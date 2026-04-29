@@ -14,7 +14,10 @@ const NAV = [
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const handleLogout = async () => { await logout(); navigate("/"); };
+  const handleLogout = async () => {
+    await logout();
+    window.location.assign("/");
+  };
 
   return (
     <div className="min-h-screen bg-muted">

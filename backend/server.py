@@ -480,7 +480,7 @@ async def generate_document(body: DocumentGenerateIn, current_user: User = Depen
         def _run_llm():
             return asyncio.run(chat.send_message(UserMessage(text=user_prompt)))
 
-        response = await asyncio.wait_for(asyncio.to_thread(_run_llm), timeout=90.0)
+        response = await asyncio.wait_for(asyncio.to_thread(_run_llm), timeout=50.0)
     except asyncio.TimeoutError:
         raise HTTPException(503, "AI provider is slow/unavailable - please retry shortly.")
     except Exception as e:
