@@ -1,72 +1,590 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Cookie, Header
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+import bcrypt
+import jwt
 import uuid
-from datetime import datetime, timezone
-
+import httpx
+from pathlib import Path
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from typing import List, Optional, Literal
+from datetime import datetime, timezone, timedelta
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+JWT_SECRET = os.environ['JWT_SECRET']
+EMERGENT_LLM_KEY = os.environ['EMERGENT_LLM_KEY']
+JWT_ALGO = "HS256"
 
-# Create a router with the /api prefix
+app = FastAPI(title="SafeTradie API")
 api_router = APIRouter(prefix="/api")
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+# =================== MODELS ===================
+class RegisterIn(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+    company_name: Optional[str] = None
+    role: Literal["owner", "worker"] = "owner"
 
-# Add your routes to the router instead of directly to app
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    email: str
+    name: str
+    role: str = "owner"
+    company_name: Optional[str] = None
+    picture: Optional[str] = None
+    auth_provider: str = "email"
+    created_at: datetime
+
+
+class WorkerIn(BaseModel):
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    role: str
+    trade: Optional[str] = None
+
+
+class Worker(WorkerIn):
+    worker_id: str
+    user_id: str
+    created_at: datetime
+
+
+class LicenceIn(BaseModel):
+    worker_id: str
+    licence_type: str  # white_card, electrical, plumbing, first_aid, high_risk, etc.
+    licence_number: str
+    issuing_authority: Optional[str] = None
+    issue_date: Optional[str] = None
+    expiry_date: str  # ISO date
+
+
+class Licence(LicenceIn):
+    licence_id: str
+    user_id: str
+    status: str = "active"
+    created_at: datetime
+
+
+class IncidentIn(BaseModel):
+    title: str
+    description: str
+    severity: Literal["near_miss", "minor", "moderate", "serious", "critical"]
+    incident_type: str  # injury, near_miss, property_damage, environmental
+    location: Optional[str] = None
+    site: Optional[str] = None
+    occurred_at: Optional[str] = None
+    photos: List[str] = []
+    workers_involved: List[str] = []
+    corrective_actions: Optional[str] = None
+
+
+class Incident(IncidentIn):
+    incident_id: str
+    user_id: str
+    status: str = "open"  # open, investigating, closed
+    notify_regulator: bool = False
+    created_at: datetime
+
+
+class DocumentGenerateIn(BaseModel):
+    document_type: Literal["SWMS", "risk_assessment", "emergency_procedure", "induction_checklist", "hazardous_substance_register"]
+    trade: str  # plumbing, electrical, roofing, carpentry, etc.
+    job_description: str
+    site_location: Optional[str] = None
+    hazards: List[str] = []
+    extra_notes: Optional[str] = None
+
+
+class DocumentRecord(BaseModel):
+    document_id: str
+    user_id: str
+    document_type: str
+    title: str
+    trade: str
+    job_description: str
+    content: str
+    created_at: datetime
+
+
+# =================== AUTH HELPERS ===================
+def hash_password(pw: str) -> str:
+    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+
+
+def verify_password(pw: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(pw.encode(), hashed.encode())
+    except Exception:
+        return False
+
+
+def make_jwt(user_id: str) -> str:
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+        "iat": datetime.now(timezone.utc),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+
+
+async def get_current_user(
+    request: Request,
+    authorization: Optional[str] = Header(None),
+    session_token: Optional[str] = Cookie(None),
+) -> User:
+    # 1. Try cookie session_token (Emergent Google Auth)
+    token = session_token
+    bearer = None
+    if authorization and authorization.lower().startswith("bearer "):
+        bearer = authorization.split(" ", 1)[1].strip()
+
+    # Try cookie session first
+    if token:
+        sess = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+        if sess:
+            expires_at = sess["expires_at"]
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at >= datetime.now(timezone.utc):
+                user_doc = await db.users.find_one({"user_id": sess["user_id"]}, {"_id": 0})
+                if user_doc:
+                    return User(**user_doc)
+
+    # 2. Try bearer (could be JWT or session_token)
+    if bearer:
+        # Try as session_token first
+        sess = await db.user_sessions.find_one({"session_token": bearer}, {"_id": 0})
+        if sess:
+            expires_at = sess["expires_at"]
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at >= datetime.now(timezone.utc):
+                user_doc = await db.users.find_one({"user_id": sess["user_id"]}, {"_id": 0})
+                if user_doc:
+                    return User(**user_doc)
+        # Try as JWT
+        try:
+            payload = jwt.decode(bearer, JWT_SECRET, algorithms=[JWT_ALGO])
+            user_doc = await db.users.find_one({"user_id": payload["user_id"]}, {"_id": 0})
+            if user_doc:
+                return User(**user_doc)
+        except jwt.PyJWTError:
+            pass
+
+    raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+# =================== ROUTES ===================
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"service": "SafeTradie API", "status": "ok"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+# ----------- AUTH -----------
+@api_router.post("/auth/register")
+async def register(body: RegisterIn):
+    existing = await db.users.find_one({"email": body.email.lower()}, {"_id": 0})
+    if existing:
+        raise HTTPException(400, "Email already registered")
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    doc = {
+        "user_id": user_id,
+        "email": body.email.lower(),
+        "name": body.name,
+        "role": body.role,
+        "company_name": body.company_name,
+        "auth_provider": "email",
+        "password_hash": hash_password(body.password),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.insert_one(doc)
+    token = make_jwt(user_id)
+    return {
+        "token": token,
+        "user": {
+            "user_id": user_id,
+            "email": body.email.lower(),
+            "name": body.name,
+            "role": body.role,
+            "company_name": body.company_name,
+            "auth_provider": "email",
+        },
+    }
 
-# Include the router in the main app
+
+@api_router.post("/auth/login")
+async def login(body: LoginIn):
+    user_doc = await db.users.find_one({"email": body.email.lower()}, {"_id": 0})
+    if not user_doc or not user_doc.get("password_hash"):
+        raise HTTPException(401, "Invalid credentials")
+    if not verify_password(body.password, user_doc["password_hash"]):
+        raise HTTPException(401, "Invalid credentials")
+    token = make_jwt(user_doc["user_id"])
+    return {
+        "token": token,
+        "user": {
+            "user_id": user_doc["user_id"],
+            "email": user_doc["email"],
+            "name": user_doc["name"],
+            "role": user_doc.get("role", "owner"),
+            "company_name": user_doc.get("company_name"),
+            "auth_provider": user_doc.get("auth_provider", "email"),
+        },
+    }
+
+
+class GoogleSessionIn(BaseModel):
+    session_id: str
+
+
+@api_router.post("/auth/google-session")
+async def google_session(body: GoogleSessionIn, response: Response):
+    """Process session_id from Emergent Google OAuth callback."""
+    async with httpx.AsyncClient() as cli:
+        r = await cli.get(
+            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+            headers={"X-Session-ID": body.session_id},
+            timeout=15.0,
+        )
+    if r.status_code != 200:
+        raise HTTPException(401, "Invalid session")
+    data = r.json()
+    email = data["email"].lower()
+    user_doc = await db.users.find_one({"email": email}, {"_id": 0})
+    if not user_doc:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        user_doc = {
+            "user_id": user_id,
+            "email": email,
+            "name": data.get("name", email.split("@")[0]),
+            "picture": data.get("picture"),
+            "role": "owner",
+            "auth_provider": "google",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.users.insert_one({**user_doc})
+    else:
+        user_id = user_doc["user_id"]
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$set": {"picture": data.get("picture"), "name": data.get("name", user_doc["name"])}},
+        )
+
+    session_token = data["session_token"]
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        max_age=7 * 24 * 60 * 60,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+    )
+    return {
+        "user": {
+            "user_id": user_id,
+            "email": email,
+            "name": user_doc.get("name"),
+            "picture": data.get("picture"),
+            "role": user_doc.get("role", "owner"),
+            "auth_provider": "google",
+        }
+    }
+
+
+@api_router.get("/auth/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user.model_dump()
+
+
+@api_router.post("/auth/logout")
+async def logout(response: Response, session_token: Optional[str] = Cookie(None)):
+    if session_token:
+        await db.user_sessions.delete_one({"session_token": session_token})
+    response.delete_cookie("session_token", path="/")
+    return {"success": True}
+
+
+# ----------- WORKERS -----------
+@api_router.get("/workers")
+async def list_workers(current_user: User = Depends(get_current_user)):
+    workers = await db.workers.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(500)
+    return workers
+
+
+@api_router.post("/workers")
+async def create_worker(body: WorkerIn, current_user: User = Depends(get_current_user)):
+    worker_id = f"wrk_{uuid.uuid4().hex[:10]}"
+    doc = {
+        "worker_id": worker_id,
+        "user_id": current_user.user_id,
+        **body.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.workers.insert_one({**doc})
+    return doc
+
+
+@api_router.delete("/workers/{worker_id}")
+async def delete_worker(worker_id: str, current_user: User = Depends(get_current_user)):
+    res = await db.workers.delete_one({"worker_id": worker_id, "user_id": current_user.user_id})
+    await db.licences.delete_many({"worker_id": worker_id, "user_id": current_user.user_id})
+    return {"deleted": res.deleted_count}
+
+
+# ----------- LICENCES -----------
+@api_router.get("/licences")
+async def list_licences(current_user: User = Depends(get_current_user)):
+    licences = await db.licences.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
+    now = datetime.now(timezone.utc)
+    for lic in licences:
+        try:
+            exp = datetime.fromisoformat(lic["expiry_date"]).replace(tzinfo=timezone.utc) if "T" not in lic["expiry_date"] else datetime.fromisoformat(lic["expiry_date"])
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            days = (exp - now).days
+            if days < 0:
+                lic["status"] = "expired"
+            elif days <= 30:
+                lic["status"] = "expiring_soon"
+            else:
+                lic["status"] = "active"
+            lic["days_until_expiry"] = days
+        except Exception:
+            lic["status"] = "unknown"
+            lic["days_until_expiry"] = None
+    return licences
+
+
+@api_router.post("/licences")
+async def create_licence(body: LicenceIn, current_user: User = Depends(get_current_user)):
+    licence_id = f"lic_{uuid.uuid4().hex[:10]}"
+    doc = {
+        "licence_id": licence_id,
+        "user_id": current_user.user_id,
+        **body.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.licences.insert_one({**doc})
+    return doc
+
+
+@api_router.delete("/licences/{licence_id}")
+async def delete_licence(licence_id: str, current_user: User = Depends(get_current_user)):
+    res = await db.licences.delete_one({"licence_id": licence_id, "user_id": current_user.user_id})
+    return {"deleted": res.deleted_count}
+
+
+# ----------- INCIDENTS -----------
+@api_router.get("/incidents")
+async def list_incidents(current_user: User = Depends(get_current_user)):
+    return await db.incidents.find({"user_id": current_user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+
+@api_router.post("/incidents")
+async def create_incident(body: IncidentIn, current_user: User = Depends(get_current_user)):
+    incident_id = f"inc_{uuid.uuid4().hex[:10]}"
+    notify_regulator = body.severity in ("serious", "critical")
+    doc = {
+        "incident_id": incident_id,
+        "user_id": current_user.user_id,
+        "status": "open",
+        "notify_regulator": notify_regulator,
+        **body.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.incidents.insert_one({**doc})
+    return doc
+
+
+@api_router.patch("/incidents/{incident_id}")
+async def update_incident_status(incident_id: str, body: dict, current_user: User = Depends(get_current_user)):
+    allowed = {k: v for k, v in body.items() if k in ("status", "corrective_actions")}
+    await db.incidents.update_one(
+        {"incident_id": incident_id, "user_id": current_user.user_id},
+        {"$set": allowed},
+    )
+    doc = await db.incidents.find_one({"incident_id": incident_id, "user_id": current_user.user_id}, {"_id": 0})
+    return doc
+
+
+# ----------- DOCUMENTS / AI GENERATION -----------
+@api_router.post("/documents/generate")
+async def generate_document(body: DocumentGenerateIn, current_user: User = Depends(get_current_user)):
+    type_label = body.document_type.replace("_", " ").upper()
+    sys_msg = (
+        "You are an expert Australian Workplace Health and Safety (WHS) consultant. "
+        "You generate compliant, professional safety documents for Australian trade businesses "
+        "in plain English, formatted in Markdown with clear headings, bullet lists and tables. "
+        "Always include relevant Australian standards (AS/NZS), WHS Act/Regulations references, "
+        "and practical hazard controls following the Hierarchy of Controls."
+    )
+    user_prompt = (
+        f"Generate a {type_label} document for the following job:\n\n"
+        f"Trade: {body.trade}\n"
+        f"Job description: {body.job_description}\n"
+        f"Site location: {body.site_location or 'Not specified'}\n"
+        f"Identified hazards: {', '.join(body.hazards) if body.hazards else 'Identify typical hazards for this trade.'}\n"
+        f"Additional notes: {body.extra_notes or 'None'}\n\n"
+        "Structure the document with sections: Document Header (title, version, date, prepared by), "
+        "Scope of Work, Hazard Identification (table: hazard | risk | control), "
+        "Risk Matrix Assessment (likelihood x consequence), Control Measures (Hierarchy of Controls), "
+        "PPE Requirements, Emergency Procedures, Sign-Off block, and Relevant Legislation. "
+        "Make it ready for use on an Australian construction site."
+    )
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"doc_{uuid.uuid4().hex[:8]}",
+            system_message=sys_msg,
+        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+        response = await chat.send_message(UserMessage(text=user_prompt))
+    except Exception as e:
+        logger.exception("AI generation failed")
+        raise HTTPException(500, f"AI generation failed: {e}")
+
+    document_id = f"doc_{uuid.uuid4().hex[:10]}"
+    title = f"{type_label} - {body.trade.title()} - {body.job_description[:40]}"
+    doc = {
+        "document_id": document_id,
+        "user_id": current_user.user_id,
+        "document_type": body.document_type,
+        "title": title,
+        "trade": body.trade,
+        "job_description": body.job_description,
+        "site_location": body.site_location,
+        "hazards": body.hazards,
+        "content": response,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.documents.insert_one({**doc})
+    return doc
+
+
+@api_router.get("/documents")
+async def list_documents(current_user: User = Depends(get_current_user)):
+    return await db.documents.find({"user_id": current_user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+
+
+@api_router.get("/documents/{document_id}")
+async def get_document(document_id: str, current_user: User = Depends(get_current_user)):
+    doc = await db.documents.find_one({"document_id": document_id, "user_id": current_user.user_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Document not found")
+    return doc
+
+
+@api_router.delete("/documents/{document_id}")
+async def delete_document(document_id: str, current_user: User = Depends(get_current_user)):
+    res = await db.documents.delete_one({"document_id": document_id, "user_id": current_user.user_id})
+    return {"deleted": res.deleted_count}
+
+
+# ----------- COMPLIANCE INTELLIGENCE -----------
+@api_router.get("/compliance/score")
+async def compliance_score(current_user: User = Depends(get_current_user)):
+    workers = await db.workers.count_documents({"user_id": current_user.user_id})
+    licences_list = await db.licences.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
+    incidents_list = await db.incidents.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
+    documents = await db.documents.count_documents({"user_id": current_user.user_id})
+
+    now = datetime.now(timezone.utc)
+    expired = 0
+    expiring = 0
+    for lic in licences_list:
+        try:
+            exp = datetime.fromisoformat(lic["expiry_date"])
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            days = (exp - now).days
+            if days < 0:
+                expired += 1
+            elif days <= 30:
+                expiring += 1
+        except Exception:
+            pass
+
+    open_incidents = sum(1 for i in incidents_list if i.get("status") == "open")
+    serious_incidents = sum(1 for i in incidents_list if i.get("severity") in ("serious", "critical"))
+
+    # Score: start 100, deduct for issues
+    score = 100
+    score -= expired * 8
+    score -= expiring * 3
+    score -= open_incidents * 4
+    score -= serious_incidents * 6
+    if documents == 0:
+        score -= 15
+    if workers == 0:
+        score -= 10
+    score = max(0, min(100, score))
+
+    insights = []
+    if expired:
+        insights.append(f"{expired} licence(s) have expired - renew immediately to remain compliant.")
+    if expiring:
+        insights.append(f"{expiring} licence(s) expiring within 30 days.")
+    if open_incidents:
+        insights.append(f"{open_incidents} incident(s) still open - close investigations promptly.")
+    if serious_incidents:
+        insights.append(f"{serious_incidents} serious/critical incident(s) recorded - regulatory notification may apply.")
+    if documents < 3:
+        insights.append("Generate more SWMS and risk assessments for high-risk activities.")
+    if not insights:
+        insights.append("Compliance posture is strong - keep documenting toolbox talks and inductions.")
+
+    return {
+        "score": score,
+        "metrics": {
+            "workers": workers,
+            "licences_total": len(licences_list),
+            "licences_expired": expired,
+            "licences_expiring_30d": expiring,
+            "documents": documents,
+            "incidents_total": len(incidents_list),
+            "incidents_open": open_incidents,
+            "incidents_serious": serious_incidents,
+        },
+        "insights": insights,
+    }
+
+
+# ----------- INCLUDE & MIDDLEWARE -----------
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,12 +595,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
