@@ -1,0 +1,57 @@
+{
+  "summary": "Iteration 2 retest of AI Document Generation event-loop fix and full marketing/dashboard frontend smoke. Event-loop fix is CONFIRMED working (parallel /auth/me probes returned in ~0.13s during in-flight gen). However the FastAPI 90s timeout never fires because the K8s ingress kills the connection at exactly 60s with 502 'preview environment is not responding'. Backend logs also show LLM provider returning 'Budget has been exceeded' (EMERGENT_LLM_KEY quota: $0.52 used vs $0.40 max) which is the upstream root cause. All 10 marketing routes render cleanly, register/login/dashboard/generator-dialog all functional, mobile (390px) has no horizontal overflow.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/documents/generate",
+        "issue": "Endpoint returns HTTP 502 (ingress upstream timeout) at ~60s instead of clean 503. The asyncio.wait_for(timeout=90s) in server.py:483 never triggers because the Kubernetes ingress proxy enforces a 60s upstream timeout. The 90s safety net is dead code in this environment. Reduce inner timeout to ~50s so FastAPI can return 503 before ingress 502s. Body returned: 'The preview environment is not responding. It may be starting up.'",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "POST /api/documents/generate (LLM upstream)",
+        "issue": "EMERGENT_LLM_KEY budget exhausted - litellm raises 'Budget has been exceeded! Current cost: 0.522045, Max budget: 0.4'. Until budget is reset/raised, every gen call will fail. Per request notes this is acceptable as long as endpoint returns clean 503; currently it returns 502 instead.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Logout from dashboard",
+        "issue": "Logout redirects to /login instead of landing page (/) as stated in the test request. Functionally correct (user is signed out) but does not match spec wording.",
+        "affected_selectors": ["[data-testid=\"logout-btn\"]"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ai_doc_gen_retest.py",
+    "/app/test_reports/pytest/iter2_aigen.xml"
+  ],
+  "action_items": [
+    "Lower asyncio.wait_for timeout in /app/backend/server.py generate_document from 90.0s to ~50.0s so the endpoint returns a clean HTTPException(503) BEFORE the K8s ingress 60s upstream timeout fires (which currently produces a 502 with 'preview environment is not responding'). The 90s value is unreachable in this preview environment.",
+    "Raise/reset EMERGENT_LLM_KEY budget - it is currently exhausted ('Budget has been exceeded! Current cost: 0.522045, Max budget: 0.4'). Every gen attempt fails upstream until this is resolved.",
+    "(Optional) After logout, redirect to '/' instead of '/login' to match the stated UX requirement of 'returns to landing page'.",
+    "(Verified working - no action) asyncio.to_thread + asyncio.run wrapper successfully unblocks the FastAPI event loop. /api/auth/me returns in ~0.13s while gen request is mid-flight."
+  ],
+  "critical_code_review_comments": [
+    "server.py:483 - 90s wait_for timeout is unreachable due to ingress 60s cap; reduce to 50s.",
+    "server.py:481 - asyncio.run inside thread is correct workaround for litellm sync internals; keep it.",
+    "server.py:488 - good defensive 503 with truncated error message (str(e)[:200])."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ai_doc_gen_retest.py (new - 2 tests covering 503-cleanliness and event-loop-not-blocked)"
+  ],
+  "success_rate": {
+    "backend": "AI gen path: 0% functional (LLM budget) but event-loop fix verified 100%. 1 of 2 retest assertions pass (event-loop probes), 1 fails because endpoint still 502s instead of 503.",
+    "frontend": "100% - all 10 marketing routes render, all dashboard flows work, generator dialog opens, mobile responsive."
+  },
+  "test_credentials": "Used fresh registrations: ui_test_<random>@safetradie.demo and ui_gen_<random>@safetradie.demo with password Demo@1234. Demo accounts in /app/memory/test_credentials.md (owner@safetradie.demo / Demo@1234) were not used.",
+  "seed_data_creation": "None. Test users created via /api/auth/register and left in DB.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Event loop fix is good - keep asyncio.to_thread + asyncio.run pattern. The remaining issue is purely the timeout value: 90s > ingress 60s, so 502 wins. Lower to 50s and re-run /app/backend/tests/test_ai_doc_gen_retest.py - the test_generate_endpoint_returns_clean_status assertion 'r.status_code in (200, 503)' should pass once main agent fixes. The LLM budget issue is environmental and would have made the call return 503 quickly anyway if timeout were correct (since the budget error throws before any retry succeeds, but litellm's internal retry loop is what makes it slow). Marketing pages and dashboard are all clean - skip those next iteration.",
+  "rca of the issue": "Root Cause: Three-layer timeout chain mismatched. (1) litellm internally retries failing requests with 60s per-attempt timeout. (2) The FastAPI handler wraps the call in asyncio.wait_for(timeout=90s). (3) Kubernetes ingress proxy enforces 60s upstream timeout. Because (3) < (2), the ingress always wins and returns 502 to the client before FastAPI's 503 path can execute. The asyncio.to_thread fix correctly prevents the event loop from being blocked (verified: /auth/me probes 0.11-0.16s during gen), but does not change the wall-clock duration. Mitigation: set asyncio.wait_for timeout to ~50s (less than ingress 60s) so 503 is returned cleanly. Additional environmental fix: raise EMERGENT_LLM_KEY monthly budget."
+}

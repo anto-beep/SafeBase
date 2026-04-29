@@ -13,6 +13,15 @@ import DocumentView from "@/pages/DocumentView";
 import Incidents from "@/pages/Incidents";
 import Workers from "@/pages/Workers";
 import Licences from "@/pages/Licences";
+import ServiceSwms from "@/pages/services/ServiceSwms";
+import ServiceIncidents from "@/pages/services/ServiceIncidents";
+import ServicePeople from "@/pages/services/ServicePeople";
+import ServiceIntelligence from "@/pages/services/ServiceIntelligence";
+import Pricing from "@/pages/Pricing";
+import Partners from "@/pages/Partners";
+import Franchises from "@/pages/Franchises";
+import Resources from "@/pages/Resources";
+import About from "@/pages/About";
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -29,6 +38,15 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/services/swms" element={<ServiceSwms />} />
+      <Route path="/services/incidents" element={<ServiceIncidents />} />
+      <Route path="/services/people" element={<ServicePeople />} />
+      <Route path="/services/intelligence" element={<ServiceIntelligence />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/partners" element={<Partners />} />
+      <Route path="/franchises" element={<Franchises />} />
+      <Route path="/resources" element={<Resources />} />
+      <Route path="/about" element={<About />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<AuthCallback />} />

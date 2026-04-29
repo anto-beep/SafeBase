@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import asyncio
 import logging
 import bcrypt
 import jwt
@@ -473,10 +474,18 @@ async def generate_document(body: DocumentGenerateIn, current_user: User = Depen
             session_id=f"doc_{uuid.uuid4().hex[:8]}",
             system_message=sys_msg,
         ).with_model("anthropic", "claude-sonnet-4-5-20250929")
-        response = await chat.send_message(UserMessage(text=user_prompt))
+
+        # Run LLM call in a thread (with its own event loop) so the FastAPI
+        # event loop is not blocked by litellm's synchronous internals.
+        def _run_llm():
+            return asyncio.run(chat.send_message(UserMessage(text=user_prompt)))
+
+        response = await asyncio.wait_for(asyncio.to_thread(_run_llm), timeout=90.0)
+    except asyncio.TimeoutError:
+        raise HTTPException(503, "AI provider is slow/unavailable - please retry shortly.")
     except Exception as e:
         logger.exception("AI generation failed")
-        raise HTTPException(500, f"AI generation failed: {e}")
+        raise HTTPException(503, f"AI provider unavailable: {str(e)[:200]}")
 
     document_id = f"doc_{uuid.uuid4().hex[:10]}"
     title = f"{type_label} - {body.trade.title()} - {body.job_description[:40]}"

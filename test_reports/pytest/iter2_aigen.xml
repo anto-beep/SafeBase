@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="120.980" timestamp="2026-04-29T15:17:07.805567+00:00" hostname="agent-env-1dd6c271-290a-493d-a066-69eaff8cbe4e"><testcase classname="backend.tests.test_ai_doc_gen_retest" name="test_generate_endpoint_returns_clean_status" time="60.599"><failure message="AssertionError: Expected 200 or 503, got 502. Body: The preview environment is not responding. It may be starting up.&#10;  &#10;assert 502 in (200, 503)&#10; +  where 502 = &lt;Response [502]&gt;.status_code">backend/tests/test_ai_doc_gen_retest.py:55: in test_generate_endpoint_returns_clean_status
+    assert r.status_code in (200, 503), (
+E   AssertionError: Expected 200 or 503, got 502. Body: The preview environment is not responding. It may be starting up.
+E     
+E   assert 502 in (200, 503)
+E    +  where 502 = &lt;Response [502]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_ai_doc_gen_retest" name="test_event_loop_not_blocked_during_generation" time="60.276"><failure message="AssertionError: Background gen returned unexpected: {'status': 502, 'elapsed': 60.27513647079468, 'body': 'The preview environment is not responding. It may be starting up.\n'}&#10;assert 502 in (200, 503)&#10; +  where 502 = &lt;built-in method get of dict object at 0xfb25ddf255c0&gt;('status')&#10; +    where &lt;built-in method get of dict object at 0xfb25ddf255c0&gt; = {'body': 'The preview environment is not responding. It may be starting up.\n', 'elapsed': 60.27513647079468, 'status': 502}.get">backend/tests/test_ai_doc_gen_retest.py:143: in test_event_loop_not_blocked_during_generation
+    assert gen_result.get("status") in (200, 503), (
+E   AssertionError: Background gen returned unexpected: {'status': 502, 'elapsed': 60.27513647079468, 'body': 'The preview environment is not responding. It may be starting up.\n'}
+E   assert 502 in (200, 503)
+E    +  where 502 = &lt;built-in method get of dict object at 0xfb25ddf255c0&gt;('status')
+E    +    where &lt;built-in method get of dict object at 0xfb25ddf255c0&gt; = {'body': 'The preview environment is not responding. It may be starting up.\n', 'elapsed': 60.27513647079468, 'status': 502}.get</failure></testcase></testsuite></testsuites>
