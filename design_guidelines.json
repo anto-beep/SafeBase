@@ -1,0 +1,116 @@
+{
+  "theme": "light",
+  "archetype": "4 - Swiss & High-Contrast",
+  "reasoning": "SafeTradie requires a robust, authoritative, and high-visibility interface to align with the construction and trades industry. A high-contrast light theme with 'warning yellow' accents and strict geometric layouts ensures maximum readability on job sites (mobile-first for incident reporting) while projecting enterprise trust (for AI document generation and compliance).",
+  "typography": {
+    "heading_font": "Cabinet Grotesk",
+    "body_font": "IBM Plex Sans",
+    "rules": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter font-black",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-bold",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "body": "text-base leading-relaxed font-normal",
+      "labels": "text-xs tracking-[0.2em] uppercase font-bold text-muted-foreground",
+      "hierarchy_gap": "Ensure size jumps are max 2 Tailwind steps between heading and subheading."
+    }
+  },
+  "colors": {
+    "primary": "#0A0A0A",
+    "primary_foreground": "#FFFFFF",
+    "secondary": "#002FA7",
+    "secondary_foreground": "#FFFFFF",
+    "accent": "#FFCC00",
+    "accent_foreground": "#0A0A0A",
+    "background": "#FFFFFF",
+    "surface": "#F1F5F9",
+    "border": "rgba(10, 10, 10, 0.15)",
+    "rules": {
+      "tints": "Never use pure grayscale; tint neutrals slightly cool.",
+      "contrast": "Ensure all text meets minimum 4.5:1 APCA contrast. High contrast on active states.",
+      "hover": "Explicitly set hover background AND text (e.g. hover:bg-black hover:text-white). Focus rings must be high contrast."
+    }
+  },
+  "layout_and_spacing": {
+    "spacing_scale": "p-1, p-2, p-4, p-6, p-8, p-12, p-16, p-24, p-32",
+    "marketing_page": {
+      "grid": "Tetris Grid (asymmetry, visual tension, grid-cols-1 md:grid-cols-12 gap-8)",
+      "padding": "Generous (py-24 or py-32 for sections)",
+      "alignment": "Left-align dense text; avoid center-everything disease."
+    },
+    "dashboard_and_app": {
+      "grid": "Control Room Grid (density, data correlation, grid-cols-1 md:grid-cols-4 gap-4 or gap-6)",
+      "padding": "Compact (p-4 or p-6)",
+      "surfaces": "Cardless or sharp flat borders with max 4px radius (rounded-sm). No glassmorphism in app."
+    }
+  },
+  "components": {
+    "marketing": {
+      "strategy": "Pure HTML + Tailwind for structural layouts. Use raw divs/sections for overlapping bento grids.",
+      "hero": "Real tradie imagery with maximum bg-black/40 overlay or gradient. Never go darker if it obscures the image.",
+      "marquee": "Use react-fast-marquee. Editorial Ribbon style (slow, low contrast, wide gaps)."
+    },
+    "dashboard": {
+      "strategy": "Shadcn components heavily customized to match the Swiss Brutalist aesthetic.",
+      "forms": "Shadcn Input, Select, Form. Do not use native HTML form elements.",
+      "buttons": "Sharp edges (rounded-none or rounded-sm). Primary action gets Warning Yellow or Deep Black background.",
+      "cards": "Flat background (bg-white or bg-slate-50), 1px solid border-border, no shadow by default. Hover adds subtle shadow and translates -translate-y-1."
+    }
+  },
+  "motion_and_interactions": {
+    "hover": "Interactive elements must have clear hover state (color change or translate).",
+    "transitions": "Use specific properties (transition-transform, transition-colors duration-200 ease-out).",
+    "accessibility": "Respect prefers-reduced-motion."
+  },
+  "icons_and_assets": {
+    "library": "@phosphor-icons/react",
+    "style": "Duotone or bold weight depending on context (Phosphor is ideal for field service dashboard clarity)."
+  },
+  "testing": {
+    "requirement": "All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid='submit-incident-button')."
+  },
+  "media": {
+    "image_urls": {
+      "hero_marketing": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/659c908f-1335-49c4-b758-9667bc1b32d0/images/b8670e675aef15a8286aa972f30754d3de0ca5d2d17a657baaef5de1580b5e13.png",
+        "description": "Wide-angle photograph of a rugged Australian construction site at golden hour, featuring a worker in high-vis gear."
+      },
+      "abstract_compliance": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/659c908f-1335-49c4-b758-9667bc1b32d0/images/6900eccc1d1fdba61c2ac6e5d1a0cbe7606b0eab0c465c61e88a3625f7e46b94.png",
+        "description": "Abstract geometric composition with warning yellow, sharp black lines."
+      },
+      "worker_context_1": {
+        "url": "https://images.unsplash.com/photo-1659353590864-c3314d25a261?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHw0fHxjb25zdHJ1Y3Rpb24lMjB3b3JrZXIlMjB0YWJsZXR8ZW58MHx8fHwxNzc3NDczMzA1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "A person wearing a hard hat, useful for testimonials or worker profiles."
+      },
+      "worker_context_2": {
+        "url": "https://images.unsplash.com/photo-1652318522046-8f6057f04fb0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwzfHxjb25zdHJ1Y3Rpb24lMjB3b3JrZXIlMjB0YWJsZXR8ZW58MHx8fHwxNzc3NDczMzA1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "A man wearing a hard hat working on a machine, good for feature sections (e.g., Incident Reporting)."
+      },
+      "worker_context_3": {
+        "url": "https://images.pexels.com/photos/8961008/pexels-photo-8961008.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Female engineer in hard hat using a tablet, good for 'People & Licence Management' feature."
+      },
+      "logo_partner_1": {
+        "url": "https://images.unsplash.com/photo-1772760110621-d7b6f54c1e42?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDV8MHwxfHNlYXJjaHwxfHxjb21wYW55JTIwbG9nbyUyMGJsYWNrJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3Nzc0NzMzMDV8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Sony logo for partner/trusted-by marquee."
+      },
+      "logo_partner_2": {
+        "url": "https://images.unsplash.com/photo-1770012977129-19f856a1f935?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDV8MHwxfHNlYXJjaHwyfHxjb21wYW55JTIwbG9nbyUyMGJsYWNrJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3Nzc0NzMzMDV8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Palantir logo for partner/trusted-by marquee."
+      },
+      "logo_partner_3": {
+        "url": "https://images.pexels.com/photos/9949424/pexels-photo-9949424.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Retro Apple logo for partner marquee."
+      }
+    }
+  },
+  "instructions_to_main_agent": {
+    "1": "Install the required font families: Cabinet Grotesk (from Fontshare or local assets) and IBM Plex Sans (from Google Fonts). Update tailwind.config.js to include these.",
+    "2": "Install phosphor-icons using `yarn add @phosphor-icons/react`.",
+    "3": "Install `react-fast-marquee` for the partner logos section in the marketing page.",
+    "4": "Ensure the application heavily utilizes data-testid attributes across all clickable or input-driven UI components.",
+    "5": "Do not default to standard rounded 'Vercel' components. Override Shadcn configurations in globals.css/tailwind.config to enforce sharp or minimal-radius borders.",
+    "6": "Ensure the dashboard uses a strictly grid-based 'Control Room' layout where data is dense but highly legible due to stark color contrasts.",
+    "7": "Do not use placeholders for images. Use the provided URLs strictly."
+  }
+}
