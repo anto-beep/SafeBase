@@ -27,11 +27,13 @@ export function MarketingNav() {
           </DropdownMenu>
           <Link to="/ecosystem" data-testid="nav-ecosystem">How it works</Link>
           <Link to="/pricing" data-testid="nav-pricing">Pricing</Link>
+          <Link to="/enterprise" data-testid="nav-enterprise" className="text-[#1B3A5C] font-bold">Enterprise</Link>
           <Link to="/compare" data-testid="nav-compare">Compare</Link>
           <Link to="/blog" data-testid="nav-blog">Blog</Link>
           <Link to="/resources" data-testid="nav-resources">Resources</Link>
         </nav>
         <div className="flex items-center gap-2">
+          <Link to="/enterprise" className="hidden lg:block"><Button variant="outline" className="btn-sharp border-[#1B3A5C] text-[#1B3A5C] hover:bg-[#1B3A5C] hover:text-white" data-testid="nav-demo-btn">Book a demo</Button></Link>
           <Link to="/login"><Button variant="ghost" className="btn-sharp" data-testid="nav-login-btn">Log in</Button></Link>
           <Link to="/register"><Button className="btn-sharp bg-ink text-white hover:bg-authority" data-testid="nav-register-btn">Start free trial <ArrowRight className="ml-1" /></Button></Link>
         </div>

@@ -8,6 +8,7 @@ const TIER_LABEL = {
   sole_trader: "Sole Trader",
   small_business: "Small Business",
   growing_business: "Growing Business",
+  enterprise: "Enterprise",
 };
 
 const STATUS_CLS = {
@@ -37,9 +38,10 @@ export default function BillingPanel() {
   const tierLabel = TIER_LABEL[sub?.tier] || "Free trial";
   const status = sub?.status || "trial";
   const cycle = sub?.cycle;
-  const priceMap = { sole_trader: cycle === "annual" ? "A$1,500/yr" : "A$150/mo",
-                     small_business: cycle === "annual" ? "A$2,500/yr" : "A$250/mo",
-                     growing_business: cycle === "annual" ? "A$4,000/yr" : "A$400/mo" };
+  const priceMap = { sole_trader: cycle === "annual" ? "A$2,490/yr + GST" : "A$249/mo + GST",
+                     small_business: cycle === "annual" ? "A$4,990/yr + GST" : "A$499/mo + GST",
+                     growing_business: cycle === "annual" ? "A$7,990/yr + GST" : "A$799/mo + GST",
+                     enterprise: cycle === "annual" ? "A$12,990/yr + GST" : "A$1,299/mo + GST" };
   const price = hasSub ? priceMap[sub.tier] : "A$0";
 
   return (

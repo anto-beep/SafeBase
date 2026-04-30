@@ -82,7 +82,7 @@ export default function Compare() {
           <div className="mt-8 border border-border p-6 bg-background">
             <div className="label-eyebrow text-muted-foreground">/ Why the difference?</div>
             <h3 className="font-display text-2xl font-black tracking-tighter mt-2">SafeTradie is the only platform purpose-built for Australian tradies — not re-skinned enterprise EHS.</h3>
-            <p className="text-muted-foreground mt-3">Enterprise platforms (HammerTech, Donesafe) charge A$15-20k/yr minimum and assume you have a safety manager. Single-purpose tools (HazardCo) miss plant and substances. SafeTradie is the only platform that ships AI SWMS, worker mobile app, consultant portal AND a marketplace — for A$150/mo.</p>
+            <p className="text-muted-foreground mt-3">Enterprise platforms (HammerTech, Donesafe) charge A$15-20k/yr minimum and assume you have a safety manager. Single-purpose tools (HazardCo) miss plant and substances. SafeTradie is the only platform that ships AI SWMS, worker mobile app, consultant portal AND a marketplace — from A$249/mo + GST, with a dedicated Enterprise tier at A$1,299/mo + GST for 50-user operations.</p>
           </div>
 
           <div className="mt-8 text-center">

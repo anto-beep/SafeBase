@@ -4,7 +4,7 @@ import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { ArrowRight, FileText, HardHat, IdentificationBadge, Student, Buildings, UserCircleGear, Lightning, CheckCircle } from "@phosphor-icons/react";
 
 const PRODUCTS = [
-  { code: "01", icon: FileText, name: "SafeTradie Core", tagline: "The foundation everything else is built on.", to: "/services/swms", price: "from A$150/month",
+  { code: "01", icon: FileText, name: "SafeTradie Core", tagline: "The foundation everything else is built on.", to: "/services/swms", price: "from A$249/month + GST",
     what: "SWMS generation, incident management, licence tracking, compliance dashboard, audit preparation.",
     who: "Any Australian trade business, 1–50 staff.",
     ai: ["Voice-to-incident-report", "AI SWMS from job type & location", "Pattern detection", "Expiry alerts"] },
@@ -137,7 +137,7 @@ export default function Ecosystem() {
       <section className="bg-warning border-b border-ink">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8"><h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">Start with Core. Add what you need.<br />The ecosystem grows with you.</h2></div>
-          <div className="lg:col-span-4 lg:text-right"><Link to="/register"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="eco-final-cta">Start from A$150/mo <ArrowRight className="ml-2" /></Button></Link></div>
+          <div className="lg:col-span-4 lg:text-right"><Link to="/register"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="eco-final-cta">Start from A$249/mo + GST <ArrowRight className="ml-2" /></Button></Link></div>
         </div>
       </section>
 

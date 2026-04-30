@@ -41,6 +41,7 @@ import Compare from "@/pages/Compare";
 import StateGuide from "@/pages/StateGuide";
 import FineCalculator from "@/pages/FineCalculator";
 import Integrations from "@/pages/Integrations";
+import Enterprise from "@/pages/Enterprise";
 import Webhooks from "@/pages/Webhooks";
 import Automations from "@/pages/Automations";
 import ServiceSwms from "@/pages/services/ServiceSwms";
@@ -99,6 +100,7 @@ function AppRouter() {
       <Route path="/guides/:state" element={<StateGuide />} />
       <Route path="/tools/fine-calculator" element={<FineCalculator />} />
       <Route path="/integrations" element={<Integrations />} />
+      <Route path="/enterprise" element={<Enterprise />} />
       <Route path="/induct/:code" element={<InductionPublic />} />
       <Route path="/worker" element={<Protected><MobileWorker /></Protected>} />
       <Route path="/dashboard" element={<Protected><DashboardLayout /></Protected>}>

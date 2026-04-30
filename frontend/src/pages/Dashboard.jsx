@@ -239,8 +239,8 @@ export default function Dashboard() {
       <div className="bg-warning border-2 border-ink p-6 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="label-eyebrow">/ Plan</div>
-          <div className="font-display font-bold text-lg mt-1">Sole Trader · A$150/month</div>
-          <div className="text-sm">Unlock contractor compliance, TradeInduct and AI pattern detection. Upgrade to Small Business for A$250/month.</div>
+          <div className="font-display font-bold text-lg mt-1">Sole Trader · A$249/month + GST</div>
+          <div className="text-sm">Unlock contractor compliance, TradeInduct and AI pattern detection. Upgrade to Small Business for A$499/month + GST — or jump to Enterprise for A$1,299/mo + GST with a dedicated Account Manager.</div>
         </div>
         <Link to="/pricing"><Button className="btn-sharp bg-ink text-white hover:bg-authority h-11" data-testid="upgrade-plan-btn">Upgrade plan <ArrowRight className="ml-2" /></Button></Link>
       </div>

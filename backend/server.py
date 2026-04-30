@@ -1812,13 +1812,15 @@ async def worker_checkins(current_user: User = Depends(get_current_user)):
 # BILLING — Stripe Checkout (server-defined fixed tiers)
 # ============================================================
 BILLING_TIERS = {
-    # slug: (amount in A$, currency, description, tier_name, cycle)
-    "sole_trader_monthly":    {"amount": 150.00,  "currency": "aud", "tier": "sole_trader",     "cycle": "monthly", "label": "Sole Trader (monthly)"},
-    "small_business_monthly": {"amount": 250.00,  "currency": "aud", "tier": "small_business",  "cycle": "monthly", "label": "Small Business (monthly)"},
-    "growing_business_monthly":{"amount": 400.00, "currency": "aud", "tier": "growing_business","cycle": "monthly", "label": "Growing Business (monthly)"},
-    "sole_trader_annual":     {"amount": 1500.00, "currency": "aud", "tier": "sole_trader",     "cycle": "annual",  "label": "Sole Trader (annual)"},
-    "small_business_annual":  {"amount": 2500.00, "currency": "aud", "tier": "small_business",  "cycle": "annual",  "label": "Small Business (annual)"},
-    "growing_business_annual":{"amount": 4000.00, "currency": "aud", "tier": "growing_business","cycle": "annual",  "label": "Growing Business (annual)"},
+    # slug: (amount in A$ ex GST, currency, description, tier_name, cycle)
+    "sole_trader_monthly":      {"amount": 249.00,   "currency": "aud", "tier": "sole_trader",      "cycle": "monthly", "label": "Sole Trader (monthly)"},
+    "small_business_monthly":   {"amount": 499.00,   "currency": "aud", "tier": "small_business",   "cycle": "monthly", "label": "Small Business (monthly)"},
+    "growing_business_monthly": {"amount": 799.00,   "currency": "aud", "tier": "growing_business", "cycle": "monthly", "label": "Growing Business (monthly)"},
+    "enterprise_monthly":       {"amount": 1299.00,  "currency": "aud", "tier": "enterprise",       "cycle": "monthly", "label": "Enterprise (monthly)"},
+    "sole_trader_annual":       {"amount": 2490.00,  "currency": "aud", "tier": "sole_trader",      "cycle": "annual",  "label": "Sole Trader (annual)"},
+    "small_business_annual":    {"amount": 4990.00,  "currency": "aud", "tier": "small_business",   "cycle": "annual",  "label": "Small Business (annual)"},
+    "growing_business_annual":  {"amount": 7990.00,  "currency": "aud", "tier": "growing_business", "cycle": "annual",  "label": "Growing Business (annual)"},
+    "enterprise_annual":        {"amount": 12990.00, "currency": "aud", "tier": "enterprise",       "cycle": "annual",  "label": "Enterprise (annual)"},
 }
 
 
@@ -1826,6 +1828,34 @@ BILLING_TIERS = {
 async def list_billing_tiers():
     """Public — list subscription tiers the UI can render."""
     return [{"slug": k, **v} for k, v in BILLING_TIERS.items()]
+
+
+@api_router.post("/enterprise/demo-request")
+async def enterprise_demo_request(body: dict):
+    """Public — capture an Enterprise demo request. No auth required."""
+    required = ["name", "business_name", "contact_email"]
+    for k in required:
+        if not body.get(k):
+            raise HTTPException(400, f"{k} is required")
+    doc = {
+        "request_id": f"edr_{uuid.uuid4().hex[:10]}",
+        "name": body.get("name"),
+        "business_name": body.get("business_name"),
+        "abn": body.get("abn", ""),
+        "contact_email": body.get("contact_email"),
+        "contact_phone": body.get("contact_phone", ""),
+        "trades": body.get("trades", []),
+        "workers": body.get("workers", 0),
+        "sites": body.get("sites", 0),
+        "states": body.get("states", []),
+        "current_tools": body.get("current_tools", ""),
+        "challenge": body.get("challenge", ""),
+        "best_time": body.get("best_time", ""),
+        "status": "new",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.enterprise_requests.insert_one({**doc})
+    return {"ok": True, "request_id": doc["request_id"], "message": "We will respond within 4 business hours."}
 
 
 @api_router.post("/billing/checkout")
