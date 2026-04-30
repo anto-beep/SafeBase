@@ -12,58 +12,100 @@ export default function Franchises() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8">
             <div className="label-eyebrow text-warning mb-3">/ For Franchise Networks</div>
-            <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">One brand.<br />One standard.<br /><span className="bg-warning text-ink px-2">200 franchisees.</span></h1>
-            <p className="mt-8 text-lg text-white/70 max-w-2xl">Trade franchise networks have a structural compliance problem — the franchisor is responsible for the brand standard, but every franchisee is an independent business. SafeTradie for Franchises gives you network visibility, master template control, and franchisee-level simplicity.</p>
+            <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">One safety standard.<br />Every franchisee.<br /><span className="bg-warning text-ink px-2">Zero excuses.</span></h1>
+            <p className="mt-8 text-lg text-white/70 max-w-2xl">Give your network the WHS compliance system your brand demands — without making franchisees figure it out themselves.</p>
             <div className="mt-8 flex gap-3">
-              <a href="mailto:franchises@safetradie.com.au"><Button className="btn-sharp h-12 bg-warning text-ink hover:bg-white" data-testid="franchise-cta">Talk to us <ArrowRight className="ml-2" /></Button></a>
+              <a href="mailto:franchises@safetradie.com.au"><Button className="btn-sharp h-12 bg-warning text-ink hover:bg-white" data-testid="franchise-cta">Book a network demo <ArrowRight className="ml-2" /></Button></a>
             </div>
           </div>
         </div>
       </section>
 
       <section className="border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
-          <div className="bg-background p-8">
-            <Buildings size={36} weight="duotone" />
-            <div className="font-display font-bold text-xl mt-4">Network dashboard</div>
-            <div className="text-sm text-muted-foreground mt-2">Compliance score, incident heat-map, SWMS coverage and licence currency across every franchisee.</div>
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
+          <div className="lg:col-span-5">
+            <div className="label-eyebrow mb-3">/ The problem</div>
+            <h2 className="font-display text-4xl font-black tracking-tighter">Your brand on the news.</h2>
           </div>
-          <div className="bg-background p-8">
-            <ShieldCheck size={36} weight="duotone" />
-            <div className="font-display font-bold text-xl mt-4">Master templates</div>
-            <div className="text-sm text-muted-foreground mt-2">Brand-aligned SWMS, induction packs and policies pushed to every franchisee instance with version control.</div>
+          <p className="lg:col-span-7 text-lg text-muted-foreground self-end">When a franchisee has a WorkSafe incident, it's your brand on the news. But right now you have no real visibility. Some use a folder. Some use nothing. You have 80 franchisees and 80 different approaches to safety. The average WHS fine is A$116,979. You cannot afford to find out the hard way.</p>
+        </div>
+      </section>
+
+      <section className="border-b border-border bg-muted">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
+          <div className="label-eyebrow mb-3">/ How it works</div>
+          <h2 className="font-display text-4xl font-black tracking-tighter mb-12">Three moves. Network-wide impact.</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
+            {[
+              { n: "01", t: "You set the standard", b: "Upload your master SWMS library, safety policies, training requirements — once." },
+              { n: "02", t: "Franchisees get SafeTradie", b: "Pre-configured to your brand standards. They just add workers and sites." },
+              { n: "03", t: "You see everything", b: "Compliance scores, incident rates, credentials, training — real-time across the network." },
+            ].map((s) => (
+              <div key={s.n} className="bg-background p-6">
+                <div className="font-display font-black text-5xl text-warning">{s.n}</div>
+                <div className="font-display font-bold text-lg mt-3">{s.t}</div>
+                <div className="text-sm text-muted-foreground mt-2">{s.b}</div>
+              </div>
+            ))}
           </div>
-          <div className="bg-background p-8">
-            <ChartBar size={36} weight="duotone" />
-            <div className="font-display font-bold text-xl mt-4">Network reporting</div>
-            <div className="text-sm text-muted-foreground mt-2">Quarterly board reports with risk concentration, leading indicators and benchmark comparisons.</div>
+        </div>
+      </section>
+
+      <section className="border-b border-border">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
+          <div className="label-eyebrow mb-3">/ Franchisor dashboard</div>
+          <h2 className="font-display text-4xl font-black tracking-tighter mb-12">Network compliance at a glance.</h2>
+          <div className="bg-ink text-white p-8 border-4 border-warning">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div><div className="label-eyebrow text-warning">NETWORK SCORE</div><div className="font-display font-black text-5xl mt-2">91<span className="text-xl">/100</span></div></div>
+              <div><div className="label-eyebrow text-warning">COMPLIANT</div><div className="font-display font-black text-5xl mt-2">47<span className="text-xl">/50</span></div></div>
+              <div><div className="label-eyebrow text-warning">OVERDUE ACTIONS</div><div className="font-display font-black text-5xl mt-2 text-destructive">3</div></div>
+              <div><div className="label-eyebrow text-warning">INCIDENTS · YTD</div><div className="font-display font-black text-5xl mt-2">28</div></div>
+            </div>
+            <div className="text-white/60 text-sm">Top 5 risk areas across network (AI identified): Working at Heights, Manual Handling, Electrical, PPE compliance, Site Housekeeping.</div>
           </div>
         </div>
       </section>
 
       <section className="border-b border-border bg-muted">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
+          <div className="label-eyebrow mb-3">/ Pricing</div>
+          <h2 className="font-display text-4xl font-black tracking-tighter mb-12">Scales with your network.</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
+            {[
+              { n: "1 – 49 franchisees", p: "A$79", u: "/franchisee/mo" },
+              { n: "50 – 199 franchisees", p: "A$59", u: "/franchisee/mo" },
+              { n: "200+ franchisees", p: "A$49", u: "/franchisee/mo" },
+            ].map((t) => (
+              <div key={t.n} className="bg-background p-8">
+                <div className="label-eyebrow">{t.n}</div>
+                <div className="font-display font-black text-5xl mt-3">{t.p}<span className="text-xl font-normal text-muted-foreground">{t.u}</span></div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 bg-warning border-2 border-ink p-4 text-center font-bold">Franchisor network dashboard included. Network setup from A$7,500 (master SWMS library + template config + onboarding support for first 10 franchisees).</div>
+        </div>
+      </section>
+
+      <section className="border-b border-border bg-ink text-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-5">
-            <div className="label-eyebrow mb-3">/ Economics</div>
-            <h2 className="font-display text-4xl font-black tracking-tighter">200 franchisees ×<br />A$79/mo = <span className="bg-warning px-2">A$189k/yr</span></h2>
-            <p className="mt-4 text-muted-foreground">Less than the cost of a single WorkSafe prosecution. Often funded by reduced workers-comp premiums alone.</p>
+            <div className="label-eyebrow text-warning mb-3">/ ROI case</div>
+            <h2 className="font-display text-4xl font-black tracking-tighter">A$94k/year vs A$117k fine.</h2>
           </div>
-          <div className="lg:col-span-7 bg-ink text-white p-8 font-mono text-sm">
-            <div className="label-eyebrow text-warning mb-4">/ INDICATIVE NETWORK ROLLOUT</div>
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 border-b border-white/10 py-2"><span>Discovery + brand templates</span><span>Wk 1–2</span></div>
-              <div className="grid grid-cols-2 border-b border-white/10 py-2"><span>Pilot — 5 franchisees</span><span>Wk 3–4</span></div>
-              <div className="grid grid-cols-2 border-b border-white/10 py-2"><span>Network rollout</span><span>Wk 5–10</span></div>
-              <div className="grid grid-cols-2 border-b border-white/10 py-2"><span>Quarterly board reporting</span><span>Ongoing</span></div>
-            </div>
+          <div className="lg:col-span-7 space-y-2 font-mono text-sm">
+            <div className="flex justify-between border-b border-white/10 py-3"><span>Average WorkSafe prosecution</span><span className="text-destructive">A$116,979</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>SafeTradie 100-franchisee network (A$79 × 100)</span><span>A$7,900/mo</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>Annual platform cost</span><span>A$94,800/yr</span></div>
+            <div className="flex justify-between py-3 text-warning font-bold"><span>Less than one prosecution. Makes that prosecution far less likely.</span><span></span></div>
           </div>
         </div>
       </section>
 
       <section className="bg-warning border-b border-ink">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-8"><h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">Brand standard meets network visibility.</h2></div>
-          <div className="lg:col-span-4 lg:text-right"><a href="mailto:franchises@safetradie.com.au"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="franchise-final-cta">Talk to us <ArrowRight className="ml-2" /></Button></a></div>
+          <div className="lg:col-span-8"><h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">Ready to protect your brand?</h2></div>
+          <div className="lg:col-span-4 lg:text-right"><a href="mailto:franchises@safetradie.com.au"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="franchise-final-cta">Book a network demo <ArrowRight className="ml-2" /></Button></a></div>
         </div>
       </section>
 

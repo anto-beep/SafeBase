@@ -46,10 +46,10 @@ export default function Register() {
             <div className="label-eyebrow mb-4">/ START FREE TRIAL</div>
             <h1 className="font-display text-5xl font-black leading-[0.95]">Generate your<br />first SWMS<br />in 90 seconds.</h1>
             <ul className="mt-8 space-y-2 text-sm">
-              <li>✓ 14-day free trial</li>
-              <li>✓ No credit card required</li>
+              <li>✓ 14-day free trial · no credit card</li>
+              <li>✓ Plans from A$150/month</li>
+              <li>✓ 30-day money-back guarantee</li>
               <li>✓ Australian WHS aligned</li>
-              <li>✓ Cancel any time</li>
             </ul>
           </div>
           <div className="font-mono text-xs">Trusted by 1,200+ Australian trade crews</div>

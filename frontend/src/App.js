@@ -22,6 +22,11 @@ import Partners from "@/pages/Partners";
 import Franchises from "@/pages/Franchises";
 import Resources from "@/pages/Resources";
 import About from "@/pages/About";
+import Ecosystem from "@/pages/Ecosystem";
+import Consulting from "@/pages/Consulting";
+import Academy from "@/pages/products/Academy";
+import TradeInduct from "@/pages/products/TradeInduct";
+import TradeCheck from "@/pages/products/TradeCheck";
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -38,10 +43,15 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/ecosystem" element={<Ecosystem />} />
       <Route path="/services/swms" element={<ServiceSwms />} />
       <Route path="/services/incidents" element={<ServiceIncidents />} />
       <Route path="/services/people" element={<ServicePeople />} />
       <Route path="/services/intelligence" element={<ServiceIntelligence />} />
+      <Route path="/products/tradeinduct" element={<TradeInduct />} />
+      <Route path="/products/tradecheck" element={<TradeCheck />} />
+      <Route path="/products/academy" element={<Academy />} />
+      <Route path="/consulting" element={<Consulting />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/partners" element={<Partners />} />
       <Route path="/franchises" element={<Franchises />} />

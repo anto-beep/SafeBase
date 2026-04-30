@@ -1,45 +1,49 @@
 import { Link } from "react-router-dom";
 import Marquee from "react-fast-marquee";
 import {
-  ShieldCheck, FileText, Warning, IdentificationBadge, ChartLineUp,
-  ArrowRight, CheckCircle, HardHat, Buildings, Sparkle, Quotes, CaretDown
+  FileText, Warning, IdentificationBadge, ChartLineUp, ArrowRight, CheckCircle,
+  HardHat, Sparkle, Quotes, Siren, Student, Buildings, UserCircleGear, Graph
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 
-const FEATURES = [
-  { icon: FileText, title: "Document Generation", body: "AI-built SWMS, risk assessments, emergency procedures and induction packs from 30 seconds of input. Mapped to AS/NZS standards.", tag: "01", to: "/services/swms" },
-  { icon: Warning, title: "Incident & Near-Miss", body: "Field-first reporting with photo, voice, and severity-based regulator notification prompts. Closed-loop corrective actions.", tag: "02", to: "/services/incidents" },
-  { icon: IdentificationBadge, title: "Licences & People", body: "Every white card, trade ticket, HRWL and first-aid cert tracked. Expiry alerts before WorkSafe ever asks.", tag: "03", to: "/services/people" },
-  { icon: ChartLineUp, title: "Compliance Intelligence", body: "Pattern detection across incidents, scoring, and audit prep. \"Your incident rate spikes Friday afternoons.\"", tag: "04", to: "/services/intelligence" },
+const ECOSYSTEM = [
+  { icon: FileText, title: "SafeTradie Core", body: "WHS & Incident Management — SWMS, licences, compliance dashboard.", to: "/services/swms" },
+  { icon: HardHat, title: "TradeInduct", body: "QR site inductions. Subbies scan, complete, done in 3 minutes.", to: "/products/tradeinduct" },
+  { icon: IdentificationBadge, title: "TradeCheck", body: "Portable contractor credentials. One QR = full compliance record.", to: "/products/tradecheck" },
+  { icon: Student, title: "SafeTradie Academy", body: "AI safety microlearning. Turn your SWMS into training in 60s.", to: "/products/academy" },
+  { icon: Buildings, title: "SafeTradie for Franchises", body: "Network compliance dashboard + franchisee instances.", to: "/franchises" },
+  { icon: UserCircleGear, title: "WHS Consulting", body: "Human experts working directly inside your SafeTradie data.", to: "/consulting" },
 ];
 
-const PARTNERS = ["MASTER BUILDERS", "HIA", "WORKSAFE READY", "JIM'S GROUP", "VIP HOME SERVICES", "TRADIE NATION", "NSW CONSTRUCTION", "BUILDPRO", "SAFEWORK NSW", "FCA"];
+const PAINS = [
+  { icon: Siren, title: "No SWMS when the inspector arrives", body: "Fines up to A$2.3M per breach under the model WHS Act." },
+  { icon: IdentificationBadge, title: "Expired licences on site", body: "You're the PCBU. You're liable — even when a subbie lapses." },
+  { icon: Warning, title: "Incident with no record", body: "No record means no cover. Your insurer will walk." },
+];
 
-const STATS = [
-  { v: "12,438", l: "SWMS generated" },
-  { v: "94%", l: "Average compliance score" },
-  { v: "60s", l: "Median doc time" },
-  { v: "1,200+", l: "Crews onboarded" },
+const STEPS = [
+  { n: "01", t: "Set up in 10 minutes", b: "Trades, workers, sites, vehicles — guided wizard does the heavy lifting." },
+  { n: "02", t: "AI runs compliance", b: "SWMS drafted, licences tracked, incidents logged — on autopilot." },
+  { n: "03", t: "Audit-ready in 2 minutes", b: "WorkSafe visit? Export your complete evidence pack with one click." },
 ];
 
 const TESTIMONIALS = [
-  { name: "Dave M.", role: "Roofing contractor, NSW", quote: "My SWMS used to take 3 hours. Now it's 90 seconds. WorkSafe came last month — we passed first time." },
-  { name: "Priya S.", role: "Plumbing director, VIC", quote: "Licences expire silently. SafeTradie's the first thing that ever caught a lapsed white card before it cost us a job." },
-  { name: "Tom B.", role: "Electrical, QLD", quote: "Incident logging from the ute, photos and all. Closed-loop in the dashboard. Insurer dropped premiums on renewal." },
+  { name: "Dave M.", role: "Electrical contractor, NSW", quote: "My SWMS used to take 3 hours. Now it's 90 seconds. WorkSafe came last month — we passed first time." },
+  { name: "Priya S.", role: "Plumbing director, VIC", quote: "Licences expire silently. SafeTradie's the first tool that ever caught a lapsed white card before it cost us a job." },
+  { name: "Tom B.", role: "Builder, QLD", quote: "Incident logging from the ute, photos and all. Insurer dropped premiums on renewal. Pays for itself." },
 ];
+
+const PARTNERS = ["MASTER ELECTRICIANS AUSTRALIA", "MASTER PLUMBERS", "HIA", "MASTER BUILDERS", "NECA", "PIPA", "WORKSAFE READY", "TRADIE NATION"];
 
 const FAQ = [
-  { q: "Are SafeTradie documents accepted by WorkSafe?", a: "Documents are drafted to align with the model WHS Act, model WHS Regulations and AS/NZS standards. Final accountability sits with the PCBU. We strongly recommend a qualified WHS professional reviews high-risk SWMS before use — our WHS Partner Network can help." },
-  { q: "Does it work on a phone in the field?", a: "Yes — every page is mobile-first. Incident capture supports rear-camera photos and works on Android and iOS browsers without an app install." },
-  { q: "Which trades is SafeTradie built for?", a: "Plumbing, electrical, roofing, carpentry, concreting, painting, tiling, HVAC, demolition, excavation, scaffolding and welding out of the box. The AI adapts to any trade you describe." },
-  { q: "What about subcontractors?", a: "You can track subbie licences and insurance in the People register. Our TradeCheck portable credential (rolling out next quarter) will let subbies maintain a single profile across every builder they work for." },
-  { q: "Can my WHS consultant white-label it?", a: "Yes — our Partner Network gives independent consultants a co-branded instance with a network dashboard. See the Partners page." },
-  { q: "How is pricing structured?", a: "Three tiers from A$79/mo (Solo) to A$299/mo (Network). 14-day trial, no credit card. Annual plans get 2 months free." },
+  { q: "Is there a free trial?", a: "Yes — 14 days full access, no credit card required." },
+  { q: "Is my data stored in Australia?", a: "Yes — hosted in AWS Sydney region." },
+  { q: "Does it cover every state?", a: "Built for every Australian WHS jurisdiction, including Victoria's OHS Act 2004." },
+  { q: "Do workers need their own login?", a: "Workers use the mobile app for incidents and inductions. Only admins consume user seats." },
+  { q: "What if I need help beyond the software?", a: "Our WHS Consulting services pair qualified human advisors with your SafeTradie data — from A$600/month." },
 ];
-
-const INTEGRATIONS = ["MYOB", "Xero", "ServiceM8", "simPRO", "Tradify", "Procore", "AroFlo", "WorkflowMax"];
 
 export default function Landing() {
   return (
@@ -52,23 +56,21 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
           <div className="lg:col-span-7 flex flex-col justify-center">
             <div className="flex items-center gap-3 mb-6">
-              <span className="px-2 py-1 bg-warning text-ink label-eyebrow">WHS COMPLIANCE</span>
-              <span className="label-eyebrow text-ink">Built for Australian trades</span>
+              <span className="px-2 py-1 bg-warning text-ink label-eyebrow">AUSTRALIA'S ONLY WHS PLATFORM BUILT FOR TRADES</span>
             </div>
             <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.95]">
-              The compliance<br />operating system<br />for <span className="bg-warning px-2">tradies</span>.
+              Australia's only WHS platform<br />built for <span className="bg-warning px-2">trades.</span><br />Powered by AI.
             </h1>
             <p className="mt-8 text-lg max-w-xl text-muted-foreground">
-              SWMS in 30 seconds. Incidents from the job site. Every licence tracked.
-              An AI safety officer in your pocket — engineered for builders, sparkies, plumbers and roofers.
+              SWMS in 3 minutes. Incidents reported by voice. Licences tracked automatically. Built for electricians, plumbers and builders — not paperwork.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
-              <Link to="/register"><Button size="lg" className="btn-sharp bg-ink text-white hover:bg-authority h-14 px-8 text-base" data-testid="hero-start-trial-btn">Start free 14-day trial <ArrowRight className="ml-2" /></Button></Link>
-              <Link to="/services/swms"><Button size="lg" variant="outline" className="btn-sharp h-14 px-8 text-base border-ink" data-testid="hero-tour-btn">Take the tour</Button></Link>
+              <Link to="/register"><Button size="lg" className="btn-sharp bg-ink text-white hover:bg-authority h-14 px-8 text-base" data-testid="hero-start-trial-btn">Start free trial <ArrowRight className="ml-2" /></Button></Link>
+              <a href="mailto:hello@safetradie.com.au?subject=Book a demo"><Button size="lg" variant="outline" className="btn-sharp h-14 px-8 text-base border-ink" data-testid="hero-demo-btn">Book a demo</Button></a>
             </div>
-            <div className="mt-10 flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="mt-10 flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-2"><CheckCircle weight="fill" className="text-ink" /> 14-day free trial</div>
               <div className="flex items-center gap-2"><CheckCircle weight="fill" className="text-ink" /> No credit card</div>
-              <div className="flex items-center gap-2"><CheckCircle weight="fill" className="text-ink" /> Cancel anytime</div>
               <div className="flex items-center gap-2"><CheckCircle weight="fill" className="text-ink" /> AS/NZS aligned</div>
             </div>
           </div>
@@ -84,8 +86,83 @@ export default function Landing() {
             </div>
             <div className="absolute -bottom-6 -left-6 bg-warning border-2 border-ink p-4 hidden lg:block">
               <div className="label-eyebrow">SWMS GENERATED</div>
-              <div className="font-display font-black text-3xl">12,438</div>
+              <div className="font-display font-black text-3xl">50,000+</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* STAT BAR */}
+      <section className="border-b border-border bg-ink text-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-10 grid grid-cols-2 lg:grid-cols-4 gap-8 text-center lg:text-left">
+          <div><div className="font-display font-black text-3xl text-warning">50,000+</div><div className="label-eyebrow text-white/60 mt-1">SWMS Generated</div></div>
+          <div><div className="font-display font-black text-3xl text-warning">446,000</div><div className="label-eyebrow text-white/60 mt-1">AU Trade Businesses</div></div>
+          <div><div className="font-display font-black text-3xl text-warning">A$116,979</div><div className="label-eyebrow text-white/60 mt-1">Average WHS Fine</div></div>
+          <div><div className="font-display font-black text-3xl text-warning">51%</div><div className="label-eyebrow text-white/60 mt-1">Prosecutions Target Small Biz</div></div>
+        </div>
+      </section>
+
+      {/* PAIN */}
+      <section className="border-b border-border">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
+            <div className="lg:col-span-5">
+              <div className="label-eyebrow mb-3">/ The reality</div>
+              <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">WorkSafe doesn't care<br />that you're busy.</h2>
+            </div>
+            <p className="lg:col-span-7 text-lg text-muted-foreground self-end">In 2024, SafeWork SA secured its highest number of convictions in 10 years. The average fine was A$116,979. <strong className="text-foreground">Over half the prosecutions targeted small businesses.</strong></p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
+            {PAINS.map((p) => (
+              <div key={p.title} className="bg-background p-8 hover:bg-ink hover:text-white transition-colors group">
+                <p.icon size={40} weight="duotone" className="text-destructive group-hover:text-warning" />
+                <div className="font-display font-bold text-xl mt-4">{p.title}</div>
+                <div className="text-sm text-muted-foreground mt-2 group-hover:text-white/70">{p.body}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ECOSYSTEM */}
+      <section className="border-b border-border bg-muted">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+            <div className="lg:col-span-6">
+              <div className="label-eyebrow mb-3">/ The ecosystem</div>
+              <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Six connected products.<br />One compliance ecosystem.</h2>
+            </div>
+            <p className="lg:col-span-6 text-lg text-muted-foreground self-end">SafeTradie isn't just software — it's the infrastructure layer that connects your entire compliance operation. Every product feeds the next.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border">
+            {ECOSYSTEM.map((e) => (
+              <Link key={e.title} to={e.to} className="bg-background p-8 hover:bg-warning transition-colors group" data-testid={`eco-${e.title.replace(/\s+/g, '-').toLowerCase()}`}>
+                <e.icon size={40} weight="duotone" />
+                <div className="font-display font-bold text-xl mt-4">{e.title}</div>
+                <div className="text-sm text-muted-foreground mt-2 group-hover:text-ink/80">{e.body}</div>
+                <div className="mt-6 label-eyebrow flex items-center gap-1 group-hover:text-ink">Learn more <ArrowRight size={12} /></div>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-8 text-center">
+            <Link to="/ecosystem"><Button variant="outline" className="btn-sharp border-ink h-12 px-6" data-testid="cta-ecosystem">See how the ecosystem connects <ArrowRight className="ml-2" /></Button></Link>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="border-b border-border">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
+          <div className="label-eyebrow mb-3">/ How it works</div>
+          <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-12">From blank page to audit-ready.</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
+            {STEPS.map((s) => (
+              <div key={s.n} className="bg-background p-8">
+                <div className="font-display font-black text-6xl text-warning">{s.n}</div>
+                <div className="font-display font-bold text-xl mt-3">{s.t}</div>
+                <div className="text-sm text-muted-foreground mt-2">{s.b}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -99,100 +176,11 @@ export default function Landing() {
         </Marquee>
       </section>
 
-      {/* PROBLEM */}
-      <section className="border-b border-border bg-background">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
-          <div className="lg:col-span-5">
-            <div className="label-eyebrow mb-3">/ The problem</div>
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">WHS paperwork<br />is killing margin.</h2>
-          </div>
-          <div className="lg:col-span-7 space-y-6 text-base">
-            <p className="text-lg">Australian trade businesses lose <strong className="bg-warning px-1">3–6 hours per week</strong> per supervisor on safety paperwork. They lose more when WorkSafe knocks and a SWMS is missing, an induction wasn't logged, or a licence quietly expired six months ago.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border mt-8">
-              <div className="bg-background p-6"><div className="font-display font-black text-4xl">A$1.8M</div><div className="label-eyebrow mt-2">Median WHS prosecution</div></div>
-              <div className="bg-background p-6"><div className="font-display font-black text-4xl">52%</div><div className="label-eyebrow mt-2">Builders fail first audit</div></div>
-              <div className="bg-background p-6"><div className="font-display font-black text-4xl">14 days</div><div className="label-eyebrow mt-2">To respond to a notice</div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section id="features" className="border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
-            <div className="lg:col-span-4">
-              <div className="label-eyebrow mb-3">/ Core stack</div>
-              <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Four functions.<br />One system.</h2>
-            </div>
-            <p className="lg:col-span-7 lg:col-start-6 text-lg text-muted-foreground self-end">
-              SafeTradie isn't another checklist app. It's compliance infrastructure — generation, capture, tracking and intelligence working as one connected layer for your business.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border border border-border">
-            {FEATURES.map((f) => (
-              <Link to={f.to} key={f.tag} className="bg-background p-8 lg:p-12 group hover:bg-warning transition-colors duration-200" data-testid={`feature-${f.tag}`}>
-                <div className="flex items-start justify-between mb-8">
-                  <f.icon size={48} weight="duotone" />
-                  <span className="font-mono text-xs text-muted-foreground group-hover:text-ink">/ {f.tag}</span>
-                </div>
-                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-3">{f.title}</h3>
-                <p className="text-muted-foreground group-hover:text-ink/80">{f.body}</p>
-                <div className="mt-6 label-eyebrow flex items-center gap-1 group-hover:text-ink">Learn more <ArrowRight size={12} /></div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="how" className="border-b border-border bg-muted">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
-          <div className="lg:col-span-5">
-            <div className="label-eyebrow mb-3">/ Workflow</div>
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-6">From blank page<br />to audit-ready.</h2>
-            <p className="text-muted-foreground mb-10">SafeTradie removes the single biggest cost in WHS — writing the documents. The AI knows the legislation. You bring the job.</p>
-            <div className="border-l-4 border-warning pl-4">
-              <div className="font-mono text-xs">"My SWMS used to take 3 hours. Now it's 90 seconds. WorkSafe came last month — we passed first time."</div>
-              <div className="mt-3 label-eyebrow">— DAVE M, ROOFING CONTRACTOR, NSW</div>
-            </div>
-          </div>
-          <div className="lg:col-span-7 space-y-px bg-border border border-border">
-            {[
-              { step: "01", title: "Describe the job", body: "Trade, scope, site, hazards. Type or talk." },
-              { step: "02", title: "AI drafts the document", body: "Claude Sonnet 4.5 generates a compliant SWMS in under a minute." },
-              { step: "03", title: "Review, sign, deploy", body: "Edit on phone, push to crew. Auto-logged for audit." },
-              { step: "04", title: "Track everything", body: "Licences, incidents, training — one compliance score." },
-            ].map((s) => (
-              <div key={s.step} className="bg-background p-6 flex gap-6 items-center">
-                <div className="font-display font-black text-5xl text-ink/10">{s.step}</div>
-                <div>
-                  <div className="font-display font-bold text-xl">{s.title}</div>
-                  <div className="text-muted-foreground text-sm mt-1">{s.body}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* STATS */}
-      <section className="border-b border-border bg-ink text-white">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {STATS.map((s) => (
-            <div key={s.l}>
-              <div className="font-display font-black text-5xl lg:text-6xl text-warning">{s.v}</div>
-              <div className="label-eyebrow mt-2 text-white/70">{s.l}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* TESTIMONIALS */}
       <section className="border-b border-border">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
           <div className="label-eyebrow mb-3">/ The crew speaks</div>
-          <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-12">Trusted by builders<br />who'd rather be on the tools.</h2>
+          <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-12">Trusted by tradies<br />who'd rather be on the tools.</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
             {TESTIMONIALS.map((t) => (
               <div key={t.name} className="bg-background p-8 flex flex-col">
@@ -208,30 +196,46 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* INTEGRATIONS */}
+      {/* PRICING PREVIEW */}
       <section className="border-b border-border bg-muted">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-4">
-              <div className="label-eyebrow mb-3">/ Integrations</div>
-              <h3 className="font-display text-2xl font-bold">Plays nice with your stack.</h3>
-              <p className="text-muted-foreground text-sm mt-2">Job-management, accounting and field-service tools — coming Q2.</p>
-            </div>
-            <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-px bg-border border border-border">
-              {INTEGRATIONS.map((i) => (
-                <div key={i} className="bg-background py-6 text-center font-display font-bold tracking-tight">{i}</div>
-              ))}
-            </div>
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
+          <div className="text-center mb-12">
+            <div className="label-eyebrow mb-3">/ Pricing</div>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Simple pricing.<br />No per-user fees.</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
+            {[
+              { n: "Sole Trader", p: "150", u: "1 user", features: ["Unlimited SWMS", "Incident register", "10 worker profiles", "Licence tracking"] },
+              { n: "Small Business", p: "250", u: "up to 5 users", highlight: true, features: ["Everything in Sole Trader", "Contractor compliance", "AI pattern detection", "TradeInduct included"] },
+              { n: "Growing Business", p: "400", u: "up to 20 users", features: ["Everything in Small Business", "Multi-site", "TradeCheck included", "Academy included"] },
+            ].map((t) => (
+              <div key={t.n} className={`p-8 ${t.highlight ? "bg-ink text-white" : "bg-background"}`} data-testid={`pricing-preview-${t.n.toLowerCase().replace(/\s+/g, '-')}`}>
+                {t.highlight && <div className="label-eyebrow text-warning mb-3">MOST POPULAR</div>}
+                <div className="font-display font-bold text-2xl">{t.n}</div>
+                <div className={`text-sm mt-1 ${t.highlight ? "text-white/60" : "text-muted-foreground"}`}>{t.u}</div>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-xl">A$</span><span className="font-display font-black text-6xl">{t.p}</span>
+                  <span className={t.highlight ? "text-white/60" : "text-muted-foreground"}>/mo</span>
+                </div>
+                <ul className="mt-6 space-y-2 text-sm">
+                  {t.features.map((f) => <li key={f} className="flex gap-2"><CheckCircle weight="fill" className={`shrink-0 ${t.highlight ? "text-warning" : "text-ink"}`} />{f}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="mt-8 text-center text-muted-foreground text-sm">All plans include free SWMS generation, incident register, and licence tracking. 14-day free trial. No credit card required.<br />Pay annually and get 2 months free — Sole Trader A$1,500/yr · Small Business A$2,500/yr · Growing Business A$4,000/yr</p>
+          <div className="mt-8 text-center">
+            <Link to="/pricing"><Button className="btn-sharp bg-ink text-white hover:bg-authority h-12 px-6" data-testid="cta-pricing">See full pricing <ArrowRight className="ml-2" /></Button></Link>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-b border-border">
+      <section className="border-b border-border">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-4">
             <div className="label-eyebrow mb-3">/ FAQ</div>
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Questions<br />from the site.</h2>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Questions from the site.</h2>
           </div>
           <div className="lg:col-span-8">
             <Accordion type="single" collapsible className="border border-border">
@@ -253,7 +257,7 @@ export default function Landing() {
             <h2 className="font-display text-4xl lg:text-6xl font-black tracking-tighter text-ink">Stop chasing paperwork.<br />Start running the site.</h2>
           </div>
           <div className="lg:col-span-4 lg:text-right">
-            <Link to="/register"><Button size="lg" className="btn-sharp bg-ink text-white hover:bg-authority h-14 px-8 text-base" data-testid="footer-cta-btn">Build my compliance stack <ArrowRight className="ml-2" /></Button></Link>
+            <Link to="/register"><Button size="lg" className="btn-sharp bg-ink text-white hover:bg-authority h-14 px-8 text-base" data-testid="footer-cta-btn">Start free trial <ArrowRight className="ml-2" /></Button></Link>
           </div>
         </div>
       </section>

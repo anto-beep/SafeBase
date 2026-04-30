@@ -37,6 +37,7 @@
     color: hsl(var(--foreground));
     font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
   h1, h2, h3, h4, .font-display {
     font-family: 'Cabinet Grotesk', 'IBM Plex Sans', sans-serif;
