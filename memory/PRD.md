@@ -30,9 +30,14 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - Blog (20 articles) · Templates Library · Competitor Comparison · 8 State Guides · Fine Calculator · Integrations · Social-proof badges
 
 ### Iteration 9 — Backlog (P1/P2) (Feb 2026)
-- **Stripe Checkout billing** (`/api/billing/*`): 6 tiers, session creation, status polling with pending-state fallback (no 500s), webhook handler, subscription sync to user doc. Frontend: Pricing-page Subscribe CTA for authed users, Settings→Billing panel with transactions table, Dashboard auto-handles `?billing=success` polling.
-- **PWA enhancement**: `/manifest.json`, apple-web-app meta, theme-color #FFCC00, Mobile Worker captures `beforeinstallprompt` and shows install CTA
-- **Outbound Webhooks** (`/api/webhooks/*`): 11 event types (incident.*, licence.*, worker.*, document.*, workflow.*, induction.*, subscription.*), subscription CRUD, test delivery, deliveries log. Events fire via `asyncio.create_task` for true fire-and-forget (doesn't block parent request). UI at `/dashboard/webhooks` with testid management.
+- **Stripe Checkout billing** · **PWA enhancement** · **Outbound Webhooks** (11 events, fire-and-forget deliveries)
+
+### Iteration 10 — Native Automations (Feb 2026)
+- `/api/automations/*` with 6 pre-built recipes (Slack on critical incident, Resend worker welcome, Slack licence expiry, Sheets via Zapier, Resend licence reminder, Slack incident closed)
+- 3 action types: `slack` (formatted message), `resend_email` (HTML template, per-account API key), `webhook_url` (generic POST)
+- Test-endpoint returns success/error without throwing; severity gate for Slack alerts
+- Frontend `/dashboard/automations`: recipe gallery with one-click enable dialogs (action-aware config fields) + My Automations list with toggle/test/delete
+- Events fire through both webhook subscriptions AND matching automations (both async, non-blocking)
 
 ---
 
