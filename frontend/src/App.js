@@ -11,6 +11,9 @@ import Dashboard from "@/pages/Dashboard";
 import Documents from "@/pages/Documents";
 import DocumentView from "@/pages/DocumentView";
 import Incidents from "@/pages/Incidents";
+import IncidentRegister from "@/pages/incident/IncidentRegister";
+import SubmitIncident from "@/pages/incident/SubmitIncident";
+import IncidentDetail from "@/pages/incident/IncidentDetail";
 import Workers from "@/pages/Workers";
 import Licences from "@/pages/Licences";
 import Notifications from "@/pages/Notifications";
@@ -113,7 +116,10 @@ function AppRouter() {
         <Route index element={<Dashboard />} />
         <Route path="documents" element={<Documents />} />
         <Route path="documents/:documentId" element={<DocumentView />} />
-        <Route path="incidents" element={<Incidents />} />
+        <Route path="incidents" element={<IncidentRegister />} />
+        <Route path="incidents/legacy" element={<Incidents />} />
+        <Route path="incidents/new" element={<SubmitIncident />} />
+        <Route path="incidents/:incident_id" element={<IncidentDetail />} />
         <Route path="workers" element={<Workers />} />
         <Route path="licences" element={<Licences />} />
         <Route path="notifications" element={<Notifications />} />

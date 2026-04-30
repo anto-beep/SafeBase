@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 15 (Incident Reporting & Management 5-stage workflow) — backend 27/27 passed. Covered: regulator meta (8 states), stats shape (9 keys), create incident -> INC-YYYY-0001 reference + lifecycle.nodes=5 + stage 'reported', urgent-keyword detector (electric shock + hospital + fell from -> urgent=true, 'routine tool inspection' -> urgent=false), triage notifiability matrix (death->category=death+stage=investigation; serious_injury_items->serious_injury; dangerous_occurrence_items->dangerous_incident; none->notifiable=false), investigation->actions advance, actions save (stage stays 'actions'), close-out 400 if missing lessons_learned/signed_off_by, successful close sets stage=closed + signed_at, reopen 400 on empty reason + success path sets stage=actions+reopened=true, all 4 AI endpoints (categorise/root-cause/summary/lessons-learned) return real Claude JSON (no fallback needed), notifications collection records incident_reported + incident_urgent + incident_triaged + incident_closed. Regression smoke OK for /risks, /library/process, /billing/tiers, /partner/branding, /incidents (legacy). Frontend smoke-tested: /dashboard/incidents register shows 8 stat cards, search + 3 filter selects, 5-dot mini stage bars, red 'Report an incident' CTA and reference column populated; /dashboard/incidents/new wizard progress-1..6 + 4 involved-type tiles + Step-2 textarea & ai-categorise-btn all visible; /dashboard/incidents/{id} shows lifecycle-tracker with 5 nodes + current-stage highlight + all 9 tabs (Summary/Submission/Triage/Investigation/Actions/Close-out/Linked/Communications/Audit) + header reference + stage badge + Sev badge.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter15_incident_workflow.py",
+    "/app/test_reports/pytest/iter15_incident_workflow.xml"
+  ],
+  "action_items": [
+    "Optional: incident-workflow has no DELETE endpoint — the module relies on closed/archived states. If product wants a hard-delete (for admin data hygiene), add one behind admin role.",
+    "Optional: Step-3 'Were any body parts injured? Yes/No/Unsure' renders BEFORE the body map. body-map-front/back + body-area-* hotspots only mount after user selects Yes — not tested interactively by Playwright but the BodyMap component + constants.BODY_AREAS exist. Main agent can self-verify by clicking Yes in Step-3.",
+    "Optional: incident_workflow.py is ~600 lines — still under the 700 soft limit but approaching; submission/triage/investigation/actions/close-out sub-module split would future-proof it."
+  ],
+  "critical_code_review_comments": [
+    "incident_workflow.py triage logic: good — notifiable + category derivation is priority-ordered (death > serious_injury > dangerous_incident) and respects caller-supplied notifiable_category override.",
+    "close-out correctly requires lessons_learned AND signed_off_by before closing (400), and stages_done always includes both 'actions' and 'closed' on success.",
+    "reopen sets stage='actions' + reopened=true but does NOT emit a notification — consider adding incident_reopened notification for audit parity with the other 4 stage events.",
+    "_call_claude wraps Claude + 45s timeout + JSON regex fallback — robust. fallback:true flag is preserved when Claude fails so frontend can flag 'AI unavailable'.",
+    "_compute_lifecycle SLA calculation only considers stage_timestamps[current] or created_at — correct; overdue flag correctly suppressed for stage='closed'.",
+    "Per-user+year incident_counters collection used with find_one_and_update(upsert=True) — atomic counter with INC-YYYY-0001 ref, matches spec.",
+    "Notification dispatch is in-app only (writes to notifications collection) — no Resend/Twilio is fired in this module. Documented as MOCKED in request. Collection writes were verified.",
+    "Consider adding an index on incident_workflow.(user_id, incident_id) — currently relying on default — OK at this scale but worth noting for scale-out."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter15_incident_workflow.py"],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "100% of smoke flows executed"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234",
+  "seed_data_creation": "Test created 7 TEST_-prefixed incidents and their notifications during the pytest run. All cleaned up at end (delete_many via Mongo + incident_counters reset). Register view confirmed empty after cleanup.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_iter15_incident_workflow.py is the regression suite for the Incident Workflow module. It depends on REACT_APP_BACKEND_URL env var (export before pytest). It creates 7+ TEST_-prefixed incidents and cleans them up directly via Mongo at the end of the testing agent's run (no public DELETE endpoint exists on /api/incident-workflow). Login response key is 'token' not 'access_token'. Body-map-front/back + body-area-* hotspots only render after the user selects 'Yes' on the 'Were any body parts injured?' question on Step 3 of the wizard — Playwright confirmation of those selectors requires that click first. All 9 tabs on IncidentDetail including Close-out and Communications are present; the data-testid lookup for those uses tab component attrs rather than visible text (e.g. look for [data-testid=tab-closeout] or button text 'Close-out').",
+  "mocked_notes": "SMS/email dispatch is MOCKED — notifications collection only (no real Resend/Twilio). Verified via GET /api/notifications. Claude Sonnet AI endpoints returned real responses in this run; fallback:true path is kept for resiliency.",
+  "rca_of_the_issue": "N/A — no blocking issues found."
+}
