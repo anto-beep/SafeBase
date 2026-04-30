@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional, Literal
 from datetime import datetime, timezone, timedelta
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,6 +26,7 @@ db = client[os.environ['DB_NAME']]
 
 JWT_SECRET = os.environ['JWT_SECRET']
 EMERGENT_LLM_KEY = os.environ['EMERGENT_LLM_KEY']
+STRIPE_API_KEY = os.environ['STRIPE_API_KEY']
 JWT_ALGO = "HS256"
 
 app = FastAPI(title="SafeTradie API")
@@ -362,6 +364,7 @@ async def create_worker(body: WorkerIn, current_user: User = Depends(get_current
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.workers.insert_one({**doc})
+    await trigger_webhook_event(current_user.user_id, "worker.added", {"worker_id": worker_id, "name": doc.get("name")})
     return doc
 
 
@@ -369,6 +372,8 @@ async def create_worker(body: WorkerIn, current_user: User = Depends(get_current
 async def delete_worker(worker_id: str, current_user: User = Depends(get_current_user)):
     res = await db.workers.delete_one({"worker_id": worker_id, "user_id": current_user.user_id})
     await db.licences.delete_many({"worker_id": worker_id, "user_id": current_user.user_id})
+    if res.deleted_count:
+        await trigger_webhook_event(current_user.user_id, "worker.removed", {"worker_id": worker_id})
     return {"deleted": res.deleted_count}
 
 
@@ -434,6 +439,7 @@ async def create_incident(body: IncidentIn, current_user: User = Depends(get_cur
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.incidents.insert_one({**doc})
+    await trigger_webhook_event(current_user.user_id, "incident.created", {"incident_id": incident_id, "severity": body.severity, "notify_regulator": notify_regulator})
     return doc
 
 
@@ -445,6 +451,9 @@ async def update_incident_status(incident_id: str, body: dict, current_user: Use
         {"$set": allowed},
     )
     doc = await db.incidents.find_one({"incident_id": incident_id, "user_id": current_user.user_id}, {"_id": 0})
+    if doc:
+        evt = "incident.closed" if allowed.get("status") in ("closed", "resolved") else "incident.updated"
+        await trigger_webhook_event(current_user.user_id, evt, {"incident_id": incident_id, "status": doc.get("status")})
     return doc
 
 
@@ -1795,6 +1804,320 @@ async def worker_checkins(current_user: User = Depends(get_current_user)):
         {"user_id": current_user.user_id}, {"_id": 0}
     ).sort("timestamp", -1).to_list(50)
     return rows
+
+
+# ============================================================
+# BILLING — Stripe Checkout (server-defined fixed tiers)
+# ============================================================
+BILLING_TIERS = {
+    # slug: (amount in A$, currency, description, tier_name, cycle)
+    "sole_trader_monthly":    {"amount": 150.00,  "currency": "aud", "tier": "sole_trader",     "cycle": "monthly", "label": "Sole Trader (monthly)"},
+    "small_business_monthly": {"amount": 250.00,  "currency": "aud", "tier": "small_business",  "cycle": "monthly", "label": "Small Business (monthly)"},
+    "growing_business_monthly":{"amount": 400.00, "currency": "aud", "tier": "growing_business","cycle": "monthly", "label": "Growing Business (monthly)"},
+    "sole_trader_annual":     {"amount": 1500.00, "currency": "aud", "tier": "sole_trader",     "cycle": "annual",  "label": "Sole Trader (annual)"},
+    "small_business_annual":  {"amount": 2500.00, "currency": "aud", "tier": "small_business",  "cycle": "annual",  "label": "Small Business (annual)"},
+    "growing_business_annual":{"amount": 4000.00, "currency": "aud", "tier": "growing_business","cycle": "annual",  "label": "Growing Business (annual)"},
+}
+
+
+@api_router.get("/billing/tiers")
+async def list_billing_tiers():
+    """Public — list subscription tiers the UI can render."""
+    return [{"slug": k, **v} for k, v in BILLING_TIERS.items()]
+
+
+@api_router.post("/billing/checkout")
+async def billing_checkout(body: dict, request: Request, current_user: User = Depends(get_current_user)):
+    """Creates a Stripe Checkout session for the chosen tier. Frontend passes origin_url; backend picks amount."""
+    slug = body.get("tier_slug")
+    origin = body.get("origin_url")
+    if slug not in BILLING_TIERS:
+        raise HTTPException(400, "Invalid tier_slug")
+    if not origin:
+        raise HTTPException(400, "origin_url is required")
+    tier = BILLING_TIERS[slug]
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    success_url = f"{origin}/dashboard?billing=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/pricing?billing=cancelled"
+    metadata = {
+        "user_id": current_user.user_id,
+        "email": current_user.email,
+        "tier_slug": slug,
+        "tier": tier["tier"],
+        "cycle": tier["cycle"],
+    }
+    req = CheckoutSessionRequest(
+        amount=float(tier["amount"]),
+        currency=tier["currency"],
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata=metadata,
+    )
+    session = await stripe_checkout.create_checkout_session(req)
+
+    # Store pending transaction BEFORE redirect
+    await db.payment_transactions.insert_one({
+        "session_id": session.session_id,
+        "user_id": current_user.user_id,
+        "email": current_user.email,
+        "amount": float(tier["amount"]),
+        "currency": tier["currency"],
+        "tier_slug": slug,
+        "tier": tier["tier"],
+        "cycle": tier["cycle"],
+        "payment_status": "initiated",
+        "status": "open",
+        "metadata": metadata,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    return {"url": session.url, "session_id": session.session_id}
+
+
+@api_router.get("/billing/status/{session_id}")
+async def billing_status(session_id: str, request: Request, current_user: User = Depends(get_current_user)):
+    """Polled by frontend after Stripe redirect. Idempotent — never upgrades user twice for same session."""
+    txn = await db.payment_transactions.find_one({"session_id": session_id, "user_id": current_user.user_id}, {"_id": 0})
+    if not txn:
+        raise HTTPException(404, "Transaction not found")
+
+    # If already finalised, just return current snapshot.
+    if txn.get("payment_status") == "paid":
+        return txn
+
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    status = await stripe_checkout.get_checkout_status(session_id)
+
+    updates = {
+        "payment_status": status.payment_status,
+        "status": status.status,
+        "last_checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.payment_transactions.update_one({"session_id": session_id}, {"$set": updates})
+
+    # Upgrade user ONLY on transition to paid — and only once per session
+    if status.payment_status == "paid" and txn.get("payment_status") != "paid":
+        renewal = "1 year" if txn["cycle"] == "annual" else "1 month"
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": {
+                "subscription_tier": txn["tier"],
+                "subscription_cycle": txn["cycle"],
+                "subscription_status": "active",
+                "subscription_renews": renewal,
+                "subscription_started_at": datetime.now(timezone.utc).isoformat(),
+            }}
+        )
+    txn.update(updates)
+    return txn
+
+
+@api_router.get("/billing/my-subscription")
+async def my_subscription(current_user: User = Depends(get_current_user)):
+    user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(404, "User not found")
+    recent = await db.payment_transactions.find(
+        {"user_id": current_user.user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(10)
+    return {
+        "tier": user.get("subscription_tier"),
+        "cycle": user.get("subscription_cycle"),
+        "status": user.get("subscription_status", "trial"),
+        "renews": user.get("subscription_renews"),
+        "started_at": user.get("subscription_started_at"),
+        "recent_transactions": recent,
+    }
+
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Stripe webhook endpoint — updates transaction + subscription on payment.success/failure."""
+    body = await request.body()
+    signature = request.headers.get("Stripe-Signature", "")
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    try:
+        event = await stripe_checkout.handle_webhook(body, signature)
+    except Exception as e:
+        logger.exception("Stripe webhook parse failed")
+        raise HTTPException(400, f"Invalid webhook: {str(e)[:150]}")
+
+    sess_id = getattr(event, "session_id", None)
+    if sess_id:
+        txn = await db.payment_transactions.find_one({"session_id": sess_id}, {"_id": 0})
+        if txn:
+            updates = {
+                "payment_status": getattr(event, "payment_status", txn.get("payment_status")),
+                "last_event": getattr(event, "event_type", None),
+                "webhook_received_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await db.payment_transactions.update_one({"session_id": sess_id}, {"$set": updates})
+            if updates["payment_status"] == "paid" and txn.get("payment_status") != "paid":
+                renewal = "1 year" if txn.get("cycle") == "annual" else "1 month"
+                await db.users.update_one(
+                    {"user_id": txn["user_id"]},
+                    {"$set": {
+                        "subscription_tier": txn.get("tier"),
+                        "subscription_cycle": txn.get("cycle"),
+                        "subscription_status": "active",
+                        "subscription_renews": renewal,
+                        "subscription_started_at": datetime.now(timezone.utc).isoformat(),
+                    }}
+                )
+    return {"ok": True}
+
+
+# ============================================================
+# OUTBOUND WEBHOOKS (Zapier-style) — subscribe to events, get POST'd
+# ============================================================
+WEBHOOK_EVENTS = {
+    "incident.created", "incident.updated", "incident.closed",
+    "licence.expiring", "licence.expired",
+    "worker.added", "worker.removed",
+    "document.generated",
+    "workflow.completed",
+    "induction.submitted",
+    "subscription.activated",
+}
+
+
+@api_router.get("/webhooks/events")
+async def list_webhook_events(current_user: User = Depends(get_current_user)):
+    """Public catalogue of event names a subscriber can filter on."""
+    return sorted(list(WEBHOOK_EVENTS))
+
+
+@api_router.get("/webhooks/subscriptions")
+async def list_subscriptions(current_user: User = Depends(get_current_user)):
+    rows = await db.webhook_subscriptions.find({"user_id": current_user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return rows
+
+
+@api_router.post("/webhooks/subscriptions")
+async def create_subscription(body: dict, current_user: User = Depends(get_current_user)):
+    url = body.get("target_url")
+    events = body.get("events") or []
+    if not url or not url.startswith(("http://", "https://")):
+        raise HTTPException(400, "target_url must start with http(s)://")
+    invalid = [e for e in events if e not in WEBHOOK_EVENTS]
+    if invalid:
+        raise HTTPException(400, f"Unknown events: {invalid}")
+    doc = {
+        "subscription_id": f"wh_{uuid.uuid4().hex[:10]}",
+        "user_id": current_user.user_id,
+        "target_url": url,
+        "events": events or sorted(list(WEBHOOK_EVENTS)),  # empty = all
+        "label": body.get("label", ""),
+        "secret": body.get("secret") or uuid.uuid4().hex,
+        "enabled": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_delivered_at": None,
+        "delivery_count": 0,
+        "failure_count": 0,
+    }
+    await db.webhook_subscriptions.insert_one({**doc})
+    return doc
+
+
+@api_router.patch("/webhooks/subscriptions/{sid}")
+async def toggle_subscription(sid: str, body: dict, current_user: User = Depends(get_current_user)):
+    updates = {k: v for k, v in body.items() if k in ("enabled", "events", "label", "target_url")}
+    await db.webhook_subscriptions.update_one(
+        {"subscription_id": sid, "user_id": current_user.user_id}, {"$set": updates}
+    )
+    doc = await db.webhook_subscriptions.find_one(
+        {"subscription_id": sid, "user_id": current_user.user_id}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(404, "Not found")
+    return doc
+
+
+@api_router.delete("/webhooks/subscriptions/{sid}")
+async def delete_subscription(sid: str, current_user: User = Depends(get_current_user)):
+    res = await db.webhook_subscriptions.delete_one(
+        {"subscription_id": sid, "user_id": current_user.user_id}
+    )
+    return {"deleted": res.deleted_count}
+
+
+@api_router.get("/webhooks/deliveries")
+async def list_deliveries(current_user: User = Depends(get_current_user)):
+    rows = await db.webhook_deliveries.find(
+        {"user_id": current_user.user_id}, {"_id": 0}
+    ).sort("delivered_at", -1).to_list(100)
+    return rows
+
+
+@api_router.post("/webhooks/test/{sid}")
+async def test_subscription(sid: str, current_user: User = Depends(get_current_user)):
+    sub = await db.webhook_subscriptions.find_one(
+        {"subscription_id": sid, "user_id": current_user.user_id}, {"_id": 0}
+    )
+    if not sub:
+        raise HTTPException(404, "Not found")
+    delivery = await _deliver_webhook(sub, "test.ping", {"message": "Hello from SafeTradie"})
+    return delivery
+
+
+async def _deliver_webhook(sub: dict, event: str, payload: dict) -> dict:
+    """POSTs the event to sub.target_url. Never raises — records the attempt."""
+    import json as _json
+    record = {
+        "delivery_id": f"dl_{uuid.uuid4().hex[:10]}",
+        "user_id": sub["user_id"],
+        "subscription_id": sub["subscription_id"],
+        "target_url": sub["target_url"],
+        "event": event,
+        "payload": payload,
+        "delivered_at": datetime.now(timezone.utc).isoformat(),
+        "status_code": None,
+        "success": False,
+        "error": None,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.post(sub["target_url"], json={
+                "event": event,
+                "delivered_at": record["delivered_at"],
+                "subscription_id": sub["subscription_id"],
+                "payload": payload,
+            }, headers={"X-SafeTradie-Secret": sub.get("secret", "")})
+            record["status_code"] = r.status_code
+            record["success"] = 200 <= r.status_code < 300
+    except Exception as e:
+        record["error"] = str(e)[:300]
+
+    await db.webhook_deliveries.insert_one({**record})
+    # increment counters on the subscription
+    inc = {"delivery_count": 1} if record["success"] else {"failure_count": 1}
+    await db.webhook_subscriptions.update_one(
+        {"subscription_id": sub["subscription_id"]},
+        {"$set": {"last_delivered_at": record["delivered_at"]}, "$inc": inc}
+    )
+    record.pop("_id", None)
+    return record
+
+
+async def trigger_webhook_event(user_id: str, event: str, payload: dict):
+    """Fire-and-forget: deliver to all enabled subs for this user that match this event."""
+    if event not in WEBHOOK_EVENTS:
+        return
+    subs = await db.webhook_subscriptions.find(
+        {"user_id": user_id, "enabled": True}, {"_id": 0}
+    ).to_list(50)
+    for s in subs:
+        if not s.get("events") or event in s["events"]:
+            try:
+                await _deliver_webhook(s, event, payload)
+            except Exception:
+                logger.exception("webhook delivery failed")
 
 
 

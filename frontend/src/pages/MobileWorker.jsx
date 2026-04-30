@@ -24,6 +24,7 @@ export default function MobileWorker() {
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [site, setSite] = useState("");
   const [history, setHistory] = useState([]);
+  const [installPrompt, setInstallPrompt] = useState(null);
 
   const load = async () => {
     const [s, h] = await Promise.all([api.get("/worker/my-summary"), api.get("/worker/checkins")]);
@@ -32,6 +33,23 @@ export default function MobileWorker() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Capture beforeinstallprompt for PWA install
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const installApp = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
 
   const doCheckin = async () => {
     if (!site.trim()) { toast.error("Site is required"); return; }
@@ -62,6 +80,12 @@ export default function MobileWorker() {
       </header>
 
       <main className="px-4 py-6 space-y-8 pb-32 max-w-md mx-auto">
+        {installPrompt && (
+          <button onClick={installApp} data-testid="pwa-install-btn" className="w-full bg-warning text-ink py-3 border-2 border-warning text-sm font-bold flex items-center justify-center gap-2">
+            📱 Install SafeTradie to your home screen
+          </button>
+        )}
+
         <button onClick={() => setCheckinOpen(true)} data-testid="mobile-checkin-btn" className="w-full bg-warning text-ink py-5 text-center border-4 border-warning hover:bg-warning/90">
           <MapPin size={28} weight="fill" className="mx-auto" />
           <div className="font-display text-xl font-black mt-1">CHECK IN</div>

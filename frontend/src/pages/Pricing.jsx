@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { CheckCircle, X, ArrowRight, Star, ShieldCheck } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+const TIER_SLUG = {
+  "Sole Trader-monthly": "sole_trader_monthly",
+  "Small Business-monthly": "small_business_monthly",
+  "Growing Business-monthly": "growing_business_monthly",
+  "Sole Trader-annual": "sole_trader_annual",
+  "Small Business-annual": "small_business_annual",
+  "Growing Business-annual": "growing_business_annual",
+};
 
 const TIERS = {
   monthly: [
@@ -59,13 +71,29 @@ const FAQ = [
 ];
 
 export default function Pricing() {
+  const { user } = useAuth();
   const [cycle, setCycle] = useState("monthly");
   const [stats, setStats] = useState({ verified_count: 0, trade_count: 0, state_count: 0 });
+  const [checkoutLoading, setCheckoutLoading] = useState(null);
   const tiers = TIERS[cycle];
 
   useEffect(() => {
     axios.get(`${API_URL}/api/tradecheck/stats`).then((r) => setStats(r.data)).catch(() => {});
   }, []);
+
+  const startCheckout = async (tierName) => {
+    if (!user) return; // fallback link handles unauthenticated
+    const slug = TIER_SLUG[`${tierName}-${cycle}`];
+    if (!slug) { toast.error("Unknown plan"); return; }
+    setCheckoutLoading(slug);
+    try {
+      const r = await api.post("/billing/checkout", { tier_slug: slug, origin_url: window.location.origin });
+      window.location.href = r.data.url;
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Checkout failed");
+      setCheckoutLoading(null);
+    }
+  };
 
   return (
     <div className="bg-background">
@@ -113,11 +141,21 @@ export default function Pricing() {
                   <span className="text-xl">A$</span><span className="font-display font-black text-6xl">{t.price}</span>
                   <span className={t.highlight ? "text-white/60" : "text-muted-foreground"}>{t.period}</span>
                 </div>
-                <Link to="/register" className="block mt-6">
+                <Link to="/register" className={`block mt-6 ${user ? "hidden" : ""}`}>
                   <Button className={`w-full btn-sharp h-12 ${t.highlight ? "bg-warning text-ink hover:bg-white" : "bg-ink text-white hover:bg-authority"}`} data-testid={`pricing-cta-${t.name.toLowerCase().replace(/\s+/g, '-')}`}>
                     {t.cta} <ArrowRight className="ml-2" />
                   </Button>
                 </Link>
+                {user && (
+                  <Button
+                    onClick={() => startCheckout(t.name)}
+                    disabled={checkoutLoading === TIER_SLUG[`${t.name}-${cycle}`]}
+                    className={`w-full btn-sharp h-12 mt-6 ${t.highlight ? "bg-warning text-ink hover:bg-white" : "bg-ink text-white hover:bg-authority"}`}
+                    data-testid={`pricing-upgrade-${t.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    {checkoutLoading === TIER_SLUG[`${t.name}-${cycle}`] ? "Redirecting…" : (<>Subscribe <ArrowRight className="ml-2" /></>)}
+                  </Button>
+                )}
                 <ul className="mt-6 space-y-2 text-sm">
                   {t.features.map((f) => (
                     <li key={f} className="flex gap-2"><CheckCircle weight="fill" className={`shrink-0 ${t.highlight ? "text-warning" : "text-ink"}`} />{f}</li>

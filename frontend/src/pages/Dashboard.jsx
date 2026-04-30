@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   ArrowRight, FileText, Warning, IdentificationBadge, Users, ChartLineUp, Sparkle,
   Lightbulb, Siren, Clock, CheckCircle, Bell
@@ -43,6 +44,36 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [licences, setLicences] = useState([]);
+  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Stripe checkout return handler: poll billing status until paid (up to ~10s)
+  useEffect(() => {
+    const billing = params.get("billing");
+    const sessionId = params.get("session_id");
+    if (billing === "success" && sessionId) {
+      let tries = 0;
+      const poll = async () => {
+        try {
+          const r = await api.get(`/billing/status/${sessionId}`);
+          if (r.data?.payment_status === "paid") {
+            toast.success("🎉 Welcome aboard — your subscription is active!");
+            params.delete("billing"); params.delete("session_id");
+            setParams(params, { replace: true });
+            return;
+          }
+        } catch (e) { /* keep polling */ }
+        if (tries < 5) { tries += 1; setTimeout(poll, 2000); }
+        else toast.info("Payment is processing — we'll email you when it's confirmed.");
+      };
+      poll();
+    } else if (billing === "cancelled") {
+      toast.info("Checkout cancelled — you can upgrade anytime from Settings → Billing.");
+      params.delete("billing");
+      setParams(params, { replace: true });
+    }
+    // eslint-disable-next-line
+  }, []);
 
   useEffect(() => {
     api.get("/compliance/score").then((r) => setData(r.data)).catch(() => {});

@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash, Warning, Database, Bell, UsersThree, Buildings, CreditCard } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import BillingPanel from "./BillingPanel";
 
 const ROLES = [
   { v: "admin", l: "Owner / Admin", d: "Full access including billing" },
@@ -217,16 +218,7 @@ export default function Settings() {
 
         {/* BILLING */}
         <TabsContent value="billing" className="space-y-4">
-          <div className="bg-background border border-border p-6">
-            <div className="label-eyebrow">/ Current plan</div>
-            <div className="font-display font-black text-3xl mt-2">Sole Trader</div>
-            <div className="text-muted-foreground mt-1">A$150/month · 14-day trial active</div>
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Button className="btn-sharp bg-ink text-white hover:bg-authority h-12" data-testid="billing-upgrade">Upgrade to Small Business (A$250/mo)</Button>
-              <Button variant="outline" className="btn-sharp border-ink h-12">Compare plans</Button>
-            </div>
-            <div className="mt-6 text-sm text-muted-foreground">Payment method: — · Next billing date: —<br/>Billing history will appear here after your first invoice.</div>
-          </div>
+          <BillingPanel />
         </TabsContent>
 
         {/* DATA */}

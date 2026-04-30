@@ -1,0 +1,20 @@
+{
+  "short_name": "SafeTradie",
+  "name": "SafeTradie — WHS for Australian tradies",
+  "description": "AI-powered WHS compliance platform built for Australian trade businesses",
+  "start_url": "/worker",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0A",
+  "theme_color": "#FFCC00",
+  "lang": "en-AU",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"]
+}

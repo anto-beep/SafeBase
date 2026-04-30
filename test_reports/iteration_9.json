@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 9 — Stripe billing, outbound webhooks, and PWA manifest fully verified. 12/13 pytest tests pass + all 8 frontend flows pass. Stripe checkout session creation returns a valid https://checkout.stripe.com URL and UI-click redirects the browser there. Webhook subscription CRUD, test-delivery (to https://httpbin.org/post status_code=200 success=true), toggle enabled, delete, and the fire-and-forget integration (POST /api/workers -> 'worker.added' delivery recorded within 1-2s) all work. Sidebar 'Webhooks' link (data-testid=nav-app-webhooks) appears under ECOSYSTEM. Settings → Billing tab renders BillingPanel with tier/status/Change-plan. Dashboard ?billing=cancelled URL param shows the cancel toast. /manifest.json returns 200 with all required PWA fields + start_url=/worker. The only failure: GET /api/billing/status/<session_id> returns 500 for fresh never-completed test sessions because the backend doesn't catch the `CheckoutError` raised by emergentintegrations when Stripe returns 404 resource_missing. This breaks the ?billing=success polling UX.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/billing/status/{session_id}", "issue": "Raises unhandled CheckoutError -> 500 when Stripe's session lookup fails (e.g., resource_missing 404 from Stripe for fresh never-completed test sessions). The Dashboard.jsx polling after ?billing=success will crash with repeated 500s. Wrap `await stripe_checkout.get_checkout_status(session_id)` in try/except and on CheckoutError either (a) return the cached txn with current payment_status unchanged, or (b) map to 502/404 with a JSON error body the frontend can handle.", "priority": "HIGH"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter9_billing_webhooks_pwa.py",
+    "/app/test_reports/pytest/iter9_billing_webhooks.xml"
+  ],
+  "action_items": [
+    "Wrap GET /api/billing/status/{session_id} Stripe call in try/except CheckoutError. For resource_missing / transient Stripe errors, return the cached txn with its existing payment_status (or return 202 with {pending:true}). This prevents the Dashboard billing-success poll from hitting 500.",
+    "Optional: since polling runs for ~30s on successful checkout (per Dashboard.jsx), add short-circuit if txn.status==='open' after N retries without a webhook event."
+  ],
+  "critical_code_review_comments": [
+    "server.py billing_status() has no try/except around stripe_checkout.get_checkout_status(); any Stripe error bubbles as 500 (confirmed in logs: emergentintegrations.payments.stripe.checkout.CheckoutError: No such checkout.session).",
+    "server.py is now 2146 lines — past the 700-line maintenance threshold. Consider splitting billing (L1809-1973), webhooks (L1976-2120), worker/mobile, safety, and auth into separate routers under /app/backend/routes/ for readability.",
+    "WEBHOOK_EVENTS is a module-level `set` used for ordering — list_webhook_events sorts on every call which is fine but freeze as a tuple + cached sorted list once at import.",
+    "trigger_webhook_event() is awaited inline in create_worker/update_incident/... which means HTTP request latency to user is bounded by external target_url reachability (10s timeout). For httpbin it's fine but a slow Zapier endpoint will slow down the core CRUD. Consider asyncio.create_task(_deliver_webhook(...)) (true fire-and-forget) or a background worker queue."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter9_billing_webhooks_pwa.py"
+  ],
+  "success_rate": {"backend": "92% (12/13 pytest — 1 failing due to billing/status 500)", "frontend": "100% (all 8 flows)"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 — verified working",
+  "seed_data_creation": "Test created + deleted: 1 Stripe checkout session (cs_test_...), 2 webhook subscriptions (pytest + UI), ~5 webhook_deliveries docs, 1 TEST_Iter9 worker (deleted in test).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Billing: tier catalogue, checkout session creation, my-subscription shape OK. The status endpoint needs try/except around Stripe call — this is the only blocker. Frontend billing success/cancel URL handlers exist in Dashboard.jsx and work (cancel toast verified; success path not tested against real Stripe webhook since we don't complete payment). Webhooks: all 11 event keys present, CRUD + delivery + integration (POST /api/workers -> worker.added fires delivery to subscriber) all verified end-to-end through both pytest and UI. PWA: manifest.json served 200 with name/short_name/icons/start_url=/worker; index.html has <link rel=manifest>, theme-color #FFCC00, apple-mobile-web-app-capable. pwa-install-btn testid exists in /worker code but only renders after 'beforeinstallprompt' fires — not reproducible in headless chromium. Sidebar nav-app-webhooks verified. No regressions in /dashboard/workers, /pricing, /login, /dashboard/settings.",
+  "rca_of_the_issue": "GET /api/billing/status/{sid} 500 RCA: emergentintegrations.payments.stripe.checkout.get_checkout_status() calls stripe.checkout.Session.retrieve() which raises stripe._error.InvalidRequestError('No such checkout.session') -> wrapped as CheckoutError. server.py:1893 does not catch this. Reproduction: (1) POST /api/billing/checkout with {tier_slug:'small_business_monthly',origin_url:<any>} (2) immediately GET /api/billing/status/<returned session_id> — returns 500. Mitigation: wrap line 1893 in try/except CheckoutError and either return existing cached txn from line 1882 unchanged, or respond 202 {pending:true} so the frontend poll loop can retry without showing an error toast."
+}

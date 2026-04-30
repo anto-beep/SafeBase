@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 
 const NAV = [
@@ -37,6 +37,7 @@ const APPS_NAV = [
   { to: "/dashboard/tradecheck", label: "TradeCheck", icon: ShieldCheck },
   { to: "/dashboard/academy", label: "Academy", icon: GraduationCap },
   { to: "/dashboard/partner", label: "Partner Portal", icon: Briefcase },
+  { to: "/dashboard/webhooks", label: "Webhooks", icon: Lightning },
   { to: "/worker", label: "Mobile Worker", icon: DeviceMobile },
 ];
 
