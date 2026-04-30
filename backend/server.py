@@ -2274,6 +2274,7 @@ async def _execute_automation(rule: dict, event: str, payload: dict) -> dict:
     action = rule.get("action")
     config = rule.get("config") or {}
     status = {"success": False, "error": None, "detail": None}
+    start = datetime.now(timezone.utc)
 
     try:
         if action == "slack":
@@ -2347,6 +2348,8 @@ async def _execute_automation(rule: dict, event: str, payload: dict) -> dict:
     except Exception as e:
         status["error"] = str(e)[:300]
 
+    duration_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+    status["duration_ms"] = duration_ms
     return await _record_run(rule, status)
 
 
@@ -2393,6 +2396,93 @@ async def list_automation_runs(automation_id: str, current_user: User = Depends(
         {"automation_id": automation_id, "user_id": current_user.user_id}, {"_id": 0}
     ).sort("ran_at", -1).to_list(50)
     return rows
+
+
+@api_router.get("/automations/analytics/summary")
+async def automations_analytics(current_user: User = Depends(get_current_user)):
+    """30-day analytics for automations: daily run counts, success rate, top rules, slowest endpoint."""
+    uid = current_user.user_id
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=30)
+    since_iso = since.isoformat()
+
+    runs = await db.automation_runs.find(
+        {"user_id": uid, "ran_at": {"$gte": since_iso}}, {"_id": 0}
+    ).to_list(10000)
+
+    # Daily aggregation
+    by_day = {}
+    for i in range(30):
+        d = (now - timedelta(days=29 - i)).strftime("%Y-%m-%d")
+        by_day[d] = {"date": d, "success": 0, "fail": 0}
+    for r in runs:
+        day = (r.get("ran_at") or "")[:10]
+        if day in by_day:
+            key = "success" if r.get("success") else "fail"
+            by_day[day][key] += 1
+
+    total = len(runs)
+    success = sum(1 for r in runs if r.get("success"))
+    success_rate = round((success / total) * 100) if total else 0
+
+    # Top rules by run_count
+    rules = await db.automations.find({"user_id": uid}, {"_id": 0}).to_list(200)
+    rules_sorted = sorted(rules, key=lambda r: r.get("run_count", 0), reverse=True)
+    top_rules = [{"automation_id": r["automation_id"], "label": r.get("label"), "action": r.get("action"), "event": r.get("event"), "run_count": r.get("run_count", 0), "last_error": r.get("last_error")} for r in rules_sorted[:5]]
+
+    # Slowest endpoint: avg duration_ms per rule (among those with durations)
+    slow_agg = {}
+    for r in runs:
+        rid = r.get("automation_id")
+        d = r.get("duration_ms")
+        if not rid or d is None:
+            continue
+        rec = slow_agg.setdefault(rid, {"total_ms": 0, "count": 0})
+        rec["total_ms"] += d
+        rec["count"] += 1
+    slowest = None
+    for rid, rec in slow_agg.items():
+        avg = rec["total_ms"] / rec["count"]
+        rule = next((r for r in rules if r["automation_id"] == rid), None)
+        if not slowest or avg > slowest["avg_ms"]:
+            slowest = {"automation_id": rid, "label": rule.get("label") if rule else rid, "avg_ms": round(avg), "runs": rec["count"]}
+
+    return {
+        "total_runs_30d": total,
+        "success_count": success,
+        "failure_count": total - success,
+        "success_rate": success_rate,
+        "active_rules": sum(1 for r in rules if r.get("enabled")),
+        "total_rules": len(rules),
+        "daily": list(by_day.values()),
+        "top_rules": top_rules,
+        "slowest": slowest,
+    }
+
+
+@api_router.post("/automations/test-all")
+async def test_all_automations(current_user: User = Depends(get_current_user)):
+    """Triggers a test run on every enabled automation in parallel. Returns per-rule result."""
+    rules = await db.automations.find(
+        {"user_id": current_user.user_id, "enabled": True}, {"_id": 0}
+    ).to_list(100)
+    if not rules:
+        return {"total": 0, "success": 0, "failed": 0, "results": []}
+    test_payload = {"test": True, "message": "SafeTradie test-all batch", "severity": "critical"}
+    results = await asyncio.gather(
+        *[_execute_automation(r, "test.ping", test_payload) for r in rules],
+        return_exceptions=True,
+    )
+    normalised = []
+    ok = 0
+    for r, res in zip(rules, results):
+        if isinstance(res, Exception):
+            normalised.append({"automation_id": r["automation_id"], "label": r.get("label"), "success": False, "error": str(res)[:200]})
+        else:
+            normalised.append({"automation_id": r["automation_id"], "label": r.get("label"), "success": res.get("success"), "error": res.get("error"), "detail": res.get("detail"), "duration_ms": res.get("duration_ms")})
+            if res.get("success"):
+                ok += 1
+    return {"total": len(rules), "success": ok, "failed": len(rules) - ok, "results": normalised}
 
 
 

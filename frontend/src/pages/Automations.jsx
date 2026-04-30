@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash, CheckCircle, X, Sparkle, Lightning } from "@phosphor-icons/react";
+import { Plus, Trash, CheckCircle, X, Sparkle, Lightning, ChartBar, Clock, Lightning as Bolt, TestTube } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 const SEVERITIES = ["minor", "moderate", "serious", "critical"];
@@ -127,12 +127,19 @@ function CreateDialog({ recipe, onClose, onSaved }) {
 export default function Automations() {
   const [recipes, setRecipes] = useState([]);
   const [automations, setAutomations] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [active, setActive] = useState(null);
+  const [testingAll, setTestingAll] = useState(false);
 
   const load = async () => {
-    const [r, a] = await Promise.all([api.get("/automations/recipes"), api.get("/automations")]);
+    const [r, a, an] = await Promise.all([
+      api.get("/automations/recipes"),
+      api.get("/automations"),
+      api.get("/automations/analytics/summary"),
+    ]);
     setRecipes(r.data);
     setAutomations(a.data);
+    setAnalytics(an.data);
   };
   useEffect(() => { load(); }, []);
 
@@ -144,14 +151,108 @@ export default function Automations() {
     else toast.error(`Test failed: ${r.data.error || r.data.detail}`);
     load();
   };
+  const testAll = async () => {
+    if (!automations.some((a) => a.enabled)) { toast.info("No enabled automations to test"); return; }
+    setTestingAll(true);
+    try {
+      const r = await api.post("/automations/test-all");
+      const d = r.data;
+      if (d.failed === 0 && d.success > 0) toast.success(`✅ ${d.success}/${d.total} automations passed`);
+      else if (d.success === 0) toast.error(`${d.failed}/${d.total} automations failed`);
+      else toast.warning(`${d.success} passed · ${d.failed} failed`);
+      load();
+    } finally { setTestingAll(false); }
+  };
+
+  const maxDaily = analytics ? Math.max(1, ...analytics.daily.map((d) => d.success + d.fail)) : 1;
 
   return (
     <div className="space-y-8" data-testid="automations-page">
-      <div className="border-b border-border pb-6">
-        <div className="label-eyebrow">/ Automations</div>
-        <h1 className="font-display text-4xl font-black tracking-tighter mt-1">Native integrations.<br />Zero middleman.</h1>
-        <p className="text-muted-foreground mt-2 max-w-xl">One-click recipes that connect SafeTradie to Slack, email, Google Sheets (via Zapier) and more. No subscription to Zapier needed for the common cases.</p>
+      <div className="flex items-end justify-between flex-wrap gap-4 border-b border-border pb-6">
+        <div>
+          <div className="label-eyebrow">/ Automations</div>
+          <h1 className="font-display text-4xl font-black tracking-tighter mt-1">Native integrations.<br />Zero middleman.</h1>
+          <p className="text-muted-foreground mt-2 max-w-xl">One-click recipes that connect SafeTradie to Slack, email, Google Sheets (via Zapier) and more. No subscription to Zapier needed for the common cases.</p>
+        </div>
+        <Button onClick={testAll} disabled={testingAll} className="btn-sharp h-12 bg-warning text-ink hover:bg-warning/90" data-testid="automation-test-all-btn">
+          <TestTube className="mr-2" weight="duotone" />{testingAll ? "Testing…" : "Test all enabled"}
+        </Button>
       </div>
+
+      {/* ANALYTICS */}
+      {analytics && (
+        <section data-testid="automations-analytics">
+          <div className="flex items-center gap-2 label-eyebrow mb-3"><ChartBar />Analytics · last 30 days</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+            <div className="border border-border bg-background p-4" data-testid="analytics-total">
+              <div className="label-eyebrow text-muted-foreground">Total runs</div>
+              <div className="font-display text-3xl font-black mt-1">{analytics.total_runs_30d}</div>
+            </div>
+            <div className="border border-border bg-background p-4" data-testid="analytics-rate">
+              <div className="label-eyebrow text-muted-foreground">Success rate</div>
+              <div className="font-display text-3xl font-black mt-1">
+                {analytics.success_rate}%
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">{analytics.success_count} ok · {analytics.failure_count} failed</div>
+            </div>
+            <div className="border border-border bg-background p-4" data-testid="analytics-top">
+              <div className="label-eyebrow text-muted-foreground flex items-center gap-1"><Bolt size={12} weight="fill" className="text-warning" />Most active rule</div>
+              {analytics.top_rules?.[0] ? (
+                <>
+                  <div className="font-display text-lg font-black mt-1 truncate">{analytics.top_rules[0].label}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{analytics.top_rules[0].run_count} runs · {analytics.top_rules[0].action}</div>
+                </>
+              ) : (<div className="text-sm text-muted-foreground mt-2">—</div>)}
+            </div>
+            <div className="border border-border bg-background p-4" data-testid="analytics-slowest">
+              <div className="label-eyebrow text-muted-foreground flex items-center gap-1"><Clock size={12} />Slowest endpoint</div>
+              {analytics.slowest ? (
+                <>
+                  <div className="font-display text-lg font-black mt-1 truncate">{analytics.slowest.label}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{analytics.slowest.avg_ms}ms avg · {analytics.slowest.runs} runs</div>
+                </>
+              ) : (<div className="text-sm text-muted-foreground mt-2">—</div>)}
+            </div>
+          </div>
+
+          {/* 30-day chart */}
+          <div className="border-2 border-ink bg-background p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="label-eyebrow">Daily run volume</div>
+              <div className="flex gap-3 text-xs">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-emerald-600" />Success</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-600" />Failed</span>
+              </div>
+            </div>
+            <div className="flex items-end gap-0.5 h-40" data-testid="analytics-chart">
+              {analytics.daily.map((d) => {
+                const total = d.success + d.fail;
+                const heightPct = total === 0 ? 2 : Math.max(4, (total / maxDaily) * 100);
+                const successPct = total === 0 ? 0 : (d.success / total) * 100;
+                return (
+                  <div
+                    key={d.date}
+                    className="flex-1 flex flex-col justify-end group relative cursor-pointer"
+                    title={`${d.date}: ${d.success} ok · ${d.fail} failed`}
+                  >
+                    <div className="flex flex-col bg-muted" style={{ height: `${heightPct}%`, minHeight: "2px" }}>
+                      <div className="bg-red-600" style={{ height: `${100 - successPct}%` }} />
+                      <div className="bg-emerald-600 flex-1" style={{ minHeight: d.success > 0 ? "2px" : "0" }} />
+                    </div>
+                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-ink text-white text-xs px-2 py-1 whitespace-nowrap z-10 pointer-events-none">
+                      {d.date} · {total}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{analytics.daily[0]?.date}</span>
+              <span>{analytics.daily[analytics.daily.length - 1]?.date}</span>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section>
         <div className="label-eyebrow mb-4">/ Recipe gallery</div>
