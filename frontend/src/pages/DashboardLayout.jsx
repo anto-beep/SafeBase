@@ -37,6 +37,7 @@ const APPS_NAV = [
   { to: "/dashboard/tradecheck", label: "TradeCheck", icon: ShieldCheck },
   { to: "/dashboard/academy", label: "Academy", icon: GraduationCap },
   { to: "/dashboard/partner", label: "Partner Portal", icon: Briefcase },
+  { to: "/dashboard/partner/branding", label: "Partner · Branding", icon: Briefcase },
   { to: "/dashboard/automations", label: "Automations", icon: MagicWand },
   { to: "/dashboard/webhooks", label: "Webhooks", icon: Lightning },
   { to: "/worker", label: "Mobile Worker", icon: DeviceMobile },

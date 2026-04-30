@@ -100,8 +100,38 @@ export default function FineCalculator() {
 
         <div className="max-w-3xl mx-auto text-center mt-12 border-2 border-warning bg-warning/20 p-8">
           <div className="label-eyebrow">/ Avoid the fine</div>
-          <h2 className="font-display text-3xl font-black tracking-tighter mt-2">A{' '}SafeTradie subscription costs A$1,800/yr. A category-1 fine is A$3.9m.</h2>
+          <h2 className="font-display text-3xl font-black tracking-tighter mt-2">Every SafeTradie plan pays for itself versus a single category-1 fine of A$3.9m.</h2>
           <Link to="/register"><Button className="btn-sharp mt-6 bg-ink text-white hover:bg-authority" data-testid="fine-calc-cta">Start 14-day free trial <ArrowRight className="ml-1" /></Button></Link>
+        </div>
+
+        <div className="max-w-5xl mx-auto mt-12" data-testid="fine-plan-comparison">
+          <div className="label-eyebrow">/ Pick a plan</div>
+          <h3 className="font-display text-2xl font-black tracking-tighter mt-1 mb-6">All four plans · A$ · ex GST</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { name: "Sole Trader", mo: 249, yr: 2490, cap: "1 user", href: "/pricing" },
+              { name: "Small Business", mo: 499, yr: 4990, cap: "up to 5 users", href: "/pricing" },
+              { name: "Growing Business", mo: 799, yr: 7990, cap: "up to 20 users", href: "/pricing", popular: true },
+              { name: "Enterprise", mo: 1299, yr: 12990, cap: "up to 50 users + API + AM", href: "/enterprise", accent: true },
+            ].map((p) => (
+              <div
+                key={p.name}
+                data-testid={`fine-plan-${p.name.toLowerCase().replace(/\s+/g, "-")}`}
+                className={`border-2 p-5 flex flex-col ${p.accent ? "border-ink bg-ink text-white" : "border-border bg-background"}`}
+              >
+                {p.popular && <span className="label-eyebrow bg-warning text-ink px-2 py-0.5 self-start mb-2">MOST POPULAR</span>}
+                <div className={`label-eyebrow ${p.accent ? "text-warning" : ""}`}>{p.name}</div>
+                <div className="font-display text-3xl font-black mt-2">A${p.mo.toLocaleString("en-AU")}<span className="text-sm font-bold">/mo</span></div>
+                <div className={`text-xs mt-1 ${p.accent ? "text-white/60" : "text-muted-foreground"}`}>+ GST · A${p.yr.toLocaleString("en-AU")}/yr billed annually</div>
+                <div className={`text-sm mt-3 ${p.accent ? "text-white/80" : ""}`}>{p.cap}</div>
+                <Link to={p.href} className="mt-4">
+                  <Button className={`btn-sharp w-full h-10 ${p.accent ? "bg-warning text-ink hover:bg-warning/90" : "bg-ink text-white hover:bg-authority"}`}>
+                    {p.name === "Enterprise" ? "Book a demo" : "See plan"} <ArrowRight className="ml-1" weight="bold" />
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </MarketingLayout>

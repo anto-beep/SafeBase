@@ -40,6 +40,18 @@ export default function Enterprise() {
   const [submitted, setSubmitted] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // ROI calculator: users × hours saved per user per month × A$120 hourly rate.
+  // Defaults conservative: 25 users × 4 hrs/mo × A$120/hr = A$12,000/mo saved vs A$1,299/mo cost.
+  const [roiUsers, setRoiUsers] = useState(25);
+  const [roiHours, setRoiHours] = useState(4);
+  const RATE = 120;
+  const ENT_MO = 1299;
+  const monthlySaved = roiUsers * roiHours * RATE;
+  const netMonthly = monthlySaved - ENT_MO;
+  const annualNet = netMonthly * 12;
+  const multiple = monthlySaved / ENT_MO;
+  const fmtAud = (n) => `A$${Math.round(n).toLocaleString("en-AU")}`;
+
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -152,6 +164,87 @@ export default function Enterprise() {
             ))}
           </ul>
           <div className="mt-6 bg-warning p-4 border-2 border-ink font-bold">Most businesses spend A$500–A$1,000 per quarter for a consultant to do a fraction of this. Included in your Enterprise subscription.</div>
+        </div>
+      </section>
+
+      {/* ROI CALCULATOR */}
+      <section className="py-20 px-6 border-b border-border bg-background" data-testid="roi-calculator-section">
+        <div className="max-w-6xl mx-auto">
+          <div className="label-eyebrow mb-3">/ Instant ROI calculator</div>
+          <h2 className="font-display text-4xl font-black tracking-tighter">What SafeTradie Enterprise pays back, every month.</h2>
+          <p className="text-muted-foreground mt-3 max-w-2xl">Most teams save <strong>4–8 hours per user per month</strong> on SWMS, incident logging, licence chasing and reporting. Slide the numbers to match your business. Australian tradie billable rate: A${RATE}/hr (Fair Work average).</p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-10">
+            {/* Inputs */}
+            <div className="lg:col-span-2 bg-background border-2 border-ink p-6 space-y-6">
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label className="label-eyebrow">Users on the platform</Label>
+                  <span className="font-display text-2xl font-black" data-testid="roi-users-value">{roiUsers}</span>
+                </div>
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
+                  step="1"
+                  value={roiUsers}
+                  onChange={(e) => setRoiUsers(parseInt(e.target.value, 10))}
+                  className="w-full mt-3 accent-ink"
+                  data-testid="roi-users-slider"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1"><span>5</span><span>50 (Enterprise cap)</span></div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label className="label-eyebrow">Hours saved per user · per month</Label>
+                  <span className="font-display text-2xl font-black" data-testid="roi-hours-value">{roiHours}</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="12"
+                  step="1"
+                  value={roiHours}
+                  onChange={(e) => setRoiHours(parseInt(e.target.value, 10))}
+                  className="w-full mt-3 accent-ink"
+                  data-testid="roi-hours-slider"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1"><span>1 (light use)</span><span>12 (heavy use)</span></div>
+              </div>
+              <div className="border-t border-border pt-4 text-xs text-muted-foreground">
+                <div className="flex justify-between py-1"><span>Hourly rate</span><span className="font-bold">A${RATE}/hr</span></div>
+                <div className="flex justify-between py-1"><span>Enterprise plan</span><span className="font-bold">A${ENT_MO.toLocaleString("en-AU")}/mo + GST</span></div>
+              </div>
+            </div>
+
+            {/* Output */}
+            <div className="lg:col-span-3 bg-ink text-white p-8">
+              <div className="flex items-center gap-2 label-eyebrow text-warning"><Sparkle weight="fill" /> / Monthly result</div>
+              <div className="grid grid-cols-2 gap-6 mt-6">
+                <div>
+                  <div className="label-eyebrow text-white/60">Time saved</div>
+                  <div className="font-display text-4xl font-black mt-1" data-testid="roi-hours-total">{(roiUsers * roiHours).toLocaleString("en-AU")}<span className="text-lg font-bold"> hrs</span></div>
+                  <div className="text-xs text-white/60 mt-1">across your team, every month</div>
+                </div>
+                <div>
+                  <div className="label-eyebrow text-warning">Value recovered</div>
+                  <div className="font-display text-4xl font-black text-warning mt-1" data-testid="roi-saved-value">{fmtAud(monthlySaved)}</div>
+                  <div className="text-xs text-white/60 mt-1">at A${RATE}/hr tradie rate</div>
+                </div>
+              </div>
+              <div className="border-t border-white/20 mt-6 pt-6">
+                <div className="label-eyebrow text-white/60">Net monthly gain · after Enterprise</div>
+                <div className="font-display text-5xl font-black text-emerald-400 mt-1" data-testid="roi-net-monthly">{netMonthly >= 0 ? "+" : ""}{fmtAud(netMonthly)}</div>
+                <div className="text-sm text-white/70 mt-2">That's <strong className="text-warning" data-testid="roi-multiple">{multiple.toFixed(1)}×</strong> your Enterprise investment — or <strong data-testid="roi-annual-net">{fmtAud(annualNet)}</strong> net over 12 months.</div>
+              </div>
+              <a href="#demo" className="inline-block mt-8">
+                <Button className="btn-sharp bg-warning text-ink hover:bg-warning/90 h-12" data-testid="roi-book-demo-btn">
+                  Book a demo with these numbers <ArrowRight className="ml-2" weight="bold" />
+                </Button>
+              </a>
+              <p className="text-xs text-white/50 mt-3 max-w-md">Based on Australian tradie average hourly rate. Most customers report 4–8 hrs saved per user per month in the first 90 days. Excludes the value of fines avoided (up to A$3.9m category-1).</p>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -33,6 +33,7 @@ import TradecheckMarketplace from "@/pages/TradecheckMarketplace";
 import TradecheckMy from "@/pages/TradecheckMy";
 import AcademyLMS from "@/pages/AcademyLMS";
 import PartnerPortal from "@/pages/PartnerPortal";
+import PartnerBranding from "@/pages/PartnerBranding";
 import MobileWorker from "@/pages/MobileWorker";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
@@ -128,6 +129,7 @@ function AppRouter() {
         <Route path="tradecheck" element={<TradecheckMy />} />
         <Route path="academy" element={<AcademyLMS />} />
         <Route path="partner" element={<PartnerPortal />} />
+        <Route path="partner/branding" element={<PartnerBranding />} />
         <Route path="webhooks" element={<Webhooks />} />
         <Route path="automations" element={<Automations />} />
       </Route>

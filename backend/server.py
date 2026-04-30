@@ -1745,6 +1745,108 @@ async def partner_summary(current_user: User = Depends(get_current_user)):
             "at_risk": sum(1 for c in clients if c.get("status") == "at_risk")}
 
 
+# -------- Partner Portal · White-label Branding --------
+# Each partner (user) owns one branding doc keyed by user_id. Logos/favicon are stored as
+# base64 data URLs (simple, no filesystem/S3 dependency for MVP). DNS verify + test email
+# are stubbed at MVP level — real DNS lookup + Resend send can be wired when infra is ready.
+
+BRANDING_DEFAULTS = {
+    "partner_name": "",
+    "logo_primary": None,      # data URL (any background)
+    "logo_dark": None,         # data URL — dark logo for light bg
+    "logo_light": None,        # data URL — light logo for dark bg
+    "favicon": None,
+    "primary_colour": "#0A0A0A",
+    "secondary_colour": "#FFCC00",
+    "subdomain": "",           # e.g. "clients" -> clients.partnerbiz.com.au
+    "custom_domain_status": "not_configured",  # not_configured | pending | active
+    "welcome_message": "",
+    "support_contact_name": "",
+    "support_contact_email": "",
+    "support_contact_phone": "",
+    "show_powered_by": True,   # hide only on Level 2+
+    "email_header_logo": None,
+    "email_signature": "",
+    "partnership_level": 1,    # Level 1 default; Level 2 unlocks custom domain + hide "Powered by"
+    "updated_at": None,
+}
+
+
+@api_router.get("/partner/branding")
+async def get_partner_branding(current_user: User = Depends(get_current_user)):
+    doc = await db.partner_branding.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    if not doc:
+        return {"user_id": current_user.user_id, **BRANDING_DEFAULTS}
+    return doc
+
+
+@api_router.put("/partner/branding")
+async def update_partner_branding(body: dict, current_user: User = Depends(get_current_user)):
+    # Whitelist allowed keys to prevent arbitrary writes.
+    allowed = set(BRANDING_DEFAULTS.keys())
+    clean = {k: v for k, v in body.items() if k in allowed}
+    # Level 1 partners cannot hide "Powered by" or set custom domain status to active.
+    current = await db.partner_branding.find_one({"user_id": current_user.user_id}) or {}
+    level = current.get("partnership_level", 1)
+    if level < 2:
+        clean["show_powered_by"] = True
+        clean.pop("custom_domain_status", None)
+    clean["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.partner_branding.update_one(
+        {"user_id": current_user.user_id},
+        {"$set": {**clean, "user_id": current_user.user_id}},
+        upsert=True,
+    )
+    saved = await db.partner_branding.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return saved
+
+
+@api_router.post("/partner/branding/verify-dns")
+async def verify_partner_dns(body: dict, current_user: User = Depends(get_current_user)):
+    """Stubbed DNS verification. In production this would dig the CNAME of
+    {subdomain}.{partner_domain} and confirm it points to partners.safetradie.com.au.
+    For MVP we mark the domain 'pending' immediately; an operator promotes to 'active'
+    after manual SSL provisioning."""
+    subdomain = (body.get("subdomain") or "").strip()
+    if not subdomain:
+        raise HTTPException(400, "subdomain required")
+    await db.partner_branding.update_one(
+        {"user_id": current_user.user_id},
+        {"$set": {
+            "subdomain": subdomain,
+            "custom_domain_status": "pending",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+        upsert=True,
+    )
+    return {"status": "pending", "subdomain": subdomain, "target": "partners.safetradie.com.au",
+            "message": "DNS verification pending. SSL will auto-provision within 24 hours of the CNAME resolving."}
+
+
+@api_router.post("/partner/branding/test-email")
+async def send_partner_test_email(current_user: User = Depends(get_current_user)):
+    """Queues a sample licence-expiry alert email using the partner's branding to
+    current_user.email. Actual delivery uses Resend if RESEND_API_KEY is set — otherwise
+    logs to the partner_test_emails collection as a dry-run record."""
+    doc = await db.partner_branding.find_one({"user_id": current_user.user_id}, {"_id": 0}) or {}
+    partner_name = doc.get("partner_name") or "your consulting brand"
+    signature = doc.get("email_signature") or f"{partner_name} · Managed on SafeTradie"
+    record = {
+        "user_id": current_user.user_id,
+        "to": current_user.email,
+        "subject": f"[{partner_name}] Sample — licence expiry alert for your client",
+        "preview_line_1": f"G'day — this is a preview of how your clients will receive alerts under the {partner_name} brand.",
+        "preview_line_2": "A worker credential is expiring in 14 days. Sample data — no action required.",
+        "signature": signature,
+        "sent_at": datetime.now(timezone.utc).isoformat(),
+        "mode": "dry_run",
+    }
+    await db.partner_test_emails.insert_one({**record})
+    record.pop("_id", None)
+    return {"queued": True, **record}
+
+
+
 # -------- Mobile Worker app — lightweight "my stuff" endpoints --------
 @api_router.get("/worker/my-summary")
 async def worker_summary(current_user: User = Depends(get_current_user)):

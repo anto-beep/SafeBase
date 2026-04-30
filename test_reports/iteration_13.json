@@ -1,0 +1,46 @@
+{
+  "summary": "Iter 13 — Marketing nav caps + Resources dropdown, Fine Calc Enterprise card, Enterprise ROI Calculator, and full White-label Partner Branding (5 tabs + live preview + 4 backend endpoints). Backend 6/6 pytest green. Frontend all critical flows verified: nav shows uppercase labels with Compare/Blog moved into RESOURCES dropdown; /tools/fine-calculator shows 4-plan comparison incl. Enterprise A$1,299 + GST card; /enterprise ROI calculator defaults 25×4 = A$12,000 saved / +A$10,701 net, slider interaction updates live (to A$4,800 @ 10×4); /dashboard/partner/branding has 5 tabs, live Desktop preview reflects primary colour change (bg turned red when #ff0000 applied), Custom Domain tab shows level2-gate warning with subdomain disabled, Messages tab shows /200 char counter + disabled 'Powered by' toggle, Email tab 'Send test email' fires POST returning 200 with {queued:true,to,subject,preview_line_1,preview_line_2,signature}, Save button triggers PUT 200. Billing tiers regression: still 8 entries.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/partner/branding", "issue": "Endpoint returns the raw Mongo doc without merging BRANDING_DEFAULTS, so once a partner has saved branding the response is missing keys like partnership_level / show_powered_by / custom_domain_status unless they were explicitly set on a PUT. First-load defaults are only returned when no doc exists. Recommend merging BRANDING_DEFAULTS with the stored doc in get_partner_branding (spread defaults, then override with doc) so shape is always complete."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/pricing (Marketing)", "issues": ["Console warning: 'Each child in a list should have a unique key prop' coming from Pricing render method — likely a missing key on a mapped array. Non-blocking but should be fixed."]},
+      {"screen": "All marketing pages (while logged out)", "issues": ["Repeated 401s to an auth-gated endpoint observed in console on every marketing page load. Not user-visible, but the marketing shell should avoid calling authenticated endpoints (e.g. /auth/me or /billing/my-subscription) when no token is present."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter13_branding.py",
+    "/app/test_reports/pytest/iter13_branding.xml"
+  ],
+  "action_items": [
+    "(Minor) Merge BRANDING_DEFAULTS into GET /api/partner/branding response so partnership_level / show_powered_by / custom_domain_status are always present — keeps frontend gating logic simpler and matches the stated contract.",
+    "(Minor) Fix missing React key warning in Pricing component.",
+    "(Minor) Gate auth-required fetches on marketing shell to avoid 401 noise when logged out.",
+    "Carry-forward from iter12: server.py > 2600 lines; split into routers (branding router is a natural candidate to extract now)."
+  ],
+  "critical_code_review_comments": [
+    "PartnerBranding PUT correctly whitelists keys against BRANDING_DEFAULTS — prevents arbitrary field writes. Good.",
+    "Level-1 gating in update_partner_branding enforces show_powered_by=True and strips custom_domain_status server-side — cannot be bypassed from the client. Solid.",
+    "verify-dns is an MVP stub that only sets status='pending' and returns the target CNAME — clearly flagged as mocked per review_request. Persists subdomain + updated_at. OK.",
+    "test-email writes a dry-run record to partner_test_emails collection and returns the preview payload — no real Resend call, which matches the spec. If a persistent queue grows, consider a TTL index on sent_at.",
+    "ROI calculator formula: users × hours × A$120 − A$1,299. Validated defaults (25×4 = A$12,000 saved → A$10,701 net) and live update when users slid to 10 (→ A$4,800 saved, net A$3,501). Math checks out.",
+    "Fine Calculator: 4-plan grid correctly includes Enterprise card with data-testid='fine-plan-enterprise', A$1,299/mo, '+ GST', annual A$12,990/yr. Consistent with Pricing & Enterprise pages.",
+    "Marketing nav: all five top-level labels are ALL CAPS (PRODUCTS, HOW IT WORKS, PRICING, ENTERPRISE, RESOURCES). Blog and Compare correctly moved under RESOURCES dropdown with the requested data-testids. Compare/Blog are not present as standalone top-level items."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter13_branding.py (new — 6 tests, all pass)"
+  ],
+  "success_rate": {"backend": "100% (6/6 pytest)", "frontend": "100% (nav caps + Resources dropdown, Fine Calc Enterprise card, ROI calculator live update, Branding 5 tabs + live preview + Save + test-email all verified)"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 — verified working",
+  "seed_data_creation": "Created 3 TEST_ entries in partner_test_emails during testing + temporarily renamed partner_branding.partner_name to 'TEST_Iter13 Consulting'. Cleaned up: db.partner_test_emails now empty and partner_branding.partner_name restored to 'Apex WHS' (test-only fields welcome_message/support_contact_*/email_signature cleared).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All iter13 features green. Partner Branding endpoints live at /api/partner/branding (GET/PUT), /verify-dns, /test-email. 4 collections touched: partner_branding (keyed by user_id) and partner_test_emails (dry-run log). PartnerBranding.jsx is the 5-tab config (Identity / Colours / Custom Domain / Messages / Email) with a right-hand live-preview panel that toggles Desktop/Mobile/Email. Level-1 gating enforced both server-side (PUT strips show_powered_by=false and custom_domain_status) and client-side (level2-gate banner + disabled controls). DNS verify and test-email are MVP stubs — no real DNS dig, no real Resend send. Marketing nav: Compare/Blog now sub-items of RESOURCES dropdown (testids nav-resources-blog, nav-resources-compare). Fine Calc 'Pick a plan' grid has data-testid='fine-plan-comparison' and Enterprise card 'fine-plan-enterprise'. Enterprise ROI section testid: 'roi-calculator-section', sliders 'roi-users-slider' + 'roi-hours-slider'.",
+  "rca_of_the_issue": "N/A — no bugs blocking shipment. One minor backend design nit (GET should merge defaults) and two pre-existing console hygiene items (React key warning + 401 noise on marketing shell) captured under action_items."
+}
