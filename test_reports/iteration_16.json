@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 16 — AutoRiskPrompt + risk-from-incident loop end-to-end. Backend 9/9 pytest passed: ai/suggest-risk-draft returns full schema (title, primary_hazard, hazard_description, description, inh L+C, res L+C, suggested_controls[], review_frequency); accept-risk-draft inserts risks doc, sets incident.linked_risk_id, emits risk_from_incident notification, computes inherent_score/residual_score/inherent_level/residual_level, propagates linked_incident_ids with both incident_id AND reference (INC-YYYY-####), defaults inherent_likelihood=3 and inherent_consequence from severity when body omits them; 404 returned for unknown incident on both endpoints; GET /api/incident-workflow/{id} reflects linked_risk_id; GET /api/risks lists the new risk. Frontend smoke (Playwright on owner@safetradie.demo): banner data-testid='auto-risk-prompt' is visible on Summary AND Close-out tab of a closed incident with copy 'Create a Risk Register entry from this incident?', generate-risk-draft-btn + risk-prompt-skip-btn both render; clicking Generate AI draft opens risk-draft-modal containing draft-title, draft-hazard, draft-frequency, draft-hazard-desc, draft-description, draft-inh-l/c, draft-res-l/c, draft-inherent-score, draft-residual-score, draft-controls (3 control rows from Claude); editing inherent L=5 + C=4 live-updates draft-inherent-score to '20'; clicking draft-save-btn closes modal, success toast fires, banner is replaced with risk-linked-card showing RISK-006 + open-linked-risk-btn linking to /dashboard/risk-register/RISK-006; clicking risk-prompt-skip-btn on a different closed incident hides the banner and persists in localStorage (verified after page reload); banner is NOT shown on stage!='closed' incident; lifecycle tracker still has 5 nodes and Reopen (Admin) button still shown on closed incidents.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter16_risk_from_incident.py",
+    "/app/test_reports/pytest/iter16_risk_from_incident.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "accept-risk-draft body uses controls[] from caller; the FE maps suggested_controls[] -> controls[] before posting (each control gets {name, hierarchy_level, description, effectiveness, status:'in_place'}). This is correct but worth a code-comment so future devs don't forget the rename.",
+    "AutoRiskPrompt is duplicated rendering on summary tab AND closeout tab — both use the same dismissal localStorage key (risk_prompt_dismissed_{incident_id}) so dismiss is consistent. OK as-is.",
+    "Backend defaults inherent_consequence to min(5, max(2, severity)) so an empty body still yields a non-zero inherent_score. Good guardrail.",
+    "Backend uses risk_counters (per user_id) to allocate RISK-### — atomic upsert + $inc, matches the INC counter pattern. The format is RISK-{seq:03d} which means seq 1000+ would render RISK-1000 (padding still works). No issue.",
+    "Reopen still does NOT emit incident_reopened notification audit parity — same comment carried over from iter15. Optional.",
+    "incident_workflow.py is now ~792 lines — past the 700 soft limit. Worth splitting into submission/triage/investigation/actions/closeout/risk_loop sub-modules in a future refactor."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter16_risk_from_incident.py"],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "100% smoke flows verified"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234",
+  "seed_data_creation": "Created 3 closed + 1 open TEST_-prefixed incidents during pytest + Playwright run; cleaned up at end of run via direct mongo delete on incident_workflow/risks/notifications collections (3 incidents + 1 risk + 1 notification removed).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_iter16_risk_from_incident.py is the regression suite for the Risk-from-Incident loop. It depends on REACT_APP_BACKEND_URL + MONGO_URL + DB_NAME envs. It seeds 4 TEST_-prefixed incidents and cleans them up via direct Mongo delete in the final test_cleanup case. The ai/suggest-risk-draft Claude call can take 10–30 seconds (covered by 90s pytest timeout + 60s Playwright wait). FE selectors confirmed: auto-risk-prompt, generate-risk-draft-btn, risk-prompt-skip-btn, risk-prompt-dismiss-x, risk-draft-modal, draft-{title,hazard,frequency,hazard-desc,description,inh-l,inh-c,res-l,res-c,inherent-score,residual-score,controls,save-btn}, risk-linked-card, open-linked-risk-btn. Banner dismissal localStorage key is risk_prompt_dismissed_{incident_id}.",
+  "rca_of_the_issue": "N/A — no issues found. Both backend endpoints + frontend AutoRiskPrompt component behave per spec and integrate end-to-end."
+}

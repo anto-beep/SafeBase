@@ -10,8 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Sparkle, CheckCircle, Warning, FileText, Phone, ArrowRight, Link as LinkIcon,
-  ChatsCircle, Plus, Trash,
+  ChatsCircle, Plus, Trash, ShieldWarning, X,
 } from "@phosphor-icons/react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import LifecycleTracker from "./LifecycleTracker";
 import {
@@ -493,6 +496,380 @@ function CloseOutForm({ doc, onSaved }) {
   );
 }
 
+// ---- AUTO-DERIVED RISK PROMPT (shown after an incident is closed) ----
+function AutoRiskPrompt({ doc, onLinked }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [dismissedKey] = useState(`risk_prompt_dismissed_${doc.incident_id}`);
+  const [dismissed, setDismissed] = useState(
+    typeof window !== "undefined" && localStorage.getItem(`risk_prompt_dismissed_${doc.incident_id}`) === "1"
+  );
+
+  if (doc.linked_risk_id) {
+    return (
+      <div className="bg-emerald-50 border-2 border-emerald-600 p-4 flex items-center justify-between gap-3" data-testid="risk-linked-card">
+        <div className="flex items-center gap-3 text-sm">
+          <CheckCircle weight="fill" className="text-emerald-700 shrink-0" size={24} />
+          <div>
+            <div className="font-display font-black text-emerald-900">Risk Register entry linked</div>
+            <div className="text-xs text-emerald-800">This incident is linked to <strong>{doc.linked_risk_id}</strong>.</div>
+          </div>
+        </div>
+        <Link to={`/dashboard/risk-register/${doc.linked_risk_id}`} className="shrink-0">
+          <Button variant="outline" className="btn-sharp border-emerald-700 text-emerald-900 h-10" data-testid="open-linked-risk-btn">
+            Open risk <ArrowRight className="ml-2" />
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  if (dismissed) return null;
+
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const r = await api.post(`/incident-workflow/${doc.incident_id}/ai/suggest-risk-draft`);
+      setDraft({
+        title: r.data.title || `Risk derived from ${doc.reference}`,
+        primary_hazard: r.data.primary_hazard || "Other",
+        hazard_description: r.data.hazard_description || "",
+        description: r.data.description || "",
+        inherent_likelihood: Number(r.data.inherent_likelihood) || 3,
+        inherent_consequence: Number(r.data.inherent_consequence) || 3,
+        residual_likelihood: Number(r.data.residual_likelihood) || 2,
+        residual_consequence: Number(r.data.residual_consequence) || 2,
+        review_frequency: r.data.review_frequency || "quarterly",
+        suggested_controls: Array.isArray(r.data.suggested_controls) ? r.data.suggested_controls : [],
+        fallback: !!r.data.fallback,
+      });
+      setOpen(true);
+    } catch {
+      toast.error("AI draft failed — please try again");
+    }
+    setLoading(false);
+  };
+
+  const dismiss = () => {
+    try { localStorage.setItem(dismissedKey, "1"); } catch {}
+    setDismissed(true);
+    toast.info("Prompt dismissed for this incident");
+  };
+
+  const save = async () => {
+    if (!draft) return;
+    setSaving(true);
+    try {
+      const payload = {
+        title: draft.title,
+        primary_hazard: draft.primary_hazard,
+        hazard_description: draft.hazard_description,
+        description: draft.description,
+        inherent_likelihood: Number(draft.inherent_likelihood),
+        inherent_consequence: Number(draft.inherent_consequence),
+        residual_likelihood: Number(draft.residual_likelihood),
+        residual_consequence: Number(draft.residual_consequence),
+        review_frequency: draft.review_frequency,
+        controls: (draft.suggested_controls || []).map((c) => ({
+          name: c.name || "Control",
+          hierarchy_level: c.hierarchy_level || "administrative",
+          description: c.description || "",
+          effectiveness: c.effectiveness || "medium",
+          status: "in_place",
+        })),
+      };
+      const r = await api.post(`/incident-workflow/${doc.incident_id}/accept-risk-draft`, payload);
+      toast.success(`Risk register entry ${r.data.risk_id} created`);
+      setOpen(false);
+      onLinked?.(r.data.risk_id);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Failed to create risk");
+    }
+    setSaving(false);
+  };
+
+  const patch = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
+  const patchControl = (i, k, v) => setDraft((d) => {
+    const n = [...(d.suggested_controls || [])];
+    n[i] = { ...n[i], [k]: v };
+    return { ...d, suggested_controls: n };
+  });
+  const removeControl = (i) => setDraft((d) => ({ ...d, suggested_controls: d.suggested_controls.filter((_, ix) => ix !== i) }));
+
+  const il = (Number(draft?.inherent_likelihood) || 0) * (Number(draft?.inherent_consequence) || 0);
+  const rl = (Number(draft?.residual_likelihood) || 0) * (Number(draft?.residual_consequence) || 0);
+  const scoreColor = (s) => (s <= 5 ? "bg-emerald-600" : s <= 11 ? "bg-amber-500" : s <= 19 ? "bg-orange-600" : "bg-red-700");
+
+  return (
+    <>
+      <div className="bg-ink text-white border-2 border-ink p-5 space-y-3 relative" data-testid="auto-risk-prompt">
+        <button
+          type="button"
+          onClick={dismiss}
+          className="absolute top-2 right-2 text-white/60 hover:text-white"
+          aria-label="Dismiss"
+          data-testid="risk-prompt-dismiss-x"
+        ><X size={18} /></button>
+        <div className="flex items-start gap-3">
+          <ShieldWarning weight="fill" className="text-warning shrink-0 mt-1" size={28} />
+          <div className="flex-1">
+            <div className="label-eyebrow text-warning">CONTINUOUS IMPROVEMENT</div>
+            <h3 className="font-display text-xl md:text-2xl font-black mt-1">
+              Create a Risk Register entry from this incident?
+            </h3>
+            <p className="text-sm text-white/80 mt-1">
+              Turn the investigation's root cause and contributing factors into a tracked
+              Risk Register item so controls and reviews persist beyond this incident.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button
+            className="btn-sharp bg-warning text-ink hover:bg-yellow-400 h-11"
+            onClick={generate}
+            disabled={loading}
+            data-testid="generate-risk-draft-btn"
+          >
+            <Sparkle weight="fill" className="mr-2" />
+            {loading ? "Drafting with AI…" : "Generate AI draft"}
+          </Button>
+          <Button
+            variant="outline"
+            className="btn-sharp border-white/40 text-white bg-transparent hover:bg-white/10 h-11"
+            onClick={dismiss}
+            data-testid="risk-prompt-skip-btn"
+          >
+            Not needed
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-none border-ink" data-testid="risk-draft-modal">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-black tracking-tighter">
+              Review AI-drafted Risk Register entry
+            </DialogTitle>
+            <DialogDescription>
+              Derived from incident <strong>{doc.reference}</strong>. Adjust any field before saving.
+              {draft?.fallback && (
+                <span className="block mt-1 text-amber-600 font-bold">
+                  AI unavailable — showing safe defaults. Review carefully.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {draft && (
+            <div className="space-y-4">
+              <div>
+                <Label className="label-eyebrow">Risk title</Label>
+                <Input
+                  value={draft.title}
+                  onChange={(e) => patch("title", e.target.value)}
+                  className="mt-1 h-11 rounded-none border-ink"
+                  data-testid="draft-title"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="label-eyebrow">Primary hazard</Label>
+                  <Select value={draft.primary_hazard} onValueChange={(v) => patch("primary_hazard", v)}>
+                    <SelectTrigger className="mt-1 h-11 rounded-none border-ink" data-testid="draft-hazard">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        "Electrical", "Mechanical", "Chemical / Hazardous Substance",
+                        "Physical / Ergonomic", "Biological", "Psychosocial",
+                        "Environmental", "Fire / Explosion", "Height / Fall",
+                        "Confined Space", "Vehicle / Traffic", "Noise", "Radiation",
+                        "Temperature Extremes", "Other",
+                      ].map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="label-eyebrow">Review frequency</Label>
+                  <Select value={draft.review_frequency} onValueChange={(v) => patch("review_frequency", v)}>
+                    <SelectTrigger className="mt-1 h-11 rounded-none border-ink" data-testid="draft-frequency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="6-monthly">6-monthly</SelectItem>
+                      <SelectItem value="annually">Annually</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="label-eyebrow">Hazard description</Label>
+                <Textarea
+                  rows={2}
+                  value={draft.hazard_description}
+                  onChange={(e) => patch("hazard_description", e.target.value)}
+                  className="mt-1 rounded-none border-ink"
+                  data-testid="draft-hazard-desc"
+                />
+              </div>
+
+              <div>
+                <Label className="label-eyebrow">Risk description (root cause framed as a risk)</Label>
+                <Textarea
+                  rows={3}
+                  value={draft.description}
+                  onChange={(e) => patch("description", e.target.value)}
+                  className="mt-1 rounded-none border-ink"
+                  data-testid="draft-description"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-muted border border-border p-3 space-y-2">
+                  <div className="label-eyebrow flex items-center justify-between">
+                    <span>Inherent (before controls)</span>
+                    <span className={`${scoreColor(il)} text-white px-2 py-0.5 text-[10px] font-bold tracking-widest`} data-testid="draft-inherent-score">
+                      {il}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Likelihood (1-5)</Label>
+                      <Input
+                        type="number" min="1" max="5"
+                        value={draft.inherent_likelihood}
+                        onChange={(e) => patch("inherent_likelihood", e.target.value)}
+                        className="mt-1 h-9 rounded-none border-ink"
+                        data-testid="draft-inh-l"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Consequence (1-5)</Label>
+                      <Input
+                        type="number" min="1" max="5"
+                        value={draft.inherent_consequence}
+                        onChange={(e) => patch("inherent_consequence", e.target.value)}
+                        className="mt-1 h-9 rounded-none border-ink"
+                        data-testid="draft-inh-c"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-muted border border-border p-3 space-y-2">
+                  <div className="label-eyebrow flex items-center justify-between">
+                    <span>Residual (after controls)</span>
+                    <span className={`${scoreColor(rl)} text-white px-2 py-0.5 text-[10px] font-bold tracking-widest`} data-testid="draft-residual-score">
+                      {rl}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Likelihood (1-5)</Label>
+                      <Input
+                        type="number" min="1" max="5"
+                        value={draft.residual_likelihood}
+                        onChange={(e) => patch("residual_likelihood", e.target.value)}
+                        className="mt-1 h-9 rounded-none border-ink"
+                        data-testid="draft-res-l"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Consequence (1-5)</Label>
+                      <Input
+                        type="number" min="1" max="5"
+                        value={draft.residual_consequence}
+                        onChange={(e) => patch("residual_consequence", e.target.value)}
+                        className="mt-1 h-9 rounded-none border-ink"
+                        data-testid="draft-res-c"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="label-eyebrow mb-2">Suggested controls ({(draft.suggested_controls || []).length})</div>
+                <div className="space-y-2" data-testid="draft-controls">
+                  {(draft.suggested_controls || []).map((c, i) => (
+                    <div key={i} className="border border-border p-3 space-y-2" data-testid={`draft-control-${i}`}>
+                      <div className="flex gap-2">
+                        <Input
+                          value={c.name || ""}
+                          onChange={(e) => patchControl(i, "name", e.target.value)}
+                          placeholder="Control name"
+                          className="h-9 rounded-none border-ink flex-1"
+                        />
+                        <Button variant="ghost" size="sm" onClick={() => removeControl(i)} className="text-destructive">
+                          <Trash />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <Select value={c.hierarchy_level || "administrative"} onValueChange={(v) => patchControl(i, "hierarchy_level", v)}>
+                          <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="elimination">1 — Elimination</SelectItem>
+                            <SelectItem value="substitution">2 — Substitution</SelectItem>
+                            <SelectItem value="isolation">3 — Isolation</SelectItem>
+                            <SelectItem value="engineering">4 — Engineering</SelectItem>
+                            <SelectItem value="administrative">5 — Administrative</SelectItem>
+                            <SelectItem value="ppe">6 — PPE</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={c.effectiveness || "medium"} onValueChange={(v) => patchControl(i, "effectiveness", v)}>
+                          <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="high">Effectiveness: High</SelectItem>
+                            <SelectItem value="medium">Effectiveness: Medium</SelectItem>
+                            <SelectItem value="low">Effectiveness: Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Textarea
+                        rows={2}
+                        value={c.description || ""}
+                        onChange={(e) => patchControl(i, "description", e.target.value)}
+                        placeholder="Control description"
+                        className="rounded-none border-ink"
+                      />
+                    </div>
+                  ))}
+                  {(draft.suggested_controls || []).length === 0 && (
+                    <div className="text-xs text-muted-foreground">No controls suggested — add some after saving.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              className="btn-sharp border-ink h-11"
+              onClick={() => setOpen(false)}
+              disabled={saving}
+              data-testid="draft-cancel-btn"
+            >Cancel</Button>
+            <Button
+              className="btn-sharp bg-ink text-white hover:bg-authority h-11"
+              onClick={save}
+              disabled={saving || !draft?.title}
+              data-testid="draft-save-btn"
+            >
+              {saving ? "Creating…" : "Create Risk Register entry"} <ArrowRight className="ml-2" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export default function IncidentDetail() {
   const { incident_id } = useParams();
   const [doc, setDoc] = useState(null);
@@ -572,6 +949,9 @@ export default function IncidentDetail() {
         </TabsList>
 
         <TabsContent value="summary" className="space-y-3">
+          {doc.stage === "closed" && (
+            <AutoRiskPrompt doc={doc} onLinked={(risk_id) => setDoc({ ...doc, linked_risk_id: risk_id })} />
+          )}
           <div className="flex items-end justify-between flex-wrap gap-2">
             <Button variant="outline" className="btn-sharp border-ink" onClick={runSummary} data-testid="ai-summary-btn"><Sparkle className="mr-2" weight="fill" />AI summary</Button>
             <Button variant="outline" className="btn-sharp border-ink" onClick={() => window.print()} data-testid="generate-report-btn"><FileText className="mr-2" />Generate report (PDF)</Button>
@@ -637,13 +1017,16 @@ export default function IncidentDetail() {
           {doc.stage === "actions" && <CloseOutForm doc={doc} onSaved={setDoc} />}
           {["reported", "triage", "investigation"].includes(doc.stage) && <div className="p-5 text-sm text-muted-foreground">Complete actions first.</div>}
           {doc.stage === "closed" && (
-            <div className="bg-background border-2 border-emerald-600 p-5 text-sm space-y-2" data-testid="closed-panel">
-              <div className="label-eyebrow text-emerald-700">CLOSED</div>
-              <div><strong>Signed off by:</strong> {doc.close_out?.signed_off_by} · {doc.close_out?.signed_at ? new Date(doc.close_out.signed_at).toLocaleString("en-AU") : ""}</div>
-              <div><strong>Lessons learned:</strong> {doc.close_out?.lessons_learned}</div>
-              {doc.close_out?.incomplete_items?.length > 0 && (
-                <div className="text-xs text-muted-foreground">Flagged incomplete: {doc.close_out.incomplete_items.length} item(s)</div>
-              )}
+            <div className="space-y-4">
+              <AutoRiskPrompt doc={doc} onLinked={(risk_id) => setDoc({ ...doc, linked_risk_id: risk_id })} />
+              <div className="bg-background border-2 border-emerald-600 p-5 text-sm space-y-2" data-testid="closed-panel">
+                <div className="label-eyebrow text-emerald-700">CLOSED</div>
+                <div><strong>Signed off by:</strong> {doc.close_out?.signed_off_by} · {doc.close_out?.signed_at ? new Date(doc.close_out.signed_at).toLocaleString("en-AU") : ""}</div>
+                <div><strong>Lessons learned:</strong> {doc.close_out?.lessons_learned}</div>
+                {doc.close_out?.incomplete_items?.length > 0 && (
+                  <div className="text-xs text-muted-foreground">Flagged incomplete: {doc.close_out.incomplete_items.length} item(s)</div>
+                )}
+              </div>
             </div>
           )}
         </TabsContent>
