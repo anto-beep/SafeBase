@@ -1,7 +1,7 @@
-# SafeTradie - PRD
+# SafeTradie — PRD
 
 ## Original problem
-WHS compliance SaaS for Australian trade businesses. Four core functions (SWMS gen, Incidents, People/Licences, Intelligence) + ecosystem (TradeInduct, TradeCheck, Academy, Franchise, Consulting). Priced A$150/250/400 per month.
+WHS compliance SaaS for Australian trade businesses. Four core functions (SWMS gen, Incidents, People/Licences, Intelligence) + ecosystem (TradeInduct, TradeCheck, Academy, Franchise, Consulting). Pricing A$150/250/400 per month.
 
 ## Users
 - Business owner (primary buyer)
@@ -11,49 +11,90 @@ WHS compliance SaaS for Australian trade businesses. Four core functions (SWMS g
 - WHS consultant (white-label partner)
 - Franchisor
 
-## Implemented (Dec 2025)
+## Batching roadmap
+User provided 34-prompt + 5-workflow blueprint; built in batches (a, b, c, d, e).
 
-### Iteration 1-2 — Foundation
-- Backend: JWT + Emergent Google Auth, Workers, Licences (expiry computation), Incidents (auto notify_regulator), Documents (Claude Sonnet 4.5), Compliance score
-- Frontend: Landing, Login, Register, Dashboard overview, Documents, Incidents, Workers, Licences
+---
+
+## Implemented
+
+### Iteration 1-2 — Foundation (Dec 2025)
+- Backend: JWT + Emergent Google Auth, Workers, Licences (expiry), Incidents (auto notify_regulator), Documents (Claude Sonnet 4.5), Compliance score
+- Frontend: Landing, Login, Register, Dashboard, Documents, Incidents, Workers, Licences
 
 ### Iteration 3 — Marketing expansion
 - 15 public routes: /, /ecosystem, /services/{swms,incidents,people,intelligence}, /products/{tradeinduct,tradecheck,academy}, /consulting, /pricing, /partners, /franchises, /resources, /about
-- Pricing rewritten to A$150/250/400 (monthly + annual toggle)
+- Pricing A$150/250/400 (monthly + annual toggle)
 - MarketingNav with Products dropdown
-- All pricing references globally consistent
 
-### Iteration 4 — Foundation + Onboarding (batch a)
-- **Onboarding Wizard** (6 steps, auto-triggers for new email/password users, progress bar, save & exit, skip buttons on steps 3-5, dismiss-sticky via sessionStorage)
-- **Settings** with 6 tabs: Business Profile (CRUD), Users & Roles (invite + role change + remove, 4 roles: admin/safety_manager/supervisor/worker), Notifications (expiry-day toggles, delivery, threshold, weekly summary, legislative digest), Billing, Data/Privacy, Danger Zone
-- **Notifications Centre** with 6 filter tabs, live synthesis from incidents+licences when no stored notifications, mark-all + mark-one
-- **Enhanced Register** with trade/state/workers fields + trust column (3 testimonials + 5 guarantees)
-- Bell icon in sidebar + mobile top bar with unread badge (polls /60s)
+### Iteration 4 — Batch (a): Foundation + Onboarding
+- OnboardingWizard (6 steps, auto-trigger, save & exit)
+- Settings (6 tabs: Business, Users & Roles, Notifications, Billing, Data, Danger Zone)
+- Notifications Centre (6 filter tabs, live synthesis)
+- Enhanced Register with trade/state/workers + trust column
+- Bell icon with unread badge
+
+### Iteration 5 — Batch (b): Core Safety Modules (Feb 2026)
+- Generic `/api/safety/{module}` CRUD pattern + `/api/safety/summary`
+- 6 modules: Toolbox Talks, Plant & Equipment, Hazardous Substances, Inspections, Risk Register, First Aid + PPE
+- Shared `SafetyModulePage.jsx` component
+- Risk Register auto-computes inherent + residual scores (L×C) with level (low/medium/high/extreme)
+- Fixed route-ordering bug (`/api/safety/summary` now before generic)
+- Fixed string-coercion bug in `_enrich()` via `_safe_int()` helper
+
+### Iteration 6 — Batch (c): Reports + Workflows (Feb 2026)
+- **Reports Module** (`/api/reports` + `/api/reports/{type}`): 10 live-computed reports — compliance_score, incidents_trend, licence_expiry, training_matrix, swms_register, toolbox_talks_log, risk_register_export, inspections_summary, plant_register, worker_roster
+- **Reports page** (`/dashboard/reports`) — card grid, dialog viewer, JSON download, Print/PDF export
+- **Workflows engine** (`/api/workflows/{wtype}` CRUD + step toggle): stepped progress tracking with progress_pct, status (not_started/in_progress/complete)
+- **5 Workflows**:
+  - W1 New Employee Onboarding (7 steps: profile → induction → licences → PPE → toolbox → SWMS sign → ready)
+  - W2 Incident Resolution (7 steps: reported → triage → regulator → investigation → corrective → implemented → closed)
+  - W3 SWMS to Job Start (6 steps: draft → reviewed → approved → site-brief → sign-off → started)
+  - W4 Annual WHS Review (7 steps: scope → policies → registers → incidents → training → audit → sign-off)
+  - W5 Subcontractor Engagement (7 steps: invite → company → insurance → licences → SWMS → induction → engaged)
+- Shared `WorkflowPage.jsx` component
+- Sidebar: new Reports link + Workflows section (5 links)
+
+---
 
 ## Backend endpoints (current)
 - Auth: POST /api/auth/{register,login,google-session,logout}, GET /api/auth/me
 - Workers/Licences/Incidents/Documents: CRUD
 - Compliance: GET /api/compliance/score
-- **NEW (iter 4)**: GET/PUT /api/settings/business, GET/PUT /api/settings/notifications, GET/POST/PATCH/DELETE /api/team, GET/POST /api/notifications (+ read/read-all), GET/PUT /api/onboarding
+- Settings: GET/PUT /api/settings/{business,notifications}, /api/team CRUD
+- Notifications: GET/POST /api/notifications (+ read/read-all)
+- Onboarding: GET/PUT /api/onboarding
+- **Safety (batch b)**: /api/safety/summary, /api/safety/{module} CRUD for 7 modules
+- **Reports (batch c)**: /api/reports (catalog), /api/reports/{type}
+- **Workflows (batch c)**: /api/workflows/catalog, /api/workflows/summary, /api/workflows/{wtype} CRUD + /api/workflows/{wtype}/{id}/step
 
-## Backlog (user-requested batches)
-### Next: batch b — Core Safety Modules
-- Toolbox Talks (Prompt 15)
-- Plant & Equipment Register (16)
-- Hazardous Substances + SDS (17)
-- Inspection Checklists (18)
-- Risk Register (19)
-- First Aid + PPE (34)
+---
 
-### Then: batch c — Marketing SEO blitz
-- Blog + 20 seed articles, Template Library, Competitor comparison, State guides, Fine Calculator, Integrations page, Partner Program LP
+## Backlog
 
-### Then: batch d — App depth
-- SWMS wizard rebuild, Incidents investigation flow, Worker profile tabs, Compliance breakdown + audit pack gen, Reporting (10 types)
+### Next: batch d — Ecosystem Apps (product verticals)
+- Mobile Worker PWA
+- TradeInduct module (contractor/worker induction portal)
+- TradeCheck module (licence/insurance verification marketplace)
+- SafeTradie Academy module (training LMS)
+- Partner/Consultant white-label portal
 
-### Then: batch e — Workflows + Mobile
-- W1 New Employee onboarding, W2 Incident→Resolution kanban, W3 SWMS→Job start, W5 Subcontractor engagement, Mobile Worker PWA
+### Then: batch e — Marketing SEO blitz
+- Blog + 20 seed articles
+- Free Templates Library
+- Competitor Comparison page
+- State-by-State Guides
+- WorkSafe Fine Calculator
+- Integrations page
+- Partner Program LP
+
+### Refactoring backlog
+- Split `server.py` into `/app/backend/routes/{auth,safety,reports,workflows,settings,...}.py`
+- Split routes models into `/app/backend/models/`
+- Move Pydantic validation for safety modules (typed `RiskCreate`, etc.) to replace `body: dict`
+
+---
 
 ## Known environmental constraints
-- EMERGENT_LLM_KEY budget exhausted (A$0.52 / A$0.40) — top up via Profile → Universal Key → Add Balance
-- K8s ingress 60s upstream timeout → backend AI timeout set to 50s
+- EMERGENT_LLM_KEY budget may deplete — SWMS generation has fallback placeholder
+- K8s ingress 60s timeout → backend AI timeout 50s
