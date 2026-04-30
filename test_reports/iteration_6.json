@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 6 — Full backend + frontend testing for Batch (c): Reports (10 types) + Workflows (W1..W5). Backend: 25/25 pytest pass (test_reports_workflows.py). Reports catalog + all 10 report detail endpoints return correct structure; bogus type returns 404. Workflows catalog + summary + full CRUD lifecycle per wtype (create→list→patch→toggle-step→complete→delete→404-on-bogus) all green. Completing all steps correctly flips status=complete/progress_pct=100; un-checking one reverts to in_progress. Regression (Batch b/a): /api/safety/*, /api/onboarding, /api/notifications all 200; Risk create with string likelihood/consequence still enriches correctly. Frontend: login + onboarding bypass via PUT /api/onboarding works. Sidebar shows nav-reports + all 5 nav-wf-* links (new-employee, incident-resolution, swms-to-job-start, annual-whs-review, subcontractor). /dashboard/reports renders all 10 report cards; dialog opens on click with Download JSON + Print buttons visible and compliance score pillars rendered. All 5 workflow routes mount their respective workflow-{wtype}-page container with add-btn. E2E on /dashboard/workflows/new-employee: filled title+entity, POST creates instance, card appears with 0%, 'Show steps' expands the 7-step checklist, clicking 'Worker profile created' toggled to 'IN PROGRESS / 14% · 1/7', delete removed the card and showed 'Removed' toast. Batch (b) Risk Register page still loads (regression OK).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Sidebar (Safety section)", "issues": ["Testid for 'First Aid & PPE' link is computed as 'nav-first-aid--ppe' (double dash) because the regex strips '&' but keeps the surrounding '-'s — test selector expected 'nav-first-aid-and-ppe'. The link still navigates correctly; this is only a test-id hygiene issue. Pre-existing from Batch (b), not introduced in Batch (c). Suggested fix in DashboardLayout.jsx line 100: add .replace(/-+/g, '-') and .replace(/^-|-$/g, '') after the existing regex to collapse double-dashes."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_reports_workflows.py",
+    "/app/test_reports/pytest/iter6_batch_c.xml"
+  ],
+  "action_items": [
+    "(LOW) Optional: collapse double-dashes in sidebar data-testid regex in DashboardLayout.jsx to make 'First Aid & PPE' testid predictable (nav-first-aid-ppe). Pre-existing, not a Batch (c) defect.",
+    "(LOW / housekeeping) Test data left in db.workflows: 5 instances were created (and deleted) by the pytest lifecycle — all cleaned up. UI E2E run created TEST_E2E_NEW_EMP and deleted it. No orphans from this iteration. Orphans from iteration_5 (risks) still present if not previously cleaned."
+  ],
+  "critical_code_review_comments": [
+    "server.py:948-1118 Reports are computed on-the-fly from live collections with consistent shape {meta, generated_at, rows|counts|pillars} — good design, no ObjectId leakage (all queries use projection {_id:0}).",
+    "server.py:1124-1293 Workflows route order is correct: /workflows/catalog and /workflows/summary declared BEFORE /workflows/{wtype}, so FastAPI matches the literal paths first. Verified by pytest (catalog/summary return 200; bogus wtype returns 404 from _validate_workflow).",
+    "server.py:1178-1187 _workflow_progress() is pure and correct — round(done/total*100) matches the 14% observed for 1/7 steps. Status transitions (not_started → in_progress → complete and reverse) are all verified green.",
+    "server.py:1246 update_workflow() properly blacklists _id, user_id, instance_id, created_at, workflow_type from PATCH body — prevents tenant-id tampering. Good.",
+    "server.py:1288 delete_workflow returns {deleted: N} without 404 when nothing was deleted — acceptable but consider 404 for consistency with other resources.",
+    "Reports.jsx uses data-testid={`report-${r.type}-btn`} — verified selector compliance end-to-end (clicking compliance_score and incidents_trend opens the dialog).",
+    "WorkflowPage.jsx is cleanly parameterised by wtype and uses data-testid={`workflow-${wtype}-page|add-btn|submit-btn|f-title|f-entity|f-notes`} + per-instance testids workflow-card-{id}/expand-{id}/step-{id}-{key}/del-{id} — excellent testability."
+  ],
+  "updated_files": ["/app/backend/tests/test_reports_workflows.py"],
+  "success_rate": {"backend": "100% (25/25 tests pass)", "frontend": "100% on all Batch (c) flows — Reports dialog, all 5 Workflow routes, full E2E create→toggle step→delete on new-employee"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (worked via /api/auth/login, JWT returned as 'token' key). Onboarding bypass: PUT /api/onboarding {step:6, completed:true} with Bearer token from localStorage key 'st_token'.",
+  "seed_data_creation": "Pytest created + deleted one workflow instance per type (5 total, all cleaned). UI E2E created TEST_E2E_NEW_EMP new_employee workflow and deleted it. One Risk 'TEST_BATCH_C_risk' created and deleted in regression test. No orphans from this iteration.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Batch (c) Reports + Workflows is solid and production-ready. Backend tests at /app/backend/tests/test_reports_workflows.py (25 tests, parametrised over 10 report types and 5 workflow types). For UI auth: login returns JWT in 'token' key; stored in localStorage 'st_token'; bypass OnboardingWizard with PUT /api/onboarding {step:6, completed:true}. Sidebar testids: nav-reports, nav-wf-{new-employee|incident-resolution|swms-to-job-start|annual-whs-review|subcontractor}. Reports page testids: reports-page, report-{type}-btn, report-dialog, report-score-value, report-download-btn, report-print-btn. Workflow page testids: workflow-{wtype}-page, workflow-{wtype}-add-btn, workflow-{wtype}-f-{title|entity|notes}, workflow-{wtype}-submit-btn, workflow-card-{iid}, workflow-expand-{iid}, workflow-step-{iid}-{stepkey}, workflow-del-{iid}. Note: Playwright page.is_visible() is not auto-waiting — always use wait_for_selector before is_visible checks on freshly mounted elements. One pre-existing cosmetic issue: nav-first-aid--ppe has double-dash due to regex; not Batch (c) related.",
+  "rca of the issue": "No bug to RCA — feature testing request. All acceptance criteria from the review_request were verified green except the pre-existing double-dash testid in the Safety sidebar (documented as LOW)."
+}

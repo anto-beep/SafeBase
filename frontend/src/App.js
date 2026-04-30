@@ -21,6 +21,12 @@ import Substances from "@/pages/safety/Substances";
 import Inspections from "@/pages/safety/Inspections";
 import RiskRegister from "@/pages/safety/RiskRegister";
 import FirstAidPpe from "@/pages/safety/FirstAidPpe";
+import Reports from "@/pages/Reports";
+import NewEmployee from "@/pages/workflows/NewEmployee";
+import IncidentResolution from "@/pages/workflows/IncidentResolution";
+import SwmsJobStart from "@/pages/workflows/SwmsJobStart";
+import AnnualReview from "@/pages/workflows/AnnualReview";
+import Subcontractor from "@/pages/workflows/Subcontractor";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -83,6 +89,12 @@ function AppRouter() {
         <Route path="inspections" element={<Inspections />} />
         <Route path="risks" element={<RiskRegister />} />
         <Route path="first-aid-ppe" element={<FirstAidPpe />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="workflows/new-employee" element={<NewEmployee />} />
+        <Route path="workflows/incident-resolution" element={<IncidentResolution />} />
+        <Route path="workflows/swms-job-start" element={<SwmsJobStart />} />
+        <Route path="workflows/annual-review" element={<AnnualReview />} />
+        <Route path="workflows/subcontractor" element={<Subcontractor />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

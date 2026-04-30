@@ -945,6 +945,354 @@ async def delete_safety_item(module: str, item_id: str, current_user: User = Dep
     return {"deleted": res.deleted_count}
 
 
+# ============================================================
+# REPORTS (Prompt 21) — 10 report types computed on-the-fly
+# ============================================================
+_REPORT_TYPES = {
+    "compliance_score", "incidents_trend", "licence_expiry", "training_matrix",
+    "swms_register", "toolbox_talks_log", "risk_register_export",
+    "inspections_summary", "plant_register", "worker_roster",
+}
+
+_REPORT_META = {
+    "compliance_score":     {"title": "Compliance Score Report",       "desc": "Overall compliance posture, score breakdown by pillar, and trend over last 90 days."},
+    "incidents_trend":      {"title": "Incidents Trend Report",        "desc": "Incidents by type, severity, injury class and month — WorkSafe-ready."},
+    "licence_expiry":       {"title": "Licence Expiry Report",         "desc": "All worker licences grouped by status (valid / expiring / expired)."},
+    "training_matrix":      {"title": "Training Matrix",               "desc": "Worker × licence/training — gap analysis."},
+    "swms_register":        {"title": "SWMS Register",                 "desc": "All SWMS documents with status, date, trade and site."},
+    "toolbox_talks_log":    {"title": "Toolbox Talks Log",              "desc": "All toolbox talks with topic, date, site, attendees."},
+    "risk_register_export": {"title": "Risk Register Export",          "desc": "Full risk register with inherent/residual scores, owner, review date."},
+    "inspections_summary":  {"title": "Inspections Summary",           "desc": "Inspections by type and outcome, overdue flags."},
+    "plant_register":       {"title": "Plant & Equipment Register",    "desc": "Equipment list with next inspection, next service, rego expiry."},
+    "worker_roster":        {"title": "Worker Roster",                 "desc": "Active workers with role, trade, start date, site assignment."},
+}
+
+
+@api_router.get("/reports")
+async def list_reports(current_user: User = Depends(get_current_user)):
+    """Returns catalogue of available reports."""
+    return [{"type": t, **meta} for t, meta in _REPORT_META.items()]
+
+
+@api_router.get("/reports/{report_type}")
+async def get_report(report_type: str, current_user: User = Depends(get_current_user)):
+    """Returns computed report data for the given type."""
+    if report_type not in _REPORT_TYPES:
+        raise HTTPException(404, f"Unknown report type: {report_type}")
+
+    uid = current_user.user_id
+    now = datetime.now(timezone.utc)
+    meta = _REPORT_META[report_type]
+
+    if report_type == "compliance_score":
+        # Simple compliance score
+        docs_total = await db.documents.count_documents({"user_id": uid})
+        workers_total = await db.workers.count_documents({"user_id": uid})
+        licences = await db.licences.find({"user_id": uid}, {"_id": 0}).to_list(1000)
+        incidents = await db.incidents.find({"user_id": uid}, {"_id": 0}).to_list(1000)
+        expired = 0
+        expiring = 0
+        for lic in licences:
+            exp = lic.get("expiry_date")
+            if exp:
+                try:
+                    d = datetime.fromisoformat(exp).replace(tzinfo=timezone.utc)
+                    days = (d - now).days
+                    if days < 0:
+                        expired += 1
+                    elif days <= 30:
+                        expiring += 1
+                except Exception:
+                    pass
+        open_incidents = sum(1 for i in incidents if (i.get("status") or "").lower() not in ("closed", "resolved"))
+        # naive scoring
+        score = 100
+        score -= expired * 10
+        score -= expiring * 3
+        score -= open_incidents * 5
+        score = max(0, min(100, score))
+        return {
+            "meta": meta, "generated_at": now.isoformat(), "score": score,
+            "pillars": [
+                {"key": "documents", "label": "Documents", "value": docs_total, "status": "good" if docs_total > 0 else "warn"},
+                {"key": "workers", "label": "Workers", "value": workers_total, "status": "good" if workers_total > 0 else "warn"},
+                {"key": "licences_valid", "label": "Valid licences", "value": len(licences) - expired - expiring, "status": "good"},
+                {"key": "licences_expiring", "label": "Expiring ≤30d", "value": expiring, "status": "warn" if expiring else "good"},
+                {"key": "licences_expired", "label": "Expired", "value": expired, "status": "bad" if expired else "good"},
+                {"key": "incidents_open", "label": "Open incidents", "value": open_incidents, "status": "bad" if open_incidents else "good"},
+            ],
+        }
+
+    if report_type == "incidents_trend":
+        incidents = await db.incidents.find({"user_id": uid}, {"_id": 0}).to_list(5000)
+        by_type = {}
+        by_severity = {}
+        by_month = {}
+        for i in incidents:
+            by_type[i.get("type", "other")] = by_type.get(i.get("type", "other"), 0) + 1
+            by_severity[i.get("severity", "unknown")] = by_severity.get(i.get("severity", "unknown"), 0) + 1
+            d = i.get("occurred_at") or i.get("created_at")
+            if d:
+                key = d[:7]
+                by_month[key] = by_month.get(key, 0) + 1
+        return {"meta": meta, "generated_at": now.isoformat(), "total": len(incidents),
+                "by_type": by_type, "by_severity": by_severity, "by_month": by_month,
+                "rows": incidents[:200]}
+
+    if report_type == "licence_expiry":
+        licences = await db.licences.find({"user_id": uid}, {"_id": 0}).to_list(2000)
+        out = {"valid": [], "expiring": [], "expired": []}
+        for lic in licences:
+            exp = lic.get("expiry_date")
+            days = None
+            if exp:
+                try:
+                    d = datetime.fromisoformat(exp).replace(tzinfo=timezone.utc)
+                    days = (d - now).days
+                except Exception:
+                    pass
+            lic["days_to_expiry"] = days
+            if days is None or days > 30:
+                out["valid"].append(lic)
+            elif days < 0:
+                out["expired"].append(lic)
+            else:
+                out["expiring"].append(lic)
+        return {"meta": meta, "generated_at": now.isoformat(),
+                "counts": {k: len(v) for k, v in out.items()}, **out}
+
+    if report_type == "training_matrix":
+        workers = await db.workers.find({"user_id": uid}, {"_id": 0}).to_list(500)
+        licences = await db.licences.find({"user_id": uid}, {"_id": 0}).to_list(2000)
+        # build types
+        lic_types = sorted({lic.get("licence_type", "Unknown") for lic in licences})
+        # map worker_id -> set of licence_type
+        worker_lic = {}
+        for lic in licences:
+            wid = lic.get("worker_id")
+            if wid:
+                worker_lic.setdefault(wid, set()).add(lic.get("licence_type", "Unknown"))
+        matrix = []
+        for w in workers:
+            held = worker_lic.get(w.get("worker_id") or w.get("id") or "", set())
+            matrix.append({
+                "worker_id": w.get("worker_id") or w.get("id"),
+                "name": w.get("name"),
+                "role": w.get("role"),
+                "trade": w.get("trade"),
+                "held": list(held),
+                "gaps": [t for t in lic_types if t not in held],
+            })
+        return {"meta": meta, "generated_at": now.isoformat(),
+                "licence_types": lic_types, "workers_count": len(workers), "rows": matrix}
+
+    if report_type == "swms_register":
+        docs = await db.documents.find({"user_id": uid}, {"_id": 0}).to_list(1000)
+        return {"meta": meta, "generated_at": now.isoformat(), "total": len(docs), "rows": docs}
+
+    if report_type == "toolbox_talks_log":
+        rows = await db.safety_toolbox_talks.find({"user_id": uid}, {"_id": 0}).sort("scheduled_at", -1).to_list(500)
+        return {"meta": meta, "generated_at": now.isoformat(), "total": len(rows), "rows": rows}
+
+    if report_type == "risk_register_export":
+        rows = await db.safety_risks.find({"user_id": uid}, {"_id": 0}).to_list(500)
+        rows = [_enrich("risks", r) for r in rows]
+        return {"meta": meta, "generated_at": now.isoformat(), "total": len(rows), "rows": rows}
+
+    if report_type == "inspections_summary":
+        rows = await db.safety_inspections.find({"user_id": uid}, {"_id": 0}).to_list(500)
+        by_outcome = {}
+        for r in rows:
+            by_outcome[r.get("outcome", "pending")] = by_outcome.get(r.get("outcome", "pending"), 0) + 1
+        return {"meta": meta, "generated_at": now.isoformat(), "total": len(rows), "by_outcome": by_outcome, "rows": rows}
+
+    if report_type == "plant_register":
+        rows = await db.safety_plant.find({"user_id": uid}, {"_id": 0}).to_list(500)
+        rows = [_enrich("plant", r) for r in rows]
+        return {"meta": meta, "generated_at": now.isoformat(), "total": len(rows), "rows": rows}
+
+    if report_type == "worker_roster":
+        rows = await db.workers.find({"user_id": uid}, {"_id": 0}).to_list(500)
+        return {"meta": meta, "generated_at": now.isoformat(), "total": len(rows), "rows": rows}
+
+    return {"meta": meta, "generated_at": now.isoformat(), "rows": []}
+
+
+# ============================================================
+# WORKFLOWS (Batch c) — W1..W5 instances with stepped progress
+# ============================================================
+_WORKFLOW_TYPES = {"new_employee", "incident_resolution", "swms_job_start", "annual_review", "subcontractor"}
+_WORKFLOW_STEPS = {
+    "new_employee": [
+        {"key": "profile", "label": "Worker profile created"},
+        {"key": "induction", "label": "Site induction completed"},
+        {"key": "licences", "label": "Licences uploaded & verified"},
+        {"key": "ppe", "label": "PPE issued"},
+        {"key": "toolbox", "label": "First toolbox talk attended"},
+        {"key": "swms_read", "label": "SWMS read & signed"},
+        {"key": "ready", "label": "Ready for work"},
+    ],
+    "incident_resolution": [
+        {"key": "reported", "label": "Incident reported"},
+        {"key": "triage", "label": "Triaged & notifier assigned"},
+        {"key": "regulator", "label": "Regulator notified (if required)"},
+        {"key": "investigation", "label": "Root-cause investigation"},
+        {"key": "corrective", "label": "Corrective actions defined"},
+        {"key": "implemented", "label": "Corrective actions implemented"},
+        {"key": "closed", "label": "Closed out & learnings shared"},
+    ],
+    "swms_job_start": [
+        {"key": "draft", "label": "SWMS drafted"},
+        {"key": "reviewed", "label": "Reviewed by safety manager"},
+        {"key": "approved", "label": "Approved for job"},
+        {"key": "site_brief", "label": "Pre-start site brief"},
+        {"key": "signoff", "label": "Worker sign-off captured"},
+        {"key": "started", "label": "Job started"},
+    ],
+    "annual_review": [
+        {"key": "scope", "label": "Define review scope"},
+        {"key": "policies", "label": "WHS policies reviewed"},
+        {"key": "registers", "label": "Registers reconciled (risk, plant, substances)"},
+        {"key": "incidents", "label": "12-month incident review"},
+        {"key": "training", "label": "Training compliance checked"},
+        {"key": "audit", "label": "Internal audit run"},
+        {"key": "signoff", "label": "Management sign-off"},
+    ],
+    "subcontractor": [
+        {"key": "invite", "label": "Subcontractor invited"},
+        {"key": "company", "label": "Company details captured"},
+        {"key": "insurance", "label": "Insurance certificates on file"},
+        {"key": "licences", "label": "Licences verified"},
+        {"key": "swms", "label": "SWMS approved"},
+        {"key": "induction", "label": "Induction completed"},
+        {"key": "engaged", "label": "Engaged & active"},
+    ],
+}
+
+
+def _validate_workflow(wtype: str):
+    if wtype not in _WORKFLOW_TYPES:
+        raise HTTPException(404, f"Unknown workflow type: {wtype}")
+
+
+def _workflow_progress(steps: list) -> dict:
+    total = len(steps) or 1
+    done = sum(1 for s in steps if s.get("completed"))
+    pct = round(done / total * 100)
+    status = "not_started"
+    if done == total:
+        status = "complete"
+    elif done > 0:
+        status = "in_progress"
+    return {"progress_pct": pct, "completed_steps": done, "total_steps": total, "status": status}
+
+
+@api_router.get("/workflows/catalog")
+async def workflows_catalog(current_user: User = Depends(get_current_user)):
+    return [{"type": t, "steps": s} for t, s in _WORKFLOW_STEPS.items()]
+
+
+@api_router.get("/workflows/summary")
+async def workflows_summary(current_user: User = Depends(get_current_user)):
+    """Counts per workflow type + status distribution."""
+    out = {}
+    for t in _WORKFLOW_TYPES:
+        rows = await db.workflows.find({"user_id": current_user.user_id, "workflow_type": t}, {"_id": 0}).to_list(1000)
+        dist = {"not_started": 0, "in_progress": 0, "complete": 0}
+        for r in rows:
+            prog = _workflow_progress(r.get("steps", []))
+            dist[prog["status"]] += 1
+        out[t] = {"total": len(rows), **dist}
+    return out
+
+
+@api_router.get("/workflows/{wtype}")
+async def list_workflows(wtype: str, current_user: User = Depends(get_current_user)):
+    _validate_workflow(wtype)
+    rows = await db.workflows.find(
+        {"user_id": current_user.user_id, "workflow_type": wtype}, {"_id": 0}
+    ).sort("created_at", -1).to_list(500)
+    for r in rows:
+        r.update(_workflow_progress(r.get("steps", [])))
+    return rows
+
+
+@api_router.post("/workflows/{wtype}")
+async def create_workflow(wtype: str, body: dict, current_user: User = Depends(get_current_user)):
+    _validate_workflow(wtype)
+    instance_id = f"wf_{uuid.uuid4().hex[:10]}"
+    # initialise steps from template, steps may be overridden via body.steps
+    default_steps = [{**s, "completed": False, "completed_at": None} for s in _WORKFLOW_STEPS[wtype]]
+    doc = {
+        "instance_id": instance_id,
+        "user_id": current_user.user_id,
+        "workflow_type": wtype,
+        "title": body.get("title") or f"{wtype} workflow",
+        "entity_id": body.get("entity_id"),
+        "entity_name": body.get("entity_name"),
+        "notes": body.get("notes", ""),
+        "steps": body.get("steps") or default_steps,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.workflows.insert_one({**doc})
+    doc.update(_workflow_progress(doc["steps"]))
+    return doc
+
+
+@api_router.patch("/workflows/{wtype}/{instance_id}")
+async def update_workflow(wtype: str, instance_id: str, body: dict, current_user: User = Depends(get_current_user)):
+    _validate_workflow(wtype)
+    updates = {k: v for k, v in body.items() if k not in ("_id", "user_id", "instance_id", "created_at", "workflow_type")}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.workflows.update_one(
+        {"instance_id": instance_id, "user_id": current_user.user_id, "workflow_type": wtype},
+        {"$set": updates},
+    )
+    doc = await db.workflows.find_one(
+        {"instance_id": instance_id, "user_id": current_user.user_id, "workflow_type": wtype}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(404, "Not found")
+    doc.update(_workflow_progress(doc.get("steps", [])))
+    return doc
+
+
+@api_router.post("/workflows/{wtype}/{instance_id}/step")
+async def toggle_workflow_step(wtype: str, instance_id: str, body: dict, current_user: User = Depends(get_current_user)):
+    """body = {step_key: str, completed: bool}"""
+    _validate_workflow(wtype)
+    step_key = body.get("step_key")
+    completed = bool(body.get("completed"))
+    doc = await db.workflows.find_one(
+        {"instance_id": instance_id, "user_id": current_user.user_id, "workflow_type": wtype}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(404, "Not found")
+    steps = doc.get("steps", [])
+    for s in steps:
+        if s.get("key") == step_key:
+            s["completed"] = completed
+            s["completed_at"] = datetime.now(timezone.utc).isoformat() if completed else None
+            break
+    await db.workflows.update_one(
+        {"instance_id": instance_id, "user_id": current_user.user_id, "workflow_type": wtype},
+        {"$set": {"steps": steps, "updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    doc["steps"] = steps
+    doc.update(_workflow_progress(steps))
+    return doc
+
+
+@api_router.delete("/workflows/{wtype}/{instance_id}")
+async def delete_workflow(wtype: str, instance_id: str, current_user: User = Depends(get_current_user)):
+    _validate_workflow(wtype)
+    res = await db.workflows.delete_one(
+        {"instance_id": instance_id, "user_id": current_user.user_id, "workflow_type": wtype}
+    )
+    return {"deleted": res.deleted_count}
+
+
 
 
 

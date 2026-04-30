@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 
 const NAV = [
@@ -22,6 +22,14 @@ const SAFETY_NAV = [
   { to: "/dashboard/inspections", label: "Inspections", icon: ClipboardText },
   { to: "/dashboard/risks", label: "Risk Register", icon: Warning },
   { to: "/dashboard/first-aid-ppe", label: "First Aid & PPE", icon: FirstAidKit },
+];
+
+const WORKFLOW_NAV = [
+  { to: "/dashboard/workflows/new-employee", label: "New Employee", icon: UserPlus },
+  { to: "/dashboard/workflows/incident-resolution", label: "Incident Resolution", icon: Warning },
+  { to: "/dashboard/workflows/swms-job-start", label: "SWMS to Job Start", icon: FlowArrow },
+  { to: "/dashboard/workflows/annual-review", label: "Annual WHS Review", icon: Calendar },
+  { to: "/dashboard/workflows/subcontractor", label: "Subcontractor", icon: Handshake },
 ];
 
 export default function DashboardLayout() {
@@ -78,6 +86,9 @@ export default function DashboardLayout() {
               {item.label === "Alerts" && unread > 0 && <span className="ml-auto bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5">{unread}</span>}
             </NavLink>
           ))}
+          <NavLink to="/dashboard/reports" data-testid="nav-reports" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
+            <ChartLineUp size={18} weight="bold" /> Reports
+          </NavLink>
           <NavLink to="/dashboard/settings" data-testid="nav-settings" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
             <Gear size={18} weight="bold" /> Settings
           </NavLink>
@@ -87,6 +98,21 @@ export default function DashboardLayout() {
               key={item.to}
               to={item.to}
               data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '')}`}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 text-sm ${
+                  isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                }`
+              }
+            >
+              <item.icon size={18} weight="bold" /> {item.label}
+            </NavLink>
+          ))}
+          <div className="mt-5 px-3 label-eyebrow text-white/40">Workflows</div>
+          {WORKFLOW_NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              data-testid={`nav-wf-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '')}`}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 text-sm ${
                   isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
