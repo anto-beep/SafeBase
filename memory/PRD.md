@@ -114,6 +114,20 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - **Navigation**: "Competency Matrix" added to main sidebar NAV between Workers and Licences.
 - Backend: new `/app/backend/competency_module.py` (~372 lines, factory pattern). 4 endpoints: `/toolbox-talks/{id}/conduct`, `/workers/competencies`, `/workers/competencies/matrix`, `/workers/unbriefed?topic=X`, `/competency/dashboard`. Tested 18/18 pytest + iter17 regression 11/11 + full FE smoke (iteration_18.json).
 
+### Iteration 19 — 14-day Free Trial + Apps & Add-ons discoverability (Feb 2026)
+- **14-day free trial system** baked into auth: every new user (email+password OR Google) is stamped with `trial_started_at`, `trial_ends_at = +14d`, `subscription_status='trial'`. Legacy users without trial fields get them backfilled lazily on first `/api/billing/my-subscription` call (uses `created_at` as start).
+- `/api/billing/my-subscription` now returns `on_trial`, `trial_days_left` (ceiling), `trial_expired`, `read_only`, `trial_started_at`, `trial_ends_at`, `trial_reminder_sent_at`. Active subscribers get `on_trial=false, read_only=false, trial_days_left=null`.
+- **Day-10 reminder** (lazy, idempotent): when `trial_days_left ≤ 4`, the next `my-subscription` call attempts a Resend email + always inserts a `trial_ending_soon` in-app notification (MOCKED when `RESEND_API_KEY` env is unset — `delivered_via='in_app_only'`). `trial_reminder_sent_at` stamps prevent re-sending.
+- **`trial_gate` middleware** at FastAPI app level blocks POST/PATCH/PUT/DELETE writes with **402 + {trial_expired:true}** when the trial expired and no active subscription exists. GETs always pass through (read-only mode preserved). Allowlist: `/api/auth/`, `/api/billing/`, `/api/webhook/stripe`, `/api/notifications`.
+- **Frontend**:
+  - `useTier()` hook extended with `onTrial`, `trialDaysLeft`, `trialExpired`, `readOnly`, `trialEndsAt`, `refresh`.
+  - **Dashboard active-trial banner** (`trial-active-banner`): black bar with yellow "FREE TRIAL · N DAYS LEFT" eyebrow, headline, module list, Choose-plan CTA, dismissable (`localStorage.trial_banner_dismissed_v1`).
+  - **Dashboard expired-trial banner** (`trial-expired-banner`): red bar, "READ-ONLY MODE — TRIAL ENDED", non-dismissable, prominent Choose-plan CTA. Hidden for active subscribers.
+  - **Dashboard "Apps & Add-ons" card grid** (`apps-addons-section`): 4 cards (TradeInduct/TradeCheck/Academy/Mobile Worker) with icons, blurbs, "ALL UNLOCKED IN TRIAL" yellow chip when on trial.
+  - **Sidebar reorg**: `ECOSYSTEM` renamed to **APPS & ADD-ONS** (yellow eyebrow), section moved from bottom to right under Settings (top half of sidebar). All 7 nav items unchanged: TradeInduct, TradeCheck, Academy, Partner Portal, Partner · Branding, Automations, Webhooks, Mobile Worker.
+  - `api.js` 402 interceptor surfaces a sonner toast on trial-expired writes.
+- Tested 8/8 backend + 18/18 iter18 regression + frontend e2e (active banner show/dismiss/persist, expired banner, apps grid, sidebar nav, route navigation, 402 on write) — zero issues (iteration_19.json).
+
 ---
 
 ## Backend endpoints (current summary)

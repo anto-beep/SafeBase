@@ -156,6 +156,13 @@ def make_jwt(user_id: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
 
+# Free-trial config — used by register, google-session, my-subscription, and
+# the trial_gate middleware. Kept near auth helpers so all auth/registration
+# paths reference the single source of truth.
+TRIAL_LENGTH_DAYS = 14
+TRIAL_REMINDER_DAY = 10  # send reminder when (TRIAL_LENGTH_DAYS - day) days remain
+
+
 async def get_current_user(
     request: Request,
     authorization: Optional[str] = Header(None),
@@ -231,7 +238,7 @@ async def register(body: RegisterIn):
         "password_hash": hash_password(body.password),
         "created_at": now.isoformat(),
         "trial_started_at": now.isoformat(),
-        "trial_ends_at": (now + timedelta(days=14)).isoformat(),
+        "trial_ends_at": (now + timedelta(days=TRIAL_LENGTH_DAYS)).isoformat(),
         "subscription_status": "trial",
     }
     await db.users.insert_one(doc)
@@ -2072,8 +2079,6 @@ async def billing_status(session_id: str, request: Request, current_user: User =
     return txn
 
 
-TRIAL_LENGTH_DAYS = 14
-TRIAL_REMINDER_DAY = 10  # send reminder when only (14-10)=4 days remain
 RESEND_API_KEY_ENV = os.environ.get("RESEND_API_KEY", "")
 
 
