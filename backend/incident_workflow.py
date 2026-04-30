@@ -528,6 +528,122 @@ def register_incident_workflow(app_db, get_current_user):
         })
         return {"reopened": True}
 
+    # ---------------------- RISK REGISTER LOOP ----------------------
+
+    @inc_router.post("/incident-workflow/{incident_id}/accept-risk-draft")
+    async def accept_risk_draft(incident_id: str, body: dict, current_user=Depends(get_current_user)):
+        """Create a new risk record from an AI draft and link it back to this
+        incident. Used by the close-out "Create Risk Register entry from this
+        incident" prompt. Body should include the finalised risk fields; we
+        always force linked_incident_ids to include this incident."""
+        existing = await app_db.incident_workflow.find_one(
+            {"incident_id": incident_id, "user_id": current_user.user_id}
+        )
+        if not existing:
+            raise HTTPException(404, "not found")
+
+        # Allocate a new RISK-### for this user
+        res = await app_db.risk_counters.find_one_and_update(
+            {"user_id": current_user.user_id},
+            {"$inc": {"seq": 1}},
+            upsert=True,
+            return_document=True,
+        )
+        seq = (res or {}).get("seq") or 1
+        risk_id = f"RISK-{seq:03d}"
+
+        now = _now_iso()
+        # Sensible defaults from the closed incident
+        inv = existing.get("investigation") or {}
+        triage = existing.get("triage") or {}
+        submission = existing.get("submission") or {}
+        derived_title = (body.get("title") or f"Risk derived from {existing.get('reference')}")[:100]
+        primary_hazard = body.get("primary_hazard") or ("Electrical" if "electric" in (submission.get("description", "").lower()) else "Other")
+        doc = {
+            "user_id": current_user.user_id,
+            "risk_id": risk_id,
+            "title": derived_title,
+            "status": "active",
+            "process_id": body.get("process_id"),
+            "process_name": body.get("process_name"),
+            "activity_id": body.get("activity_id"),
+            "activity_name": body.get("activity_name"),
+            "task_ids": body.get("task_ids", []),
+            "task_names": body.get("task_names", []),
+            "primary_hazard": primary_hazard,
+            "secondary_hazard": body.get("secondary_hazard"),
+            "hazard_description": body.get("hazard_description") or submission.get("description", "")[:500],
+            "at_risk": body.get("at_risk", []),
+            "description": body.get("description") or inv.get("root_cause") or "Auto-drafted from closed incident. Review before use.",
+            "risk_owner": body.get("risk_owner") or existing.get("created_by_name"),
+            "sites": [submission.get("site")] if submission.get("site") else [],
+            "date_identified": now,
+            "source": "Incident or Near Miss",
+            "linked_incident_ids": list(set((body.get("linked_incident_ids") or []) + [incident_id, existing.get("reference")])),
+            "linked_swms_ids": body.get("linked_swms_ids", []),
+            "linked_inspection_ids": [],
+            "linked_toolbox_ids": [],
+            "inherent_likelihood": int(body.get("inherent_likelihood") or 3),
+            "inherent_consequence": int(body.get("inherent_consequence") or min(5, max(2, (existing.get("severity") or 3)))),
+            "controls": body.get("controls", []),
+            "residual_likelihood": body.get("residual_likelihood"),
+            "residual_consequence": body.get("residual_consequence"),
+            "residual_acceptable": body.get("residual_acceptable", "no"),
+            "residual_conditions": body.get("residual_conditions", ""),
+            "additional_actions": body.get("additional_actions", []),
+            "review_frequency": body.get("review_frequency", "quarterly"),
+            "next_review_date": (datetime.now(timezone.utc) + timedelta(days=90)).isoformat(),
+            "notify_days_before": 14,
+            "notify_safety_manager": True,
+            "triggers": {
+                "on_new_incident": True, "on_failed_inspection": True,
+                "on_swms_update": True, "on_near_miss": True,
+            },
+            "last_reviewed_at": None,
+            "acknowledged_by": None,
+            "created_at": now,
+            "updated_at": now,
+            "derived_from_incident_id": incident_id,
+            "audit_log": [{
+                "at": now, "user_id": current_user.user_id, "user_name": current_user.name,
+                "field": "__created__",
+                "old": None,
+                "new": f"Auto-drafted from incident {existing.get('reference')}",
+            }],
+        }
+        # Compute scores
+        il = (doc.get("inherent_likelihood") or 0) * (doc.get("inherent_consequence") or 0)
+        rl = (doc.get("residual_likelihood") or 0) * (doc.get("residual_consequence") or 0)
+        doc["inherent_score"] = il
+        doc["residual_score"] = rl
+
+        def _lvl(s):
+            if not s: return None
+            if s <= 5: return "low"
+            if s <= 11: return "medium"
+            if s <= 19: return "high"
+            return "extreme"
+        doc["inherent_level"] = _lvl(il)
+        doc["residual_level"] = _lvl(rl)
+
+        await app_db.risks.insert_one({**doc})
+
+        # Link risk back onto incident
+        audit = existing.get("audit_log") or []
+        audit.append(_audit_entry(current_user, "linked_risk_id", existing.get("linked_risk_id"), risk_id))
+        await app_db.incident_workflow.update_one(
+            {"incident_id": incident_id, "user_id": current_user.user_id},
+            {"$set": {"linked_risk_id": risk_id, "updated_at": now, "audit_log": audit}},
+        )
+        await _notify(app_db, current_user.user_id, {
+            "channel": "in_app", "type": "risk_from_incident",
+            "title": f"Risk register entry created — {risk_id}",
+            "body": f"Derived from incident {existing.get('reference')}. Review controls and residual score.",
+            "severity": "info", "incident_id": incident_id,
+        })
+        doc.pop("_id", None)
+        return {"created": True, "risk_id": risk_id, "risk": doc}
+
     # ---------------------- AI ----------------------
 
     async def _call_claude(system, prompt, fallback, LlmChat, UserMessage, key):
@@ -605,6 +721,71 @@ def register_incident_workflow(app_db, get_current_user):
             sys = "You are a WHS learning-and-development writer. 2-3 sentences."
             prompt = (f"Incident context: {_json.dumps(body)[:3500]}\n\n"
                       "Return JSON: {lessons_learned}. No prose outside JSON.")
+            return await _call_claude(sys, prompt, fallback, LlmChat, UserMessage, llm_key)
+
+        @inc_router.post("/incident-workflow/{incident_id}/ai/suggest-risk-draft")
+        async def ai_suggest_risk_draft(incident_id: str, current_user=Depends(get_current_user)):
+            """Build an AI-drafted Risk Register entry using root cause +
+            contributing factors from the investigation, plus the incident's
+            severity + description. Called from the close-out prompt."""
+            doc = await app_db.incident_workflow.find_one(
+                {"incident_id": incident_id, "user_id": current_user.user_id}, {"_id": 0})
+            if not doc:
+                raise HTTPException(404, "incident not found")
+            inv = doc.get("investigation") or {}
+            sev = int(doc.get("severity") or 3)
+            fallback_sugg_controls = [
+                {"name": "Strengthen pre-start risk review", "hierarchy_level": "administrative",
+                 "description": "Formal pre-start briefing covering identified root cause + control gaps.",
+                 "effectiveness": "medium"},
+                {"name": "Update SWMS with learnings", "hierarchy_level": "administrative",
+                 "description": "Revise the relevant SWMS to reflect the incident findings.",
+                 "effectiveness": "medium"},
+                {"name": "Supervisor sign-off before high-risk work", "hierarchy_level": "administrative",
+                 "description": "Require documented sign-off by a supervisor before commencing.",
+                 "effectiveness": "medium"},
+            ]
+            fallback = {
+                "title": (doc.get("title") or "Risk derived from incident")[:100],
+                "primary_hazard": "Other",
+                "hazard_description": (doc.get("submission") or {}).get("description", "")[:500],
+                "description": inv.get("root_cause") or "Auto-drafted — review root cause and controls.",
+                "inherent_likelihood": 3,
+                "inherent_consequence": max(2, min(5, sev)),
+                "residual_likelihood": 2,
+                "residual_consequence": max(2, min(4, sev - 1)),
+                "suggested_controls": fallback_sugg_controls,
+                "review_frequency": "quarterly",
+            }
+            sys = (
+                "You are a senior WHS risk assessor for Australian tradie businesses. "
+                "Draft a Risk Register entry derived from a closed incident. Use the "
+                "root cause + contributing factors identified in the investigation. "
+                "Favour elimination/substitution/engineering controls where possible."
+            )
+            payload = {
+                "title": doc.get("title"),
+                "severity": sev,
+                "description": (doc.get("submission") or {}).get("description", ""),
+                "category": doc.get("incident_type"),
+                "root_cause": inv.get("root_cause"),
+                "contributing_factors": inv.get("factors"),
+                "immediate_cause": inv.get("immediate_cause"),
+            }
+            prompt = (
+                f"Closed incident: {_json.dumps(payload)[:3500]}\n\n"
+                "Return JSON: {title (<=100 chars), primary_hazard "
+                "(one of Electrical|Mechanical|Chemical / Hazardous Substance|"
+                "Physical / Ergonomic|Biological|Psychosocial|Environmental|"
+                "Fire / Explosion|Height / Fall|Confined Space|Vehicle / Traffic|"
+                "Noise|Radiation|Temperature Extremes|Other), hazard_description, "
+                "description (root cause framed as a risk), inherent_likelihood (1-5), "
+                "inherent_consequence (1-5), residual_likelihood (1-5), "
+                "residual_consequence (1-5), suggested_controls: [{name, hierarchy_level "
+                "(elimination|substitution|isolation|engineering|administrative|ppe), "
+                "description, effectiveness (high|medium|low)}], review_frequency "
+                "(monthly|quarterly|6-monthly|annually)}. No prose outside JSON."
+            )
             return await _call_claude(sys, prompt, fallback, LlmChat, UserMessage, llm_key)
 
     return inc_router, register_ai_routes, REGULATOR_BY_STATE
