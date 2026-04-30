@@ -56,6 +56,14 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
   4. Dashboard: unique incident sites > 5 → sites-variant upsell banner
 - All prices across /pricing, /enterprise, /compare, /fine-calculator, /dashboard plan banner, Billing panel show "+ GST" strictly
 
+### Iteration 13 — Nav consolidation + ROI calc + White-label Partner Branding (Feb 2026)
+- Marketing nav: all labels UPPERCASE; Compare & Blog consolidated under RESOURCES dropdown
+- `/tools/fine-calculator` now includes a 4-plan comparison grid with Enterprise card
+- `/enterprise` **ROI calculator** (users × hours × A$120/hr vs A$1,299/mo) — live sliders, monthly net gain, 12-month net, multiple-of-investment, CTA to /enterprise#demo
+- **White-label Partner Branding** (`/dashboard/partner/branding`): 5-tab config (Identity, Colours, Custom Domain, Messages, Email) + Desktop/Mobile/Email live preview
+- Backend: `GET/PUT /api/partner/branding` (Level-1 server-side gating), `POST /api/partner/branding/verify-dns` (MVP stub), `POST /api/partner/branding/test-email` (dry-run)
+- Assets stored as base64 data URLs (≤500 KB); `partnership_level` default 1 gates custom domain + "Powered by" hide
+
 ---
 
 ## Backend endpoints (current summary)

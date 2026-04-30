@@ -1775,9 +1775,12 @@ BRANDING_DEFAULTS = {
 @api_router.get("/partner/branding")
 async def get_partner_branding(current_user: User = Depends(get_current_user)):
     doc = await db.partner_branding.find_one({"user_id": current_user.user_id}, {"_id": 0})
-    if not doc:
-        return {"user_id": current_user.user_id, **BRANDING_DEFAULTS}
-    return doc
+    # Always merge defaults on top so the frontend receives a complete shape
+    # regardless of which keys were previously persisted.
+    merged = {**BRANDING_DEFAULTS, "user_id": current_user.user_id}
+    if doc:
+        merged.update(doc)
+    return merged
 
 
 @api_router.put("/partner/branding")
