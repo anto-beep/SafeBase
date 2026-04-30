@@ -812,6 +812,126 @@ async def update_onboarding(body: OnboardingIn, current_user: User = Depends(get
 
 
 
+# ============================================================
+# GENERIC SAFETY MODULES (batch b)
+# toolbox_talks | plant | substances | inspections | risks | first_aid | ppe
+# ============================================================
+_SAFETY_MODULES = {"toolbox_talks", "plant", "substances", "inspections", "risks", "first_aid", "ppe"}
+_ID_PREFIX = {
+    "toolbox_talks": "tbt", "plant": "plt", "substances": "sub",
+    "inspections": "ins", "risks": "rsk", "first_aid": "fa", "ppe": "ppe",
+}
+
+
+def _validate_module(module: str):
+    if module not in _SAFETY_MODULES:
+        raise HTTPException(404, f"Unknown safety module: {module}")
+
+
+def _compute_risk_level(likelihood: int, consequence: int) -> str:
+    score = (likelihood or 0) * (consequence or 0)
+    if score <= 4:
+        return "low"
+    if score <= 9:
+        return "medium"
+    if score <= 15:
+        return "high"
+    return "extreme"
+
+
+def _enrich(module: str, item: dict) -> dict:
+    """Add computed fields by module type."""
+    if module == "risks":
+        item["inherent_score"] = (item.get("likelihood") or 0) * (item.get("consequence") or 0)
+        item["inherent_level"] = _compute_risk_level(item.get("likelihood"), item.get("consequence"))
+        if item.get("residual_likelihood") and item.get("residual_consequence"):
+            item["residual_score"] = item["residual_likelihood"] * item["residual_consequence"]
+            item["residual_level"] = _compute_risk_level(item["residual_likelihood"], item["residual_consequence"])
+    if module in ("plant", "ppe"):
+        # status based on next_inspection / next_service
+        now = datetime.now(timezone.utc)
+        for date_field in ("next_inspection", "next_service", "rego_expiry"):
+            v = item.get(date_field)
+            if v:
+                try:
+                    d = datetime.fromisoformat(v).replace(tzinfo=timezone.utc)
+                    days = (d - now).days
+                    item[f"{date_field}_days"] = days
+                except Exception:
+                    pass
+    if module == "toolbox_talks":
+        # default status
+        item.setdefault("status", "scheduled")
+    return item
+
+
+@api_router.get("/safety/summary")
+async def safety_summary(current_user: User = Depends(get_current_user)):
+    """Returns counts per module for dashboard widgets. Must be defined BEFORE generic /safety/{module}."""
+    out = {}
+    for m in _SAFETY_MODULES:
+        out[m] = await db[f"safety_{m}"].count_documents({"user_id": current_user.user_id})
+    return out
+
+
+@api_router.get("/safety/{module}")
+async def list_safety_items(module: str, current_user: User = Depends(get_current_user)):
+    _validate_module(module)
+    items = await db[f"safety_{module}"].find(
+        {"user_id": current_user.user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(500)
+    return [_enrich(module, i) for i in items]
+
+
+@api_router.post("/safety/{module}")
+async def create_safety_item(module: str, body: dict, current_user: User = Depends(get_current_user)):
+    _validate_module(module)
+    item_id = f"{_ID_PREFIX[module]}_{uuid.uuid4().hex[:10]}"
+    doc = {
+        "item_id": item_id,
+        "user_id": current_user.user_id,
+        "module": module,
+        **body,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db[f"safety_{module}"].insert_one({**doc})
+    return _enrich(module, doc)
+
+
+@api_router.patch("/safety/{module}/{item_id}")
+async def update_safety_item(module: str, item_id: str, body: dict, current_user: User = Depends(get_current_user)):
+    _validate_module(module)
+    updates = {k: v for k, v in body.items() if k not in ("_id", "user_id", "item_id", "created_at")}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db[f"safety_{module}"].update_one(
+        {"item_id": item_id, "user_id": current_user.user_id},
+        {"$set": updates},
+    )
+    doc = await db[f"safety_{module}"].find_one(
+        {"item_id": item_id, "user_id": current_user.user_id}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(404, "Not found")
+    return _enrich(module, doc)
+
+
+@api_router.delete("/safety/{module}/{item_id}")
+async def delete_safety_item(module: str, item_id: str, current_user: User = Depends(get_current_user)):
+    _validate_module(module)
+    res = await db[f"safety_{module}"].delete_one(
+        {"item_id": item_id, "user_id": current_user.user_id}
+    )
+    return {"deleted": res.deleted_count}
+
+
+
+
+
+
+
+
+
 
 # ----------- INCLUDE & MIDDLEWARE -----------
 app.include_router(api_router)

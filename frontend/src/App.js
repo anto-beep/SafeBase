@@ -15,6 +15,12 @@ import Workers from "@/pages/Workers";
 import Licences from "@/pages/Licences";
 import Notifications from "@/pages/Notifications";
 import Settings from "@/pages/Settings";
+import ToolboxTalks from "@/pages/safety/ToolboxTalks";
+import Plant from "@/pages/safety/Plant";
+import Substances from "@/pages/safety/Substances";
+import Inspections from "@/pages/safety/Inspections";
+import RiskRegister from "@/pages/safety/RiskRegister";
+import FirstAidPpe from "@/pages/safety/FirstAidPpe";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -71,6 +77,12 @@ function AppRouter() {
         <Route path="licences" element={<Licences />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="toolbox-talks" element={<ToolboxTalks />} />
+        <Route path="plant" element={<Plant />} />
+        <Route path="substances" element={<Substances />} />
+        <Route path="inspections" element={<Inspections />} />
+        <Route path="risks" element={<RiskRegister />} />
+        <Route path="first-aid-ppe" element={<FirstAidPpe />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

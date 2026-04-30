@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 
 const NAV = [
@@ -13,6 +13,15 @@ const NAV = [
   { to: "/dashboard/workers", label: "Workers", icon: Users },
   { to: "/dashboard/licences", label: "Licences", icon: IdentificationBadge },
   { to: "/dashboard/notifications", label: "Alerts", icon: Bell },
+];
+
+const SAFETY_NAV = [
+  { to: "/dashboard/toolbox-talks", label: "Toolbox Talks", icon: ChatCircleText },
+  { to: "/dashboard/plant", label: "Plant", icon: Truck },
+  { to: "/dashboard/substances", label: "Substances", icon: Flask },
+  { to: "/dashboard/inspections", label: "Inspections", icon: ClipboardText },
+  { to: "/dashboard/risks", label: "Risk Register", icon: Warning },
+  { to: "/dashboard/first-aid-ppe", label: "First Aid & PPE", icon: FirstAidKit },
 ];
 
 export default function DashboardLayout() {
@@ -72,6 +81,21 @@ export default function DashboardLayout() {
           <NavLink to="/dashboard/settings" data-testid="nav-settings" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
             <Gear size={18} weight="bold" /> Settings
           </NavLink>
+          <div className="mt-5 px-3 label-eyebrow text-white/40">Safety</div>
+          {SAFETY_NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '')}`}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 text-sm ${
+                  isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                }`
+              }
+            >
+              <item.icon size={18} weight="bold" /> {item.label}
+            </NavLink>
+          ))}
         </nav>
         <div className="p-4 border-t border-white/10">
           <div className="text-sm font-bold truncate">{user?.name}</div>

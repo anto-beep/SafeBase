@@ -1,0 +1,62 @@
+{
+  "summary": "Iteration 4: Batch (b) Core Safety Modules end-to-end test. Backend: 54/54 pytest pass — auth-guard on all 8 /safety/* paths, summary returns 7 module keys (route-ordering fix verified), CRUD on all 7 modules, risks inherent_score/level threshold matrix (low/medium/high/extreme), plant *_days computation, 404 on unknown module, mongo _id never leaked. Frontend: All 6 sidebar routes register and render correct H1 + Add button; sidebar SAFETY_NAV nav-* testids navigate correctly; Toolbox Talks Add→list→Delete works fully E2E; Settings/Notifications/Documents/Incidents/Workers/Licences regression OK. CRITICAL INTEGRATION BUG: Risk Register Add via UI returns 500 — frontend Select sends likelihood/consequence as STRINGS but backend _enrich does likelihood*consequence which raises TypeError 'can't multiply sequence by non-int of type str'. Backend tests masked this because pytest sent ints.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/safety/risks",
+        "issue": "Returns 500 when likelihood/consequence arrive as numeric strings (which the frontend Select sends). server.py _enrich() at lines 845-849 does `item.get('likelihood') * item.get('consequence')` without int() coercion, raising TypeError. Backend logs: 'TypeError: can\\'t multiply sequence by non-int of type str'. This breaks the end-to-end Risk Register UI flow even though pytest passes (pytest sends ints).",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "DialogContent (all SafetyModulePage dialogs)",
+        "issue": "Console warning: 'Missing Description or aria-describedby={undefined} for {DialogContent}' on every safety dialog open. Not blocking but a11y warning.",
+        "selector": "[role='dialog']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Risk Register → Add Risk",
+        "issue": "Submitting the Risk dialog with category + likelihood=5 + consequence=5 returns 500 from POST /api/safety/risks. The new row never appears in the table. Same root cause as backend critical above (string × string in _enrich). Affects ALL risk creates from UI because RiskRegister.jsx maps SCORES via String(n) and SafetyModulePage only coerces fields whose type is 'number' (likelihood/consequence are type 'select').",
+        "affected_selectors": ["[data-testid=\"risks-submit-btn\"]", "[data-testid=\"risks-f-likelihood\"]", "[data-testid=\"risks-f-consequence\"]"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_safety_modules.py",
+    "/app/test_reports/pytest/iter4_safety.xml"
+  ],
+  "action_items": [
+    "FIX (backend, recommended): In server.py _enrich() (lines 845-849), coerce likelihood/consequence/residual_* to int before multiply, e.g. `lk = int(item.get('likelihood') or 0); cq = int(item.get('consequence') or 0); item['inherent_score'] = lk * cq`. Same for residual fields. Also coerce in the doc itself so stored values are ints (or store coerced numbers in create_safety_item too).",
+    "ALTERNATIVE FIX (frontend): In SafetyModulePage.jsx submit(), additionally coerce select fields whose options.v are numeric strings — but backend coercion is safer because field schemas live in each page.",
+    "OPTIONAL: Add aria-describedby (or DialogDescription) to DialogContent inside SafetyModulePage to silence Radix a11y warning.",
+    "OPTIONAL: Patch endpoint should also re-_enrich() on PATCH responses for risks (currently it does — verified) and plant; confirmed working but worth re-checking after coercion fix."
+  ],
+  "critical_code_review_comments": [
+    "server.py:845-849 — Missing int() coercion is the root cause of the integration 500. Pydantic body model is `dict` (free-form) so no auto-coercion. Recommend adding a typed RiskCreate Pydantic model OR int() guards in _enrich.",
+    "server.py:887 — `body: dict` accepts anything. Stored doc retains the raw types from the client; combined with the multiply op above, this is fragile. Consider per-module Pydantic models.",
+    "SafetyModulePage.jsx:46-50 — Number coercion only applies to fields with type==='number'. Select fields with numeric values are passed through as strings. Either special-case selects with numeric option.v or add a `coerce: 'number'` field flag.",
+    "RiskRegister.jsx:10 — `SCORES = [1,2,3,4,5].map(n => ({v: String(n), ...}))` — using String(n) is what triggers the backend issue. Could keep numbers but Radix Select requires string values; backend coercion is the cleaner fix.",
+    "server.py:856-861 — Plant date parsing silently swallows ParseException; consider logging at debug level so bad ISO strings are visible.",
+    "All safety endpoints: no pagination beyond `.to_list(500)`. Acceptable for MVP."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_safety_modules.py (new, 54 tests, all pass)"
+  ],
+  "success_rate": {
+    "backend": "100% (54/54 pytest pass)",
+    "frontend": "~85% — 5 of 6 safety modules CRUD-able, sidebar+routes+regression all good, ONLY Risk Register Add broken end-to-end due to backend 500"
+  },
+  "test_credentials": "owner@safetradie.demo / Demo@1234 — login worked; used for all tests.",
+  "seed_data_creation": "Tests create-and-delete TEST_-prefixed records in safety_* collections; cleaned up via DELETE in teardown. Pre-existing orphan rows (1 in toolbox_talks, 1 in risks) from prior test runs were cleaned via API before frontend run.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run /app/backend/tests/test_safety_modules.py for full backend regression (covers auth-guard, summary route ordering, CRUD on all 7 modules, risk threshold matrix, plant *_days, 404). After main agent fixes the int coercion in server.py _enrich(), re-test the Risk Register UI flow specifically: login → /dashboard/risks → Add → fill title+category+likelihood=5+consequence=5 → submit → verify EXTREME · 25 badge appears in row → delete. Backend route-ordering for /api/safety/summary is verified correct. ToolboxTalks UI CRUD already verified passing E2E. Sidebar nav-toolbox-talks, nav-plant, nav-substances, nav-inspections, nav-risk-register, nav-first-aid--ppe testids all work. Note the unusual double-dash in nav-first-aid--ppe (label 'First Aid & PPE' → testid generation drops & to '').",
+  "rca of the issue": "RCA: Frontend SafetyModulePage submits form values as-is for select-type fields. RiskRegister.jsx defines SCORES with String(n) values to satisfy Radix Select's string-only contract. Backend POST /safety/risks accepts free-form dict and stores as-is, then calls _enrich() which does `item.get('likelihood') * item.get('consequence')` — when both are strings, Python raises TypeError leading to 500. Reproduce: login as owner@safetradie.demo → /dashboard/risks → Add → pick any category, likelihood, consequence → Submit. Toast shows 'Failed', console shows 500 on POST /api/safety/risks. Mitigation: in server.py around line 845, replace `item['inherent_score'] = (item.get('likelihood') or 0) * (item.get('consequence') or 0)` with int-coerced version: `try: lk = int(item.get('likelihood') or 0); cq = int(item.get('consequence') or 0); except: lk=cq=0; item['inherent_score'] = lk*cq; item['inherent_level'] = _compute_risk_level(lk, cq)`. Apply same pattern for residual_likelihood/residual_consequence."
+}
