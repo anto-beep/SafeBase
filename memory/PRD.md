@@ -95,6 +95,16 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - Post-save the banner is replaced by a green **Risk Register entry linked** card with Open-risk CTA.
 - Tested 9/9 pytest + full FE Playwright smoke (iteration_16.json) — no issues.
 
+### Iteration 17 — Reverse loop: Risk Review → Toolbox Talk + SWMS Revision (Feb 2026)
+- **RemediationPrompt** card on Risk Review form (between sections 3 and 4) — visible when `control_reviews` has rows with `effectiveness in {not, partial}` OR `still_in_place in {no, partial}` OR `recommended_change in {improve, replace, remove, supplement}`, and no remediation already linked.
+- Copy: "N control(s) flagged — close the loop with a Toolbox Talk & SWMS revision?" · lists failing controls.
+- `POST /api/risk-reviews/{id}/ai/draft-remediation` → Claude Sonnet 4.5 drafts a **Toolbox Talk** (topic, objective, 5-7 key_points, 3 worker_questions, sign_off_prompt) AND a **SWMS Revision Task** (title, summary, 4-7 concrete changes, priority). Fallback skeleton on LLM failure; `no_failing:true` returned when review has no failing rows.
+- Modal with two tabs (Toolbox Talk / SWMS Revision), every field editable, three CTAs: Create Toolbox Talk only · Create SWMS Revision only · Create both.
+- `POST /api/risk-reviews/{id}/accept-remediation` → (1) inserts `safety_toolbox_talks` doc (default scheduled_at = +7d, source='risk_review_remediation', linked_review_id, linked_risk_id), (2) inserts `swms_revision_tasks` doc (new collection; default due_date = +14d, status='open'), (3) writes `review.remediation = {drafted_at, accepted_at, toolbox_talk_id, toolbox_talk_topic, swms_revision_id, swms_revision_title}`, (4) appends `remediation_created` audit entry on the risk, (5) emits `risk_remediation_created` in-app notification. Returns 400 if neither body present.
+- **SWMS Revisions page** `/dashboard/swms-revisions` — 4 KPI cards (Total/Open/High priority/Completed), sortable table with HIGH/MEDIUM/LOW chips, expandable change list, status select (open/in_progress/completed/cancelled), Done button that sets `completed_at`. `GET/PATCH /api/swms-revisions` endpoints.
+- Sidebar nav: "SWMS Revisions" added under Safety between Risk Register and First Aid & PPE.
+- Backend: `risk_module.py` now ~1200 lines — tested 14/14 pytest pass + FE smoke (iteration_17.json).
+
 ---
 
 ## Backend endpoints (current summary)
