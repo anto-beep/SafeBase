@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   ArrowRight, FileText, Warning, IdentificationBadge, Users, ChartLineUp, Sparkle,
-  Lightbulb, Siren, Clock, CheckCircle, Bell, Buildings
+  Lightbulb, Siren, Clock, CheckCircle, Bell, Buildings, X, QrCode, ShieldCheck,
+  GraduationCap, DeviceMobile, Lock,
 } from "@phosphor-icons/react";
 import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
 import useTier from "@/hooks/useTier";
@@ -53,7 +54,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [sitesUpsellOpen, setSitesUpsellOpen] = useState(false);
   const [competency, setCompetency] = useState(null);
-  const { isEnterprise } = useTier();
+  const [trialBannerDismissed, setTrialBannerDismissed] = useState(
+    typeof window !== "undefined" && localStorage.getItem("trial_banner_dismissed_v1") === "1"
+  );
+  const { isEnterprise, onTrial, trialDaysLeft, trialExpired, readOnly } = useTier();
 
   // Stripe checkout return handler: poll billing status until paid (up to ~20s)
   useEffect(() => {
@@ -113,6 +117,59 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6" data-testid="dashboard-overview">
+      {/* Trial expired — read-only banner (top priority, non-dismissable) */}
+      {readOnly && (
+        <div className="bg-red-700 text-white border-2 border-red-700 p-5 flex items-start gap-3" data-testid="trial-expired-banner">
+          <Lock weight="fill" size={28} className="shrink-0 mt-1 text-warning" />
+          <div className="flex-1">
+            <div className="label-eyebrow text-warning">READ-ONLY MODE — TRIAL ENDED</div>
+            <h2 className="font-display text-xl md:text-2xl font-black mt-1">
+              Your free trial has ended. Pick a plan to keep building.
+            </h2>
+            <p className="text-sm text-white/80 mt-1">
+              All your data is preserved — you can still view + export everything.
+              Choose a plan to unlock create &amp; edit again.
+            </p>
+          </div>
+          <Link to="/dashboard/settings?tab=billing" className="shrink-0">
+            <Button className="btn-sharp bg-warning text-ink hover:bg-yellow-400 h-11" data-testid="trial-expired-cta">
+              Choose plan <ArrowRight className="ml-2" />
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {/* Active trial banner — dismissable */}
+      {onTrial && !trialExpired && !trialBannerDismissed && trialDaysLeft != null && (
+        <div className="bg-ink text-white border-2 border-ink p-5 relative" data-testid="trial-active-banner">
+          <button
+            type="button"
+            onClick={() => { localStorage.setItem("trial_banner_dismissed_v1", "1"); setTrialBannerDismissed(true); }}
+            className="absolute top-2 right-2 text-white/60 hover:text-white"
+            aria-label="Dismiss"
+            data-testid="trial-banner-dismiss"
+          ><X size={18} /></button>
+          <div className="flex items-start gap-3 flex-wrap">
+            <Sparkle weight="fill" size={28} className="shrink-0 mt-1 text-warning" />
+            <div className="flex-1 min-w-[260px]">
+              <div className="label-eyebrow text-warning">FREE TRIAL · {trialDaysLeft} DAY{trialDaysLeft === 1 ? "" : "S"} LEFT</div>
+              <h2 className="font-display text-xl md:text-2xl font-black mt-1">
+                Full access to every module &amp; add-on — no card required.
+              </h2>
+              <p className="text-sm text-white/80 mt-1">
+                SWMS · Incidents · Risk Register · Toolbox Talks · TradeInduct · TradeCheck ·
+                Academy · Automations · Worker PWA. Add a plan anytime to lock in your data.
+              </p>
+            </div>
+            <Link to="/dashboard/settings?tab=billing" className="shrink-0">
+              <Button className="btn-sharp bg-warning text-ink hover:bg-yellow-400 h-11" data-testid="trial-banner-cta">
+                Choose a plan <ArrowRight className="ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-end justify-between flex-wrap gap-4 border-b border-border pb-6">
         <div>
           <div className="label-eyebrow">/ Overview · {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</div>
@@ -164,6 +221,45 @@ export default function Dashboard() {
             <div className="label-eyebrow mt-1">{c.label}</div>
           </Link>
         ))}
+      </div>
+
+      {/* Apps & Add-ons — discoverability for ecosystem (always visible) */}
+      <div className="bg-background border border-border p-5" data-testid="apps-addons-section">
+        <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <div className="label-eyebrow">/ Apps &amp; Add-ons</div>
+            <h2 className="font-display text-xl md:text-2xl font-black tracking-tighter mt-1">
+              Included with every SafeTradie plan
+            </h2>
+          </div>
+          {onTrial && !trialExpired && (
+            <span className="bg-warning text-ink px-2 py-1 text-[10px] font-bold tracking-widest" data-testid="apps-trial-pill">
+              ALL UNLOCKED IN TRIAL
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { to: "/dashboard/tradeinduct", label: "TradeInduct", icon: QrCode, blurb: "QR-based subbie inductions — capture details in 60 seconds." },
+            { to: "/dashboard/tradecheck", label: "TradeCheck", icon: ShieldCheck, blurb: "Verify any contractor's licences and insurances on the job site." },
+            { to: "/dashboard/academy", label: "Academy", icon: GraduationCap, blurb: "Worker micro-courses with certificates — link to the Competency Matrix." },
+            { to: "/worker", label: "Mobile Worker", icon: DeviceMobile, blurb: "Installable PWA — sign SWMS, see toolbox talks, photograph incidents." },
+          ].map((a) => (
+            <Link
+              key={a.to}
+              to={a.to}
+              className="group border border-border p-4 hover:border-ink hover:bg-warning transition-colors"
+              data-testid={`apps-card-${a.label.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <div className="flex items-start justify-between">
+                <a.icon size={28} weight="duotone" />
+                <ArrowRight className="opacity-40 group-hover:opacity-100 group-hover:text-ink" />
+              </div>
+              <div className="font-display text-lg font-black mt-3">{a.label}</div>
+              <div className="text-xs text-muted-foreground group-hover:text-ink mt-1">{a.blurb}</div>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Unbriefed workers × active hazards (reverse-loop telemetry) */}

@@ -1,0 +1,36 @@
+{
+  "summary": "Iter19 — 14-day Free Trial + Apps & Add-ons discoverability fully verified end-to-end. Backend pytest 8/8 in /app/backend/tests/test_iter19_trial.py: register stamps trial_started_at/trial_ends_at(+14d)/subscription_status='trial'; lazy backfill on legacy users via /api/billing/my-subscription; active subscription overrides (on_trial=false, read_only=false, trial_days_left=null); day-10 reminder lazy fire when trial_days_left<=4 (idempotent — second call did NOT re-stamp or re-emit notification, in-app notification with type='trial_ending_soon' inserted, RESEND_API_KEY absent so detail=no_resend_key as expected MOCKED); trial_gate middleware returns 402 + {detail, trial_expired:true} on POST /api/workers when trial expired with no active sub, GET /api/workers still 200, /api/billing/preview POST allow-listed (not 402); active subscription bypass verified with worker creation succeeding when trial_ends_at is past but tier=pro+status=active. Iter18 regression suite re-run 18/18 still passing. Frontend verified live on owner@safetradie.demo via Playwright on the public preview URL: trial-active-banner with 'FREE TRIAL · 14 DAYS LEFT' eyebrow + Sparkle icon + 'Choose a plan' CTA + dismiss-x — dismiss correctly sets localStorage.trial_banner_dismissed_v1='1', removes banner, and persists across reload; apps-addons-section grid renders all 4 apps-card-{tradeinduct,tradecheck,academy,mobile-worker} cards with apps-trial-pill 'ALL UNLOCKED IN TRIAL' yellow chip; sidebar shows 'APPS & ADD-ONS' yellow eyebrow with all 7 nav-app-* items (tradeinduct/tradecheck/academy/partner-portal/automations/webhooks/mobile-worker) above SAFETY section, old 'ECOSYSTEM' label gone; clicking apps-card-tradeinduct correctly navigates to /dashboard/tradeinduct (zero-gating verified). Expired-trial path tested via direct Mongo expiry of owner: trial-expired-banner appeared with 'READ-ONLY MODE — TRIAL ENDED' label + 'Choose plan' CTA, trial-active-banner hidden, GET /dashboard/workers still loaded fine, fetch POST /api/workers returned 402 (visible in browser console error log). Owner trial state restored after testing.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/dashboard (active trial banner)", "issues": ["Black bar with yellow Sparkle + 'FREE TRIAL · 14 DAYS LEFT' eyebrow looks great. Yellow CTA on dark background has strong contrast. Dismiss-x is small but discoverable in top-right."]},
+      {"screen": "/dashboard (expired-trial banner)", "issues": ["Red 'READ-ONLY MODE — TRIAL ENDED' bar with white text + yellow Choose-plan CTA: high-contrast and unambiguous. Non-dismissable (correctly — no dismiss-x rendered)."]},
+      {"screen": "/dashboard (Apps & Add-ons section)", "issues": ["4-card grid with QR/shield/cap/phone icons + 'ALL UNLOCKED IN TRIAL' yellow chip in top-right reads cleanly. Cards are clickable and route to module pages."]},
+      {"screen": "Sidebar", "issues": ["'APPS & ADD-ONS' yellow eyebrow now sits between Settings and Safety — top half of sidebar — as spec'd. ECOSYSTEM label fully removed. All 7 app nav items render correctly."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter19_trial.py",
+    "/app/test_reports/pytest/iter19_trial.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "trial_gate middleware: token decode duplicates get_current_user logic — extract a shared helper async def _resolve_user_from_request(request) -> Optional[dict] to keep middleware + dependency in lockstep on auth conventions.",
+    "_compute_trial: ceil-days math uses (seconds_left + 86399) // 86400 — correct for positive days but redundant max(0, ...) clamp since seconds_left>0 guarantees positive ceil. Minor.",
+    "_maybe_send_trial_reminder: stamps trial_reminder_sent_at + creates notification even when RESEND_API_KEY missing (delivered_via='in_app_only') — this is a deliberate MOCKED behavior and aligns with the spec. Confirmed in test_day10_reminder_lazy_and_idempotent.",
+    "register endpoint hardcodes +14d directly (line 234) while my-subscription path uses TRIAL_LENGTH_DAYS constant — pull the constant up so register/google-session reuse it (avoid drift).",
+    "trial_gate middleware silently returns call_next on user-not-found / parse-error — correct for downstream 401 handling but worth a debug log for observability.",
+    "Allow-list /api/notifications matches both reads + writes — fine since notifications are user-scoped and trivial; document the rationale in code comment.",
+    "Frontend useTier hook + Dashboard.jsx + DashboardLayout.jsx — clean implementation; localStorage dismissal key is versioned ('_v1') which is a nice future-proof touch."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter19_trial.py"],
+  "success_rate": {"backend": "100% (8/8 iter19 + 18/18 iter18 regression)", "frontend": "100% (banner show/dismiss/persist, expired banner, apps section, sidebar nav, route navigation, 402 on write all verified)"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (also see /app/memory/test_credentials.md). New register flow tested with email pattern @example.com (note: pydantic EmailStr rejects .test/.example/.invalid TLDs; tests use @example.com).",
+  "seed_data_creation": "Test creates one TEST_iter19_*@example.com user via POST /api/auth/register (cleaned in finally). Owner doc temporarily mutated (trial_ends_at past/future + tier/status flips) and restored in fixtures' finally blocks. trial_ending_soon notifications cleaned post-test. Cleanup pattern: db.users.delete_one({user_id}), db.notifications.delete_many({type:'trial_ending_soon'}), db.workers.delete_many({worker_id}).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run iter19 backend regression: `export $(grep -v ^# /app/frontend/.env | xargs) && export $(grep -v ^# /app/backend/.env | xargs) && pytest /app/backend/tests/test_iter19_trial.py -v`. To manually test expired-trial path: 1) python -c \"from pymongo import MongoClient; from datetime import datetime, timezone, timedelta; db=MongoClient('mongodb://localhost:27017')['test_database']; db.users.update_one({'email':'owner@safetradie.demo'},{'$set':{'trial_ends_at':(datetime.now(timezone.utc)-timedelta(days=1)).isoformat(),'subscription_status':'trial'},'$unset':{'subscription_tier':''}})\" 2) hit /api/billing/my-subscription → trial_expired=true 3) RESTORE: $set trial_ends_at to +14d. Auth token localStorage key is 'st_token'. Frontend testids verified live: trial-active-banner, trial-banner-dismiss, trial-banner-cta, trial-expired-banner, apps-addons-section, apps-card-{tradeinduct/tradecheck/academy/mobile-worker}, apps-trial-pill, nav-app-{tradeinduct/tradecheck/academy/partner-portal/automations/webhooks/mobile-worker}. Allow-list paths in trial_gate: /api/auth/, /api/billing/, /api/webhook/stripe, /api/notifications.",
+  "rca_of_the_issue": "N/A — feature works per spec end-to-end. One test-file fixup during run: pydantic EmailStr v2 rejects .test TLD as 'reserved name' (RFC 2606) so register test had to use @example.com domain instead of @x.test. Adjusted and re-run clean."
+}

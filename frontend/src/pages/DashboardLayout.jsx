@@ -42,14 +42,14 @@ const WORKFLOW_NAV = [
 ];
 
 const APPS_NAV = [
-  { to: "/dashboard/tradeinduct", label: "TradeInduct", icon: QrCode },
-  { to: "/dashboard/tradecheck", label: "TradeCheck", icon: ShieldCheck },
-  { to: "/dashboard/academy", label: "Academy", icon: GraduationCap },
-  { to: "/dashboard/partner", label: "Partner Portal", icon: Briefcase },
+  { to: "/dashboard/tradeinduct", label: "TradeInduct", icon: QrCode, blurb: "QR subbie inductions" },
+  { to: "/dashboard/tradecheck", label: "TradeCheck", icon: ShieldCheck, blurb: "Verify contractors" },
+  { to: "/dashboard/academy", label: "Academy", icon: GraduationCap, blurb: "Worker micro-learning" },
+  { to: "/dashboard/partner", label: "Partner Portal", icon: Briefcase, blurb: "Multi-client view" },
   { to: "/dashboard/partner/branding", label: "Partner · Branding", icon: Briefcase },
   { to: "/dashboard/automations", label: "Automations", icon: MagicWand },
   { to: "/dashboard/webhooks", label: "Webhooks", icon: Lightning },
-  { to: "/worker", label: "Mobile Worker", icon: DeviceMobile },
+  { to: "/worker", label: "Mobile Worker", icon: DeviceMobile, blurb: "Installable PWA" },
 ];
 
 export default function DashboardLayout() {
@@ -112,6 +112,21 @@ export default function DashboardLayout() {
           <NavLink to="/dashboard/settings" data-testid="nav-settings" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
             <Gear size={18} weight="bold" /> Settings
           </NavLink>
+          <div className="mt-5 px-3 label-eyebrow text-warning">Apps &amp; Add-ons</div>
+          {APPS_NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              data-testid={`nav-app-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 text-sm ${
+                  isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                }`
+              }
+            >
+              <item.icon size={18} weight="bold" /> {item.label}
+            </NavLink>
+          ))}
           <div className="mt-5 px-3 label-eyebrow text-white/40">Safety</div>
           {SAFETY_NAV.map((item) => (
             <NavLink
@@ -148,21 +163,6 @@ export default function DashboardLayout() {
               key={item.to}
               to={item.to}
               data-testid={`nav-lib-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 text-sm ${
-                  isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
-                }`
-              }
-            >
-              <item.icon size={18} weight="bold" /> {item.label}
-            </NavLink>
-          ))}
-          <div className="mt-5 px-3 label-eyebrow text-white/40">Ecosystem</div>
-          {APPS_NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              data-testid={`nav-app-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 text-sm ${
                   isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"

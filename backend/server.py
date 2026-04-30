@@ -220,6 +220,7 @@ async def register(body: RegisterIn):
     if existing:
         raise HTTPException(400, "Email already registered")
     user_id = f"user_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
     doc = {
         "user_id": user_id,
         "email": body.email.lower(),
@@ -228,7 +229,10 @@ async def register(body: RegisterIn):
         "company_name": body.company_name,
         "auth_provider": "email",
         "password_hash": hash_password(body.password),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now.isoformat(),
+        "trial_started_at": now.isoformat(),
+        "trial_ends_at": (now + timedelta(days=14)).isoformat(),
+        "subscription_status": "trial",
     }
     await db.users.insert_one(doc)
     token = make_jwt(user_id)
@@ -286,6 +290,7 @@ async def google_session(body: GoogleSessionIn, response: Response):
     user_doc = await db.users.find_one({"email": email}, {"_id": 0})
     if not user_doc:
         user_id = f"user_{uuid.uuid4().hex[:12]}"
+        now = datetime.now(timezone.utc)
         user_doc = {
             "user_id": user_id,
             "email": email,
@@ -293,7 +298,10 @@ async def google_session(body: GoogleSessionIn, response: Response):
             "picture": data.get("picture"),
             "role": "owner",
             "auth_provider": "google",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": now.isoformat(),
+            "trial_started_at": now.isoformat(),
+            "trial_ends_at": (now + timedelta(days=14)).isoformat(),
+            "subscription_status": "trial",
         }
         await db.users.insert_one({**user_doc})
     else:
@@ -2064,11 +2072,143 @@ async def billing_status(session_id: str, request: Request, current_user: User =
     return txn
 
 
+TRIAL_LENGTH_DAYS = 14
+TRIAL_REMINDER_DAY = 10  # send reminder when only (14-10)=4 days remain
+RESEND_API_KEY_ENV = os.environ.get("RESEND_API_KEY", "")
+
+
+async def _ensure_trial_fields(user: dict) -> dict:
+    """Lazy-backfill trial_started_at + trial_ends_at on legacy users so the
+    countdown works for accounts created before the trial system existed.
+    Returns the (possibly updated) user dict."""
+    if user.get("trial_ends_at"):
+        return user
+    started = user.get("trial_started_at") or user.get("created_at") or datetime.now(timezone.utc).isoformat()
+    try:
+        start_dt = datetime.fromisoformat(started.replace("Z", "+00:00")).replace(tzinfo=timezone.utc)
+    except Exception:
+        start_dt = datetime.now(timezone.utc)
+    ends_at = (start_dt + timedelta(days=TRIAL_LENGTH_DAYS)).isoformat()
+    update = {"trial_started_at": start_dt.isoformat(), "trial_ends_at": ends_at}
+    if not user.get("subscription_status"):
+        update["subscription_status"] = "trial"
+    await db.users.update_one({"user_id": user["user_id"]}, {"$set": update})
+    user.update(update)
+    return user
+
+
+def _compute_trial(user: dict) -> dict:
+    """Return {trial_days_left, trial_expired, read_only, on_trial}."""
+    has_active_sub = user.get("subscription_tier") and user.get("subscription_status") == "active"
+    if has_active_sub:
+        return {"on_trial": False, "trial_days_left": None,
+                "trial_expired": False, "read_only": False}
+    ends = user.get("trial_ends_at")
+    if not ends:
+        return {"on_trial": True, "trial_days_left": TRIAL_LENGTH_DAYS,
+                "trial_expired": False, "read_only": False}
+    try:
+        end_dt = datetime.fromisoformat(ends.replace("Z", "+00:00")).replace(tzinfo=timezone.utc)
+    except Exception:
+        return {"on_trial": True, "trial_days_left": TRIAL_LENGTH_DAYS,
+                "trial_expired": False, "read_only": False}
+    now = datetime.now(timezone.utc)
+    seconds_left = (end_dt - now).total_seconds()
+    days_left = max(0, int((seconds_left + 86399) // 86400))  # ceil
+    expired = seconds_left <= 0
+    return {"on_trial": True, "trial_days_left": days_left,
+            "trial_expired": expired, "read_only": expired}
+
+
+async def _maybe_send_trial_reminder(user: dict, trial_info: dict):
+    """Day-10 (i.e. ~4 days remaining) reminder. Idempotent — only sends if
+    not already sent. No-op when RESEND_API_KEY is unset (logs to a collection
+    so the day-10 stamp still records)."""
+    if not trial_info.get("on_trial") or trial_info.get("trial_expired"):
+        return
+    days_left = trial_info.get("trial_days_left") or 0
+    if days_left > (TRIAL_LENGTH_DAYS - TRIAL_REMINDER_DAY):
+        return  # too early
+    if user.get("trial_reminder_sent_at"):
+        return  # already sent
+    now_iso = datetime.now(timezone.utc).isoformat()
+    subject = f"Your SafeTradie free trial ends in {days_left} day{'s' if days_left != 1 else ''}"
+    html = (
+        "<div style=\"font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;\">"
+        "<div style=\"background:#0A0A0A;color:#FFCC00;padding:16px;font-weight:900;letter-spacing:-.02em;font-size:20px;\">SafeTradie</div>"
+        f"<h1 style=\"font-size:22px;margin:20px 0 12px;\">G'day {user.get('name','tradie').split(' ')[0]} — your trial ends in {days_left} day{'s' if days_left != 1 else ''}.</h1>"
+        "<p style=\"color:#444;line-height:1.6;font-size:14px;\">You've been getting full access to every SafeTradie module — SWMS, incidents, risk register, toolbox talks, TradeInduct, TradeCheck, Academy, automations and the worker PWA. To keep going past your trial, pick a plan now and lock in your data.</p>"
+        "<a href=\"https://safetradie.com.au/dashboard/settings?tab=billing\" style=\"display:inline-block;background:#0A0A0A;color:#FFCC00;padding:12px 24px;text-decoration:none;font-weight:900;letter-spacing:.04em;margin-top:12px;\">CHOOSE A PLAN →</a>"
+        "<p style=\"color:#888;font-size:12px;margin-top:24px;\">If you do nothing, your account will move to read-only on the trial end date so nothing is lost — you can still view all your records and reactivate by upgrading.</p>"
+        "</div>"
+    )
+    delivered = False
+    detail = "no_resend_key"
+    if RESEND_API_KEY_ENV:
+        try:
+            resend.api_key = RESEND_API_KEY_ENV
+            def _send():
+                return resend.Emails.send({
+                    "from": "SafeTradie <noreply@safetradie.com.au>",
+                    "to": [user["email"]],
+                    "subject": subject,
+                    "html": html,
+                })
+            res = await asyncio.wait_for(asyncio.to_thread(_send), timeout=15.0)
+            delivered = True
+            detail = f"email_id={(res or {}).get('id')}"
+        except Exception as e:
+            detail = f"send_failed: {str(e)[:200]}"
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"trial_reminder_sent_at": now_iso, "trial_reminder_status": detail}},
+    )
+    await db.notifications.insert_one({
+        "user_id": user["user_id"],
+        "channel": "in_app",
+        "type": "trial_ending_soon",
+        "title": subject,
+        "body": f"Your free trial ends in {days_left} day{'s' if days_left != 1 else ''}. Choose a plan from Settings → Billing to keep your access.",
+        "severity": "warning",
+        "delivered_via": "email" if delivered else "in_app_only",
+        "created_at": now_iso,
+        "read": False,
+    })
+
+
+async def require_write_access(current_user: User = Depends(get_current_user)) -> User:
+    """Block POST/PATCH/DELETE write operations when the trial has expired and
+    no active subscription exists. Used as a Depends() override for write
+    endpoints; GETs remain unrestricted so users can still view + export
+    their data after expiry (read-only mode)."""
+    user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(401, "User not found")
+    user = await _ensure_trial_fields(user)
+    info = _compute_trial(user)
+    if info["read_only"]:
+        raise HTTPException(
+            status_code=402,
+            detail=("Your free trial has ended. Upgrade from Settings → Billing to "
+                    "continue creating and editing records. You can still view + "
+                    "export everything in read-only mode."),
+        )
+    return current_user
+
+
 @api_router.get("/billing/my-subscription")
 async def my_subscription(current_user: User = Depends(get_current_user)):
     user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0, "password_hash": 0})
     if not user:
         raise HTTPException(404, "User not found")
+    user = await _ensure_trial_fields(user)
+    info = _compute_trial(user)
+    # Day-10 reminder is fired lazily on the first my-subscription call after
+    # the threshold. Keeps things simple — no background scheduler needed.
+    try:
+        await _maybe_send_trial_reminder(user, info)
+    except Exception:
+        pass
     recent = await db.payment_transactions.find(
         {"user_id": current_user.user_id}, {"_id": 0}
     ).sort("created_at", -1).to_list(10)
@@ -2078,6 +2218,13 @@ async def my_subscription(current_user: User = Depends(get_current_user)):
         "status": user.get("subscription_status", "trial"),
         "renews": user.get("subscription_renews"),
         "started_at": user.get("subscription_started_at"),
+        "trial_started_at": user.get("trial_started_at"),
+        "trial_ends_at": user.get("trial_ends_at"),
+        "trial_days_left": info["trial_days_left"],
+        "trial_expired": info["trial_expired"],
+        "read_only": info["read_only"],
+        "on_trial": info["on_trial"],
+        "trial_reminder_sent_at": user.get("trial_reminder_sent_at"),
         "recent_transactions": recent,
     }
 
@@ -2660,6 +2807,71 @@ async def list_hrcw():
 
 
 # ----------- INCLUDE & MIDDLEWARE -----------
+
+# Trial gate: block write methods when trial expired & no active subscription.
+# Allow-listed paths stay open (auth, billing, read-only health). All GETs pass
+# through unconditionally so users can still view + export their data.
+_TRIAL_WRITE_METHODS = {"POST", "PATCH", "PUT", "DELETE"}
+_TRIAL_ALLOWLIST_PREFIXES = (
+    "/api/auth/",
+    "/api/billing/",
+    "/api/webhook/stripe",
+    "/api/notifications",  # mark-read etc.
+)
+
+
+@app.middleware("http")
+async def trial_gate(request, call_next):
+    if request.method not in _TRIAL_WRITE_METHODS:
+        return await call_next(request)
+    path = request.url.path
+    if not path.startswith("/api/"):
+        return await call_next(request)
+    if any(path.startswith(p) for p in _TRIAL_ALLOWLIST_PREFIXES):
+        return await call_next(request)
+    auth = request.headers.get("authorization", "")
+    cookie_token = request.cookies.get("session_token")
+    user_id = None
+    if auth.lower().startswith("bearer "):
+        token = auth.split(" ", 1)[1].strip()
+        # Try session_token first
+        sess = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+        if sess:
+            user_id = sess.get("user_id")
+        else:
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+                user_id = payload.get("user_id")
+            except Exception:
+                pass
+    if not user_id and cookie_token:
+        sess = await db.user_sessions.find_one({"session_token": cookie_token}, {"_id": 0})
+        if sess:
+            user_id = sess.get("user_id")
+    if not user_id:
+        return await call_next(request)  # let downstream return 401
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    if not user:
+        return await call_next(request)
+    has_active_sub = user.get("subscription_tier") and user.get("subscription_status") == "active"
+    if has_active_sub:
+        return await call_next(request)
+    ends = user.get("trial_ends_at")
+    if not ends:
+        return await call_next(request)
+    try:
+        end_dt = datetime.fromisoformat(ends.replace("Z", "+00:00")).replace(tzinfo=timezone.utc)
+    except Exception:
+        return await call_next(request)
+    if (end_dt - datetime.now(timezone.utc)).total_seconds() <= 0:
+        return JSONResponse(
+            status_code=402,
+            content={"detail": "Your free trial has ended. Upgrade from Settings → Billing to continue. Read-only access is preserved.",
+                     "trial_expired": True},
+        )
+    return await call_next(request)
+
+
 app.include_router(api_router)
 
 app.add_middleware(
