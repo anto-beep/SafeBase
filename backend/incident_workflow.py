@@ -520,6 +520,12 @@ def register_incident_workflow(app_db, get_current_user):
             {"incident_id": incident_id, "user_id": current_user.user_id},
             {"$set": {"stage": "actions", "reopened": True, "audit_log": audit}},
         )
+        await _notify(app_db, current_user.user_id, {
+            "channel": "in_app", "type": "incident_reopened",
+            "title": f"Incident reopened — {existing['reference']}",
+            "body": f"Reason: {reason[:200]}",
+            "severity": "warning", "incident_id": incident_id,
+        })
         return {"reopened": True}
 
     # ---------------------- AI ----------------------
