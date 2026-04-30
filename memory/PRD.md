@@ -105,6 +105,15 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - Sidebar nav: "SWMS Revisions" added under Safety between Risk Register and First Aid & PPE.
 - Backend: `risk_module.py` now ~1200 lines — tested 14/14 pytest pass + FE smoke (iteration_17.json).
 
+### Iteration 18 — Competency Matrix: Toolbox attendance → Workers (Feb 2026)
+- **Third side of the safety triangle complete**: Incident→Risk (iter16) · Risk Review→Toolbox+SWMS (iter17) · **Toolbox→Competency Matrix (iter18)**.
+- **Conduct flow** on `/dashboard/toolbox-talks`: each scheduled row gets a **Conduct** button → modal with multi-select attendees (checkbox grid, Select-all toggle), optional notes, sign-off name. Submit calls `POST /api/toolbox-talks/{id}/conduct` → UPSERTs one `worker_competencies` doc per attendee (keyed by user+worker+topic, latest-wins), stamps the toolbox with `status='conducted'` + attendees_list, appends `toolbox_conducted` audit entry on any linked risk, emits in-app notification.
+- **Competency ledger**: each stamp records topic, hazard_category (derived from topic via `TOPIC_TO_HAZARD` lookup), attended_at, expires_at (+365d default, overridable via `validity_days`), source_toolbox_talk_id, linked_risk_id, linked_review_id.
+- **Competency Matrix page** `/dashboard/competency-matrix`: sticky-left worker column × topic columns, colour-coded cells (green ✓ current / amber ! expiring ≤30d / red ✗ expired / bordered X missing), 4 stat cards (workers / topics / overall coverage % / expiring ≤30d), search + trade/role filters, CSV export.
+- **Dashboard widget** `competency-widget` on `/dashboard` Overview — red-themed card headed "UNBRIEFED WORKERS × ACTIVE HAZARDS", renders only when `/api/competency/dashboard` returns `active_hazards.length > 0`. Ranks hazards by score (high-priority open SWMS rev = +3, medium = +2, low = +1, plus +1 per failing control in recent reviews). Each card shows hazard, coverage %, unbriefed/total, source count, and a Schedule-toolbox CTA.
+- **Navigation**: "Competency Matrix" added to main sidebar NAV between Workers and Licences.
+- Backend: new `/app/backend/competency_module.py` (~372 lines, factory pattern). 4 endpoints: `/toolbox-talks/{id}/conduct`, `/workers/competencies`, `/workers/competencies/matrix`, `/workers/unbriefed?topic=X`, `/competency/dashboard`. Tested 18/18 pytest + iter17 regression 11/11 + full FE smoke (iteration_18.json).
+
 ---
 
 ## Backend endpoints (current summary)
