@@ -330,7 +330,11 @@ async def google_session(body: GoogleSessionIn, response: Response):
 
 @api_router.get("/auth/me")
 async def get_me(current_user: User = Depends(get_current_user)):
-    return current_user.model_dump()
+    data = current_user.model_dump()
+    user_doc = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    if user_doc:
+        data["onboarding_complete"] = user_doc.get("onboarding_complete", False)
+    return data
 
 
 @api_router.post("/auth/logout")
@@ -591,6 +595,222 @@ async def compliance_score(current_user: User = Depends(get_current_user)):
         },
         "insights": insights,
     }
+
+
+# ----------- SETTINGS / BUSINESS PROFILE -----------
+class BusinessProfileIn(BaseModel):
+    company_name: Optional[str] = None
+    abn: Optional[str] = None
+    trade_type: Optional[str] = None
+    primary_state: Optional[str] = None
+    worker_count_band: Optional[str] = None
+    logo_url: Optional[str] = None
+    primary_contact_name: Optional[str] = None
+    primary_contact_phone: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    whs_rep_name: Optional[str] = None
+
+
+@api_router.get("/settings/business")
+async def get_business(current_user: User = Depends(get_current_user)):
+    doc = await db.business_profiles.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return doc or {"user_id": current_user.user_id}
+
+
+@api_router.put("/settings/business")
+async def update_business(body: BusinessProfileIn, current_user: User = Depends(get_current_user)):
+    payload = {k: v for k, v in body.model_dump().items() if v is not None}
+    payload["user_id"] = current_user.user_id
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.business_profiles.update_one(
+        {"user_id": current_user.user_id}, {"$set": payload}, upsert=True
+    )
+    if body.company_name:
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": {"company_name": body.company_name}},
+        )
+    doc = await db.business_profiles.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return doc
+
+
+# ----------- TEAM / USERS & ROLES -----------
+class InviteIn(BaseModel):
+    email: EmailStr
+    role: Literal["admin", "safety_manager", "supervisor", "worker"]
+    name: Optional[str] = None
+
+
+@api_router.get("/team")
+async def list_team(current_user: User = Depends(get_current_user)):
+    members = await db.team_members.find({"owner_id": current_user.user_id}, {"_id": 0}).to_list(200)
+    return members
+
+
+@api_router.post("/team/invite")
+async def invite_team_member(body: InviteIn, current_user: User = Depends(get_current_user)):
+    existing = await db.team_members.find_one(
+        {"owner_id": current_user.user_id, "email": body.email.lower()}
+    )
+    if existing:
+        raise HTTPException(400, "Already invited")
+    invite_id = f"inv_{uuid.uuid4().hex[:10]}"
+    doc = {
+        "invite_id": invite_id,
+        "owner_id": current_user.user_id,
+        "email": body.email.lower(),
+        "name": body.name,
+        "role": body.role,
+        "status": "pending",
+        "invited_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.team_members.insert_one({**doc})
+    return doc
+
+
+@api_router.delete("/team/{invite_id}")
+async def remove_team_member(invite_id: str, current_user: User = Depends(get_current_user)):
+    await db.team_members.delete_one({"invite_id": invite_id, "owner_id": current_user.user_id})
+    return {"deleted": True}
+
+
+class RoleUpdateIn(BaseModel):
+    role: Literal["admin", "safety_manager", "supervisor", "worker"]
+
+
+@api_router.patch("/team/{invite_id}")
+async def update_team_role(invite_id: str, body: RoleUpdateIn, current_user: User = Depends(get_current_user)):
+    await db.team_members.update_one(
+        {"invite_id": invite_id, "owner_id": current_user.user_id},
+        {"$set": {"role": body.role}},
+    )
+    return {"updated": True}
+
+
+# ----------- NOTIFICATION PREFERENCES -----------
+class NotificationPrefsIn(BaseModel):
+    credential_expiry_days: List[int] = [60, 30, 14, 7]
+    credential_delivery: Literal["email", "sms", "both", "inapp"] = "both"
+    incident_score_threshold: int = 70
+    weekly_summary: bool = True
+    legislative_digest: Literal["immediate", "weekly", "monthly"] = "weekly"
+
+
+@api_router.get("/settings/notifications")
+async def get_notif_prefs(current_user: User = Depends(get_current_user)):
+    doc = await db.notification_prefs.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return doc or NotificationPrefsIn().model_dump()
+
+
+@api_router.put("/settings/notifications")
+async def update_notif_prefs(body: NotificationPrefsIn, current_user: User = Depends(get_current_user)):
+    payload = body.model_dump()
+    payload["user_id"] = current_user.user_id
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.notification_prefs.update_one(
+        {"user_id": current_user.user_id}, {"$set": payload}, upsert=True
+    )
+    return payload
+
+
+# ----------- NOTIFICATIONS CENTRE -----------
+async def push_notification(user_id: str, tone: str, tag: str, title: str, body: str, link: Optional[str] = None):
+    doc = {
+        "notification_id": f"ntf_{uuid.uuid4().hex[:12]}",
+        "user_id": user_id,
+        "tone": tone,  # critical | expiry | insight | update | task
+        "tag": tag,
+        "title": title,
+        "body": body,
+        "link": link,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.notifications.insert_one({**doc})
+    return doc
+
+
+@api_router.get("/notifications")
+async def list_notifications(current_user: User = Depends(get_current_user)):
+    items = await db.notifications.find(
+        {"user_id": current_user.user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+
+    # If empty, synthesize live notifications from current data
+    if not items:
+        incidents_list = await db.incidents.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(100)
+        licences_list = await db.licences.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(200)
+        now = datetime.now(timezone.utc)
+        synth = []
+        for lic in licences_list:
+            try:
+                exp = datetime.fromisoformat(lic["expiry_date"])
+                if exp.tzinfo is None:
+                    exp = exp.replace(tzinfo=timezone.utc)
+                days = (exp - now).days
+                if days < 0:
+                    synth.append({"notification_id": f"synth_{lic['licence_id']}", "user_id": current_user.user_id, "tone": "critical", "tag": "LICENCE", "title": f"{lic['licence_type'].replace('_', ' ').title()} expired", "body": f"Expired {-days} days ago. Renew immediately.", "link": "/dashboard/licences", "read": False, "created_at": lic.get("created_at")})
+                elif days <= 30:
+                    synth.append({"notification_id": f"synth_{lic['licence_id']}", "user_id": current_user.user_id, "tone": "expiry", "tag": "LICENCE", "title": f"{lic['licence_type'].replace('_', ' ').title()} expiring", "body": f"Expires in {days} days. Plan renewal.", "link": "/dashboard/licences", "read": False, "created_at": lic.get("created_at")})
+            except Exception:
+                pass
+        for inc in incidents_list:
+            if inc.get("severity") in ("serious", "critical"):
+                synth.append({"notification_id": f"synth_{inc['incident_id']}", "user_id": current_user.user_id, "tone": "critical", "tag": "INCIDENT", "title": f"{inc['severity'].title()} incident logged", "body": inc.get("title", ""), "link": "/dashboard/incidents", "read": False, "created_at": inc.get("created_at")})
+        return synth[:20]
+    return items
+
+
+@api_router.post("/notifications/{notification_id}/read")
+async def mark_read(notification_id: str, current_user: User = Depends(get_current_user)):
+    await db.notifications.update_one(
+        {"notification_id": notification_id, "user_id": current_user.user_id},
+        {"$set": {"read": True}},
+    )
+    return {"read": True}
+
+
+@api_router.post("/notifications/read-all")
+async def mark_all_read(current_user: User = Depends(get_current_user)):
+    await db.notifications.update_many(
+        {"user_id": current_user.user_id, "read": False},
+        {"$set": {"read": True}},
+    )
+    return {"success": True}
+
+
+# ----------- ONBOARDING STATE -----------
+class OnboardingIn(BaseModel):
+    step: int
+    data: dict = {}
+    completed: bool = False
+
+
+@api_router.get("/onboarding")
+async def get_onboarding(current_user: User = Depends(get_current_user)):
+    doc = await db.onboarding.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return doc or {"user_id": current_user.user_id, "step": 1, "completed": False, "data": {}}
+
+
+@api_router.put("/onboarding")
+async def update_onboarding(body: OnboardingIn, current_user: User = Depends(get_current_user)):
+    payload = body.model_dump()
+    payload["user_id"] = current_user.user_id
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.onboarding.update_one(
+        {"user_id": current_user.user_id}, {"$set": payload}, upsert=True
+    )
+    # mirror completion onto user
+    if body.completed:
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": {"onboarding_complete": True}},
+        )
+    return payload
+
+
 
 
 # ----------- INCLUDE & MIDDLEWARE -----------

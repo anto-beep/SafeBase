@@ -5,21 +5,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { HardHat, GoogleLogo } from "@phosphor-icons/react";
+import { HardHat, GoogleLogo, CheckCircle, Quotes } from "@phosphor-icons/react";
 import { toast } from "sonner";
+
+const TRADES = ["Electrician", "Plumber", "Builder", "Carpenter", "Roofer", "Gasfitter", "Other"];
+const STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT"];
+const WORKER_BANDS = ["Just me", "2-5", "6-10", "11-20", "20+"];
 
 export default function Register() {
   const { registerEmail } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", company_name: "", role: "owner" });
+  const [form, setForm] = useState({
+    name: "", email: "", password: "", company_name: "",
+    trade_type: "Electrician", primary_state: "NSW", worker_count_band: "Just me",
+    phone: "", role: "owner", agree: false, marketing: true,
+  });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.agree) { toast.error("Please accept the Terms of Service"); return; }
     setLoading(true);
     try {
-      await registerEmail(form);
-      toast.success("Account created");
+      await registerEmail({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        company_name: form.company_name,
+        role: form.role,
+      });
+      toast.success("Account created — let's get you set up");
       navigate("/dashboard");
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Registration failed");
@@ -34,63 +49,100 @@ export default function Register() {
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
-  const onChange = (k) => (e) => setForm({ ...form, [k]: e.target?.value ?? e });
-
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      <div className="hidden lg:flex bg-warning relative overflow-hidden order-2">
-        <div className="absolute inset-0 ribbon-stripe opacity-10" />
-        <div className="relative z-10 p-12 flex flex-col justify-between text-ink">
-          <Link to="/" className="flex items-center gap-2"><div className="w-8 h-8 bg-ink flex items-center justify-center"><HardHat weight="fill" className="text-warning" size={20} /></div><span className="font-display font-black tracking-tight">SAFETRADIE</span></Link>
-          <div>
-            <div className="label-eyebrow mb-4">/ START FREE TRIAL</div>
-            <h1 className="font-display text-5xl font-black leading-[0.95]">Generate your<br />first SWMS<br />in 90 seconds.</h1>
-            <ul className="mt-8 space-y-2 text-sm">
-              <li>✓ 14-day free trial · no credit card</li>
-              <li>✓ Plans from A$150/month</li>
-              <li>✓ 30-day money-back guarantee</li>
-              <li>✓ Australian WHS aligned</li>
-            </ul>
-          </div>
-          <div className="font-mono text-xs">Trusted by 1,200+ Australian trade crews</div>
-        </div>
-      </div>
-      <div className="flex items-center justify-center p-8 order-1">
-        <div className="w-full max-w-md">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12">
+      <div className="lg:col-span-7 p-6 md:p-12 flex items-center">
+        <div className="w-full max-w-2xl mx-auto">
+          <Link to="/" className="flex items-center gap-2 mb-10" data-testid="brand-back">
+            <div className="w-8 h-8 bg-ink flex items-center justify-center"><HardHat weight="fill" className="text-warning" size={20} /></div>
+            <span className="font-display font-black">SAFETRADIE</span>
+          </Link>
           <div className="label-eyebrow mb-3">/ Create account</div>
-          <h2 className="font-display text-4xl font-black tracking-tighter mb-8">Start free.</h2>
-          <Button onClick={googleLogin} variant="outline" className="w-full btn-sharp h-12 border-ink mb-4" data-testid="google-register-btn"><GoogleLogo weight="bold" className="mr-2" /> Sign up with Google</Button>
+          <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-2">Start free.<br />14-day trial.</h2>
+          <p className="text-muted-foreground mb-6">No credit card. Cancel anytime.</p>
+
+          <Button onClick={googleLogin} variant="outline" className="w-full btn-sharp h-12 border-ink mb-4" data-testid="google-register-btn">
+            <GoogleLogo weight="bold" className="mr-2" /> Sign up with Google
+          </Button>
           <div className="flex items-center gap-3 my-6"><div className="flex-1 h-px bg-border" /><span className="label-eyebrow">or</span><div className="flex-1 h-px bg-border" /></div>
-          <form onSubmit={handleSubmit} className="space-y-3" data-testid="register-form">
+
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="register-form">
+            <div><Label className="label-eyebrow">First name</Label><Input data-testid="reg-name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
+            <div><Label className="label-eyebrow">Business name</Label><Input data-testid="reg-company" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
+            <div><Label className="label-eyebrow">Email</Label><Input data-testid="reg-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
+            <div><Label className="label-eyebrow">Mobile</Label><Input data-testid="reg-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="mt-2 h-12 rounded-none border-ink" placeholder="For SMS alerts" /></div>
             <div>
-              <Label className="label-eyebrow">Full name</Label>
-              <Input data-testid="reg-name" value={form.name} onChange={onChange("name")} required className="mt-2 h-12 rounded-none border-ink" />
+              <Label className="label-eyebrow">Trade</Label>
+              <Select value={form.trade_type} onValueChange={(v) => setForm({ ...form, trade_type: v })}>
+                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-trade"><SelectValue /></SelectTrigger>
+                <SelectContent>{TRADES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
             <div>
-              <Label className="label-eyebrow">Company name</Label>
-              <Input data-testid="reg-company" value={form.company_name} onChange={onChange("company_name")} className="mt-2 h-12 rounded-none border-ink" />
+              <Label className="label-eyebrow">State</Label>
+              <Select value={form.primary_state} onValueChange={(v) => setForm({ ...form, primary_state: v })}>
+                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-state"><SelectValue /></SelectTrigger>
+                <SelectContent>{STATES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
             <div>
-              <Label className="label-eyebrow">Email</Label>
-              <Input data-testid="reg-email" type="email" value={form.email} onChange={onChange("email")} required className="mt-2 h-12 rounded-none border-ink" />
+              <Label className="label-eyebrow">Workers</Label>
+              <Select value={form.worker_count_band} onValueChange={(v) => setForm({ ...form, worker_count_band: v })}>
+                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-workers"><SelectValue /></SelectTrigger>
+                <SelectContent>{WORKER_BANDS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
             <div>
-              <Label className="label-eyebrow">Password</Label>
-              <Input data-testid="reg-password" type="password" value={form.password} onChange={onChange("password")} required minLength={6} className="mt-2 h-12 rounded-none border-ink" />
-            </div>
-            <div>
-              <Label className="label-eyebrow">Role</Label>
+              <Label className="label-eyebrow">I am</Label>
               <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
                 <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-role"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="owner">Trade business owner</SelectItem>
+                  <SelectItem value="owner">Business owner</SelectItem>
                   <SelectItem value="worker">Worker / Crew</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" disabled={loading} className="w-full btn-sharp h-12 bg-ink text-white hover:bg-authority mt-2" data-testid="register-submit-btn">{loading ? "Creating..." : "Create account"}</Button>
+            <div className="md:col-span-2"><Label className="label-eyebrow">Password</Label><Input data-testid="reg-password" type="password" required minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
+
+            <label className="md:col-span-2 flex items-start gap-2 text-sm mt-2">
+              <input type="checkbox" checked={form.agree} onChange={(e) => setForm({ ...form, agree: e.target.checked })} className="mt-1" data-testid="reg-agree" required />
+              <span>I agree to the <a href="/terms" className="underline">Terms of Service</a> and <a href="/privacy" className="underline">Privacy Policy</a></span>
+            </label>
+            <label className="md:col-span-2 flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={form.marketing} onChange={(e) => setForm({ ...form, marketing: e.target.checked })} className="mt-1" />
+              <span>Send me WHS compliance tips (unsubscribe anytime)</span>
+            </label>
+            <Button type="submit" disabled={loading} className="md:col-span-2 btn-sharp h-14 bg-ink text-white hover:bg-authority mt-2 text-base" data-testid="register-submit-btn">
+              {loading ? "Creating account…" : "Start my free 14-day trial"}
+            </Button>
           </form>
           <div className="mt-6 text-sm">Have an account? <Link to="/login" className="font-bold underline" data-testid="link-to-login">Log in</Link></div>
+        </div>
+      </div>
+
+      {/* TRUST COLUMN */}
+      <div className="lg:col-span-5 bg-ink text-white p-8 md:p-12 flex flex-col justify-center order-first lg:order-last">
+        <div className="label-eyebrow text-warning mb-3">/ TRUST SIGNALS</div>
+        <h3 className="font-display text-3xl lg:text-4xl font-black tracking-tighter">50,000+ SWMS<br />generated for<br />Australian tradies.</h3>
+        <ul className="mt-8 space-y-3 text-white/80 text-sm">
+          <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> 14-day full access trial</li>
+          <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> No credit card required</li>
+          <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> Data hosted in AWS Sydney</li>
+          <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> Cancel anytime</li>
+          <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> 30-day money-back guarantee after trial</li>
+        </ul>
+        <div className="mt-10 space-y-6">
+          {[
+            { q: "Saved me 4 hours a week on SWMS alone", n: "John, Electrician, Melbourne" },
+            { q: "First time I've felt ready for a WorkSafe visit", n: "Dave, Plumber, Brisbane" },
+            { q: "Set up in 20 minutes, first SWMS done in 10", n: "Mark, Builder, Sydney" },
+          ].map((t) => (
+            <div key={t.n} className="border-l-4 border-warning pl-4">
+              <Quotes size={18} weight="duotone" className="text-warning" />
+              <div className="font-mono text-sm mt-1">"{t.q}"</div>
+              <div className="label-eyebrow mt-2 text-white/60">— {t.n}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -1,0 +1,66 @@
+{
+  "summary": "Iteration 4: Foundation + Onboarding testing. Backend: all 16 tests PASS (business profile, team, notif prefs, notifications list/synth/mark-all, onboarding state, auth_required isolation, onboarding_complete mirror to user). Frontend: Register form renders all 8 fields + trust column (3 testimonials + 5 guarantees) correctly. Wizard auto-triggers after register at /dashboard showing Step 1. Step 1 -> Step 2 navigation works. Settings page renders all 6 tabs. Notifications page renders all 6 filter tabs + mark-all. Sidebar has Alerts + Settings nav. HOWEVER, several expected data-testid selectors for Settings sub-tabs are MISSING (notif-days-60/30/14/7, notif-delivery, notif-threshold, notif-weekly, notif-digest, notif-save, team-invite-btn). Also the X close button in onboarding wizard does NOT close the wizard (only 'Save & exit' works).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "OnboardingWizard",
+        "issue": "X close button in wizard header does NOT dismiss the wizard. Only 'Save & exit' text link works. Per spec the X should also close the wizard.",
+        "selector": "header button (X icon)",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "Settings -> Notifications tab",
+        "issue": "Expected data-testid selectors are missing from rendered DOM: notif-days-60, notif-days-30, notif-days-14, notif-days-7, notif-delivery, notif-threshold, notif-weekly, notif-digest, notif-save. Either the Notifications tab is not rendering its controls, or the testids differ from the spec (main agent should verify /app/frontend/src/pages/Settings.jsx).",
+        "selector": "[data-testid=\"notif-*\"]",
+        "priority": "HIGH"
+      },
+      {
+        "component": "Settings -> Team tab",
+        "issue": "Expected data-testid 'team-invite-btn' is missing after clicking settings-tab-team. Invite flow cannot be exercised via the documented selectors. team-invite-email / team-invite-role / team-invite-submit also not verifiable without the trigger button.",
+        "selector": "[data-testid=\"team-invite-btn\"]",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Onboarding Step 3 (Generate first SWMS)",
+        "issue": "No 'Skip' button is visible on Step 3. Since EMERGENT_LLM_KEY budget is exhausted, 'Generate with AI' will 503/timeout and leaves the user stuck on Step 3 with Back + Generate buttons only. Wizard does not appear to auto-advance on AI failure as the task description claimed it would. Main agent should either (a) add a Skip button on Step 3 or (b) verify the auto-advance-on-error path actually triggers next(step) in the catch block.",
+        "affected_selectors": ["[data-testid=\"onb-step-3\"]", "button:has-text(\"Generate with AI\")"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_foundation_onboarding.py",
+    "/app/test_reports/pytest/iter4_foundation.xml"
+  ],
+  "action_items": [
+    "Verify/fix data-testid attributes in /app/frontend/src/pages/Settings.jsx for Notifications sub-tab: notif-days-60/30/14/7, notif-delivery, notif-threshold, notif-weekly, notif-digest, notif-save",
+    "Verify/fix data-testid='team-invite-btn' (and the invite dialog testids team-invite-email, team-invite-role, team-invite-submit) in Settings Team sub-tab",
+    "Add onClick handler to the X icon button in OnboardingWizard header to dismiss the wizard (currently only 'Save & exit' text link works)",
+    "Add a Skip button to Onboarding Step 3 OR verify the 'proceed on AI error' fallback actually advances to step 4 (LLM budget is exhausted so AI gen will 503 in this env)"
+  ],
+  "critical_code_review_comments": [
+    "server.py - all new Foundation endpoints are clean: proper user_id isolation, Pydantic validation, no _id leakage, sensible defaults. Onboarding completion correctly mirrors onboarding_complete=true onto users collection so /auth/me reflects state.",
+    "server.py:735-763 - /notifications synthesis path is elegant (falls back to live-derived notifications from licences/incidents when no stored notifications exist).",
+    "server.py:654-658 - /team/invite lowercases email on lookup but the duplicate check uses body.email.lower() - good, but consider using EmailStr's normalized form consistently.",
+    "OnboardingWizard.jsx - Step 3 lacks a skip option which creates a hard dead-end when AI provider is unavailable."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_foundation_onboarding.py (new, 16 tests, all pass)"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 tests pass)",
+    "frontend": "~70% - registration, wizard auto-trigger, step1->step2, settings page shell, notifications page, sidebar nav all work; notif+team sub-tab testids and wizard X button are broken/missing"
+  },
+  "test_credentials": "Fresh registrations used: foundation_test_<random>@safetradie.demo / Demo@1234. Existing demo accounts in /app/memory/test_credentials.md (owner@safetradie.demo / Demo@1234) not used for new-user onboarding flow.",
+  "seed_data_creation": "None beyond TEST_ prefixed business profile + invite records created via automated tests.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend is solid - no need to re-run /app/backend/tests/test_foundation_onboarding.py unless endpoints change. Frontend reproduction recipe: (1) register fresh email, (2) observe wizard auto-opens, (3) verify the 3 action items above. Wizard step 3 dead-end blocks full 6-step flow test in this env because LLM budget is exhausted - main agent should implement the skip/auto-advance-on-error path, then next agent can complete the wizard-to-finish flow. All 6 notification filter testids and notif-mark-all exist on /dashboard/notifications. Sidebar already exposes Alerts+Settings nav.",
+  "rca of the issue": "Settings Notifications/Team sub-tab testids missing: most likely the main agent used different testid names in Settings.jsx than what was spec'd in the review request (e.g. 'notif-delivery-select' vs 'notif-delivery') OR the sub-tab content isn't conditionally rendering. Main agent should grep /app/frontend/src/pages/Settings.jsx for data-testid= attributes and align with spec. Wizard X-button-non-functional: likely the <X/> icon button has no onClick={onClose} wired up; only the 'Save & exit' link has the handler. Step 3 no-skip: design choice or missing fallback in catch(err) => setStep(next)."
+}

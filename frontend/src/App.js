@@ -13,6 +13,8 @@ import DocumentView from "@/pages/DocumentView";
 import Incidents from "@/pages/Incidents";
 import Workers from "@/pages/Workers";
 import Licences from "@/pages/Licences";
+import Notifications from "@/pages/Notifications";
+import Settings from "@/pages/Settings";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -67,6 +69,8 @@ function AppRouter() {
         <Route path="incidents" element={<Incidents />} />
         <Route path="workers" element={<Workers />} />
         <Route path="licences" element={<Licences />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
