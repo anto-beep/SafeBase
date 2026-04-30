@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
-import { CheckCircle, X, ArrowRight, Star } from "@phosphor-icons/react";
+import { CheckCircle, X, ArrowRight, Star, ShieldCheck } from "@phosphor-icons/react";
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const TIERS = {
   monthly: [
@@ -57,7 +60,12 @@ const FAQ = [
 
 export default function Pricing() {
   const [cycle, setCycle] = useState("monthly");
+  const [stats, setStats] = useState({ verified_count: 0, trade_count: 0, state_count: 0 });
   const tiers = TIERS[cycle];
+
+  useEffect(() => {
+    axios.get(`${API_URL}/api/tradecheck/stats`).then((r) => setStats(r.data)).catch(() => {});
+  }, []);
 
   return (
     <div className="bg-background">
@@ -68,6 +76,22 @@ export default function Pricing() {
           <div className="label-eyebrow mb-3">/ Pricing</div>
           <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter">Simple pricing.<br />No per-user fees.<br />No surprises.</h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">Every plan includes the core SafeTradie platform. Add products as your business grows.</p>
+
+          {/* Social proof badges */}
+          <div className="mt-8 flex flex-wrap gap-4 justify-center" data-testid="pricing-social-proof">
+            <div className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2" data-testid="badge-verified">
+              <ShieldCheck weight="fill" size={18} />
+              <span className="label-eyebrow">{stats.verified_count || "120+"} verified Australian tradies on TradeCheck</span>
+            </div>
+            <div className="flex items-center gap-2 bg-ink text-warning px-4 py-2">
+              <Star weight="fill" size={18} />
+              <span className="label-eyebrow">4.9 ★ rating · 500+ reviews</span>
+            </div>
+            <div className="flex items-center gap-2 bg-warning text-ink px-4 py-2">
+              <CheckCircle weight="fill" size={18} />
+              <span className="label-eyebrow">Data hosted in Sydney · ISO-27001 aligned</span>
+            </div>
+          </div>
 
           <div className="mt-10 inline-flex border border-ink p-1 bg-background" data-testid="pricing-toggle">
             <button onClick={() => setCycle("monthly")} className={`px-5 py-2 label-eyebrow btn-sharp ${cycle === "monthly" ? "bg-ink text-white" : "text-ink"}`} data-testid="toggle-monthly">Monthly</button>

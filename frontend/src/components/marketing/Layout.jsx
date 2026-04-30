@@ -27,8 +27,8 @@ export function MarketingNav() {
           </DropdownMenu>
           <Link to="/ecosystem" data-testid="nav-ecosystem">How it works</Link>
           <Link to="/pricing" data-testid="nav-pricing">Pricing</Link>
-          <Link to="/partners" data-testid="nav-partners">Partners</Link>
-          <Link to="/franchises" data-testid="nav-franchises">Franchises</Link>
+          <Link to="/compare" data-testid="nav-compare">Compare</Link>
+          <Link to="/blog" data-testid="nav-blog">Blog</Link>
           <Link to="/resources" data-testid="nav-resources">Resources</Link>
         </nav>
         <div className="flex items-center gap-2">
@@ -43,7 +43,7 @@ export function MarketingNav() {
 export function MarketingFooter() {
   return (
     <footer className="bg-ink text-white">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 grid grid-cols-2 md:grid-cols-5 gap-8">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 grid grid-cols-2 md:grid-cols-6 gap-8">
         <div className="col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={20} /></div>
@@ -70,6 +70,17 @@ export function MarketingFooter() {
             <li><Link to="/products/academy">Academy</Link></li>
             <li><Link to="/consulting">WHS Consulting</Link></li>
             <li><Link to="/franchises">Franchises</Link></li>
+          </ul>
+        </div>
+        <div>
+          <div className="label-eyebrow text-white/60 mb-3">Resources</div>
+          <ul className="space-y-2 text-sm">
+            <li><Link to="/blog">Blog</Link></li>
+            <li><Link to="/templates">Free templates</Link></li>
+            <li><Link to="/guides">State guides</Link></li>
+            <li><Link to="/tools/fine-calculator">Fine calculator</Link></li>
+            <li><Link to="/compare">Compare</Link></li>
+            <li><Link to="/integrations">Integrations</Link></li>
           </ul>
         </div>
         <div>

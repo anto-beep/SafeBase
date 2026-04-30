@@ -34,6 +34,13 @@ import TradecheckMy from "@/pages/TradecheckMy";
 import AcademyLMS from "@/pages/AcademyLMS";
 import PartnerPortal from "@/pages/PartnerPortal";
 import MobileWorker from "@/pages/MobileWorker";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
+import TemplatesLibrary from "@/pages/TemplatesLibrary";
+import Compare from "@/pages/Compare";
+import StateGuide from "@/pages/StateGuide";
+import FineCalculator from "@/pages/FineCalculator";
+import Integrations from "@/pages/Integrations";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -82,6 +89,14 @@ function AppRouter() {
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/tradecheck" element={<TradecheckMarketplace />} />
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/blog/:slug" element={<BlogPost />} />
+      <Route path="/templates" element={<TemplatesLibrary />} />
+      <Route path="/compare" element={<Compare />} />
+      <Route path="/guides" element={<StateGuide />} />
+      <Route path="/guides/:state" element={<StateGuide />} />
+      <Route path="/tools/fine-calculator" element={<FineCalculator />} />
+      <Route path="/integrations" element={<Integrations />} />
       <Route path="/induct/:code" element={<InductionPublic />} />
       <Route path="/worker" element={<Protected><MobileWorker /></Protected>} />
       <Route path="/dashboard" element={<Protected><DashboardLayout /></Protected>}>

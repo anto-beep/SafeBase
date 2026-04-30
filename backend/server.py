@@ -1508,6 +1508,21 @@ async def submit_induction(code: str, body: dict):
 
 
 # -------- TradeCheck: verified contractor marketplace --------
+@api_router.get("/tradecheck/stats")
+async def tradecheck_stats():
+    """Public social-proof stats — verified count, total trades."""
+    total = await db.tradecheck_listings.count_documents({})
+    verified = await db.tradecheck_listings.count_documents({"status": "verified"})
+    trades = await db.tradecheck_listings.distinct("trade", {"status": "verified"})
+    states = await db.tradecheck_listings.distinct("state", {"status": "verified"})
+    return {
+        "verified_count": verified,
+        "total_count": total,
+        "trade_count": len([t for t in trades if t]),
+        "state_count": len([s for s in states if s]),
+    }
+
+
 @api_router.get("/tradecheck/listings")
 async def list_tradecheck(trade: Optional[str] = None, state: Optional[str] = None):
     """Public listing — returns verified contractors."""
