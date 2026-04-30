@@ -88,6 +88,13 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - **Incident Register**: 8-card stats dashboard (Total YTD · Notifiable · Lost Time · Medical Treatment · Near Miss · First Aid · Avg close days · Open >30d), filter bar, mini 5-dot stage bar per row, days-open SLA colouring
 - Backend: `/app/backend/incident_workflow.py` (~620 lines, factory pattern) — tested 27/27 pytest pass · Legacy incident module preserved at `/dashboard/incidents/legacy`
 
+### Iteration 16 — Auto-derived Risk Register entry from closed Incident (Feb 2026)
+- **AutoRiskPrompt** card on `IncidentDetail.jsx` (Summary + Close-out tabs, only for `stage === 'closed'` and `!linked_risk_id`): "Create a Risk Register entry from this incident?" with **Generate AI draft** and **Not needed** CTAs. Dismissal persists via localStorage key `risk_prompt_dismissed_{incident_id}`.
+- Clicking Generate calls `POST /api/incident-workflow/{id}/ai/suggest-risk-draft` → Claude Sonnet 4.5 drafts title + primary_hazard + hazard_description + description (root cause framed as a risk) + inherent/residual L×C + review_frequency + suggested_controls[{name, hierarchy_level, description, effectiveness}]. Fallback:true returned on LLM failure.
+- Review modal lets Safety Manager edit every field; L×C score pills recompute live. Save calls `POST /api/incident-workflow/{id}/accept-risk-draft` → creates a real `RISK-###` record, links `incident.linked_risk_id`, emits `risk_from_incident` notification, includes both `incident_id` and reference (e.g. `INC-2026-0001`) in `linked_incident_ids`.
+- Post-save the banner is replaced by a green **Risk Register entry linked** card with Open-risk CTA.
+- Tested 9/9 pytest + full FE Playwright smoke (iteration_16.json) — no issues.
+
 ---
 
 ## Backend endpoints (current summary)
