@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import asyncio
+import json
 import logging
 import bcrypt
 import jwt
@@ -16,6 +17,7 @@ from typing import List, Optional, Literal
 from datetime import datetime, timezone, timedelta
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -2131,6 +2133,266 @@ async def trigger_webhook_event(user_id: str, event: str, payload: dict):
     for s in subs:
         if not s.get("events") or event in s["events"]:
             asyncio.create_task(_deliver_webhook(s, event, payload))
+    # Also trigger native automations (Slack / email / etc.)
+    asyncio.create_task(run_automations_for_event(user_id, event, payload))
+
+
+# ============================================================
+# NATIVE AUTOMATIONS — Slack / Resend / etc. (no Zapier middleman)
+# ============================================================
+_AUTOMATION_ACTIONS = {"slack", "resend_email", "webhook_url"}
+
+AUTOMATION_RECIPES = [
+    {
+        "recipe_id": "slack_critical_incident",
+        "title": "Slack alert on critical incidents",
+        "desc": "When a serious or critical incident is reported, post to your Slack #safety channel.",
+        "event": "incident.created",
+        "action": "slack",
+        "config_schema": {"webhook_url": "https://hooks.slack.com/...", "severity_min": "serious"},
+        "icon": "💬",
+    },
+    {
+        "recipe_id": "resend_worker_welcome",
+        "title": "Email welcome to new worker",
+        "desc": "When a worker is added, send a welcome email with induction instructions.",
+        "event": "worker.added",
+        "action": "resend_email",
+        "config_schema": {"api_key": "re_...", "from_email": "safety@example.com.au", "subject": "Welcome to the crew"},
+        "icon": "📧",
+    },
+    {
+        "recipe_id": "slack_licence_expiry",
+        "title": "Slack alert on licence expiring",
+        "desc": "When a worker's licence is within 30 days of expiry, ping #ops channel.",
+        "event": "licence.expiring",
+        "action": "slack",
+        "config_schema": {"webhook_url": "https://hooks.slack.com/..."},
+        "icon": "🎫",
+    },
+    {
+        "recipe_id": "webhook_sheets_via_zapier",
+        "title": "Log to Google Sheets via Zapier",
+        "desc": "Configure a Zapier catch-hook URL to write any SafeTradie event into a Google Sheet.",
+        "event": "incident.created",
+        "action": "webhook_url",
+        "config_schema": {"webhook_url": "https://hooks.zapier.com/..."},
+        "icon": "📊",
+    },
+    {
+        "recipe_id": "resend_licence_reminder",
+        "title": "Email reminder on licence expiry",
+        "desc": "Email the worker when their licence is expiring.",
+        "event": "licence.expiring",
+        "action": "resend_email",
+        "config_schema": {"api_key": "re_...", "from_email": "safety@example.com.au", "subject": "Your licence is expiring soon"},
+        "icon": "⏰",
+    },
+    {
+        "recipe_id": "slack_incident_closed",
+        "title": "Slack celebration on incident closed",
+        "desc": "Share incident close-outs and learnings back to the team channel.",
+        "event": "incident.closed",
+        "action": "slack",
+        "config_schema": {"webhook_url": "https://hooks.slack.com/..."},
+        "icon": "✅",
+    },
+]
+
+
+@api_router.get("/automations/recipes")
+async def list_recipes(current_user: User = Depends(get_current_user)):
+    return AUTOMATION_RECIPES
+
+
+@api_router.get("/automations")
+async def list_automations(current_user: User = Depends(get_current_user)):
+    rows = await db.automations.find({"user_id": current_user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return rows
+
+
+@api_router.post("/automations")
+async def create_automation(body: dict, current_user: User = Depends(get_current_user)):
+    action = body.get("action")
+    event = body.get("event")
+    if action not in _AUTOMATION_ACTIONS:
+        raise HTTPException(400, f"Unknown action: {action}")
+    if event not in WEBHOOK_EVENTS:
+        raise HTTPException(400, f"Unknown event: {event}")
+    doc = {
+        "automation_id": f"auto_{uuid.uuid4().hex[:10]}",
+        "user_id": current_user.user_id,
+        "recipe_id": body.get("recipe_id"),
+        "label": body.get("label") or body.get("recipe_id") or "Automation",
+        "event": event,
+        "action": action,
+        "config": body.get("config") or {},
+        "enabled": True,
+        "run_count": 0,
+        "last_run_at": None,
+        "last_error": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.automations.insert_one({**doc})
+    return doc
+
+
+@api_router.patch("/automations/{automation_id}")
+async def update_automation(automation_id: str, body: dict, current_user: User = Depends(get_current_user)):
+    updates = {k: v for k, v in body.items() if k in ("enabled", "label", "config", "event")}
+    await db.automations.update_one(
+        {"automation_id": automation_id, "user_id": current_user.user_id}, {"$set": updates}
+    )
+    doc = await db.automations.find_one(
+        {"automation_id": automation_id, "user_id": current_user.user_id}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(404, "Not found")
+    return doc
+
+
+@api_router.delete("/automations/{automation_id}")
+async def delete_automation(automation_id: str, current_user: User = Depends(get_current_user)):
+    res = await db.automations.delete_one({"automation_id": automation_id, "user_id": current_user.user_id})
+    return {"deleted": res.deleted_count}
+
+
+@api_router.post("/automations/{automation_id}/test")
+async def test_automation(automation_id: str, current_user: User = Depends(get_current_user)):
+    rule = await db.automations.find_one(
+        {"automation_id": automation_id, "user_id": current_user.user_id}, {"_id": 0}
+    )
+    if not rule:
+        raise HTTPException(404, "Not found")
+    test_payload = {"test": True, "message": "This is a SafeTradie automation test.", "preview": "Lorem ipsum"}
+    result = await _execute_automation(rule, "test.ping", test_payload)
+    return result
+
+
+async def _execute_automation(rule: dict, event: str, payload: dict) -> dict:
+    """Executes a single automation. Never raises — records success/error."""
+    action = rule.get("action")
+    config = rule.get("config") or {}
+    status = {"success": False, "error": None, "detail": None}
+
+    try:
+        if action == "slack":
+            url = config.get("webhook_url")
+            if not url:
+                status["error"] = "Missing webhook_url"
+            else:
+                # Optional severity gate
+                sev_min = config.get("severity_min")
+                if sev_min and payload.get("severity"):
+                    order = ["minor", "moderate", "serious", "critical"]
+                    if order.index(payload.get("severity", "minor")) < order.index(sev_min):
+                        status["detail"] = "Skipped (severity below threshold)"
+                        status["success"] = True
+                        return await _record_run(rule, status)
+                text = f"*SafeTradie · {event}*\n```{json.dumps(payload, indent=2)[:1000]}```"
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    r = await client.post(url, json={"text": text})
+                    status["success"] = 200 <= r.status_code < 300
+                    status["detail"] = f"HTTP {r.status_code}"
+                    if not status["success"]:
+                        status["error"] = f"Slack returned {r.status_code}"
+
+        elif action == "resend_email":
+            api_key = config.get("api_key")
+            from_email = config.get("from_email")
+            to_email = payload.get("email") or config.get("to_email")
+            if not api_key or not from_email or not to_email:
+                status["error"] = "Missing api_key, from_email, or to_email"
+            else:
+                subject = config.get("subject", f"SafeTradie · {event}")
+                pretty = {"worker.added": "Welcome to the crew", "licence.expiring": "Your licence is expiring soon", "incident.closed": "Incident closed — thanks for your help"}
+                heading = pretty.get(event, subject)
+                html = (
+                    f"<div style=\"font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;\">"
+                    f"<div style=\"background:#0A0A0A;color:#FFCC00;padding:16px;font-weight:900;letter-spacing:-.02em;font-size:20px;\">SafeTradie</div>"
+                    f"<h1 style=\"font-size:22px;margin:20px 0 12px;\">{heading}</h1>"
+                    f"<p style=\"color:#444;line-height:1.6;font-size:14px;\">This notification was triggered by a SafeTradie event: <code>{event}</code>.</p>"
+                    f"<pre style=\"background:#F5F5F5;padding:12px;font-size:12px;white-space:pre-wrap;word-break:break-word;\">{json.dumps(payload, indent=2)[:1500]}</pre>"
+                    f"<p style=\"color:#888;font-size:12px;margin-top:24px;\">You can manage these automations in your SafeTradie dashboard.</p>"
+                    f"</div>"
+                )
+                resend.api_key = api_key
+                def _send():
+                    return resend.Emails.send({
+                        "from": from_email,
+                        "to": [to_email],
+                        "subject": subject,
+                        "html": html,
+                    })
+                try:
+                    result = await asyncio.wait_for(asyncio.to_thread(_send), timeout=15.0)
+                    status["success"] = True
+                    status["detail"] = f"email_id={result.get('id')}"
+                except Exception as e:
+                    status["error"] = str(e)[:300]
+
+        elif action == "webhook_url":
+            url = config.get("webhook_url")
+            if not url:
+                status["error"] = "Missing webhook_url"
+            else:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    r = await client.post(url, json={"event": event, "payload": payload})
+                    status["success"] = 200 <= r.status_code < 300
+                    status["detail"] = f"HTTP {r.status_code}"
+                    if not status["success"]:
+                        status["error"] = f"Target returned {r.status_code}"
+        else:
+            status["error"] = f"Unknown action: {action}"
+    except Exception as e:
+        status["error"] = str(e)[:300]
+
+    return await _record_run(rule, status)
+
+
+async def _record_run(rule: dict, status: dict) -> dict:
+    """Stores a run record + updates automation counters."""
+    run_id = f"run_{uuid.uuid4().hex[:10]}"
+    run = {
+        "run_id": run_id,
+        "automation_id": rule["automation_id"],
+        "user_id": rule["user_id"],
+        "ran_at": datetime.now(timezone.utc).isoformat(),
+        **status,
+    }
+    await db.automation_runs.insert_one({**run})
+    updates = {"last_run_at": run["ran_at"]}
+    if status["success"]:
+        updates["last_error"] = None
+    elif status["error"]:
+        updates["last_error"] = status["error"]
+    await db.automations.update_one(
+        {"automation_id": rule["automation_id"]},
+        {"$set": updates, "$inc": {"run_count": 1}},
+    )
+    run.pop("_id", None)
+    return run
+
+
+async def run_automations_for_event(user_id: str, event: str, payload: dict):
+    """Looks up matching user automations and executes each as a separate task."""
+    try:
+        rules = await db.automations.find(
+            {"user_id": user_id, "enabled": True, "event": event}, {"_id": 0}
+        ).to_list(50)
+    except Exception:
+        logger.exception("run_automations_for_event: lookup failed")
+        return
+    for r in rules:
+        asyncio.create_task(_execute_automation(r, event, payload))
+
+
+@api_router.get("/automations/{automation_id}/runs")
+async def list_automation_runs(automation_id: str, current_user: User = Depends(get_current_user)):
+    rows = await db.automation_runs.find(
+        {"automation_id": automation_id, "user_id": current_user.user_id}, {"_id": 0}
+    ).sort("ran_at", -1).to_list(50)
+    return rows
 
 
 

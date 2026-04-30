@@ -42,6 +42,7 @@ import StateGuide from "@/pages/StateGuide";
 import FineCalculator from "@/pages/FineCalculator";
 import Integrations from "@/pages/Integrations";
 import Webhooks from "@/pages/Webhooks";
+import Automations from "@/pages/Automations";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -126,6 +127,7 @@ function AppRouter() {
         <Route path="academy" element={<AcademyLMS />} />
         <Route path="partner" element={<PartnerPortal />} />
         <Route path="webhooks" element={<Webhooks />} />
+        <Route path="automations" element={<Automations />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
