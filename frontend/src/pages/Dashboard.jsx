@@ -47,7 +47,7 @@ export default function Dashboard() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Stripe checkout return handler: poll billing status until paid (up to ~10s)
+  // Stripe checkout return handler: poll billing status until paid (up to ~20s)
   useEffect(() => {
     const billing = params.get("billing");
     const sessionId = params.get("session_id");
@@ -62,8 +62,9 @@ export default function Dashboard() {
             setParams(params, { replace: true });
             return;
           }
+          // if backend says pending (Stripe not ready yet), just retry
         } catch (e) { /* keep polling */ }
-        if (tries < 5) { tries += 1; setTimeout(poll, 2000); }
+        if (tries < 10) { tries += 1; setTimeout(poll, 2000); }
         else toast.info("Payment is processing — we'll email you when it's confirmed.");
       };
       poll();

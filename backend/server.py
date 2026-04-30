@@ -1890,7 +1890,18 @@ async def billing_status(session_id: str, request: Request, current_user: User =
     host_url = str(request.base_url).rstrip("/")
     webhook_url = f"{host_url}/api/webhook/stripe"
     stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    status = await stripe_checkout.get_checkout_status(session_id)
+    try:
+        status = await stripe_checkout.get_checkout_status(session_id)
+    except Exception as e:
+        # Stripe can return 'No such checkout.session' for fresh/pending sessions.
+        # Don't crash the poll — return the cached txn so the frontend can retry.
+        logger.info(f"billing_status: stripe lookup returned {type(e).__name__}: {str(e)[:120]}")
+        txn["last_checked_at"] = datetime.now(timezone.utc).isoformat()
+        txn["pending"] = True
+        await db.payment_transactions.update_one(
+            {"session_id": session_id}, {"$set": {"last_checked_at": txn["last_checked_at"]}}
+        )
+        return txn
 
     updates = {
         "payment_status": status.payment_status,
@@ -2106,18 +2117,20 @@ async def _deliver_webhook(sub: dict, event: str, payload: dict) -> dict:
 
 
 async def trigger_webhook_event(user_id: str, event: str, payload: dict):
-    """Fire-and-forget: deliver to all enabled subs for this user that match this event."""
+    """Fire-and-forget: deliver to all enabled subs for this user that match this event.
+    Spawns asyncio tasks so the core CRUD request isn't blocked by slow subscriber endpoints."""
     if event not in WEBHOOK_EVENTS:
         return
-    subs = await db.webhook_subscriptions.find(
-        {"user_id": user_id, "enabled": True}, {"_id": 0}
-    ).to_list(50)
+    try:
+        subs = await db.webhook_subscriptions.find(
+            {"user_id": user_id, "enabled": True}, {"_id": 0}
+        ).to_list(50)
+    except Exception:
+        logger.exception("trigger_webhook_event: failed to load subs")
+        return
     for s in subs:
         if not s.get("events") or event in s["events"]:
-            try:
-                await _deliver_webhook(s, event, payload)
-            except Exception:
-                logger.exception("webhook delivery failed")
+            asyncio.create_task(_deliver_webhook(s, event, payload))
 
 
 
