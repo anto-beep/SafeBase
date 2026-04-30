@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash, Warning, Database, Bell, UsersThree, Buildings, CreditCard } from "@phosphor-icons/react";
+import { Plus, Trash, Warning, Database, Bell, UsersThree, Buildings, CreditCard, PlugsConnected } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import BillingPanel from "./BillingPanel";
+import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
+import useTier from "@/hooks/useTier";
 
 const ROLES = [
   { v: "admin", l: "Owner / Admin", d: "Full access including billing" },
@@ -21,11 +23,13 @@ const ROLES = [
 
 export default function Settings() {
   const { user } = useAuth();
+  const { isEnterprise } = useTier();
   const [biz, setBiz] = useState({});
   const [team, setTeam] = useState([]);
   const [prefs, setPrefs] = useState({ credential_expiry_days: [60, 30, 14, 7], credential_delivery: "both", incident_score_threshold: 70, weekly_summary: true, legislative_digest: "weekly" });
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker", name: "" });
+  const [apiUpsellOpen, setApiUpsellOpen] = useState(false);
 
   const load = async () => {
     const [b, t, p] = await Promise.all([
@@ -73,6 +77,12 @@ export default function Settings() {
           <TabsTrigger value="team" className="rounded-none" data-testid="settings-tab-team"><UsersThree className="mr-2" />Users & Roles</TabsTrigger>
           <TabsTrigger value="notifications" className="rounded-none" data-testid="settings-tab-notifications"><Bell className="mr-2" />Notifications</TabsTrigger>
           <TabsTrigger value="billing" className="rounded-none" data-testid="settings-tab-billing"><CreditCard className="mr-2" />Billing</TabsTrigger>
+          <TabsTrigger
+            value="api"
+            className="rounded-none"
+            data-testid="settings-tab-api"
+            onClick={() => { if (!isEnterprise) setApiUpsellOpen(true); }}
+          ><PlugsConnected className="mr-2" />API</TabsTrigger>
           <TabsTrigger value="data" className="rounded-none" data-testid="settings-tab-data"><Database className="mr-2" />Data & Privacy</TabsTrigger>
           <TabsTrigger value="danger" className="rounded-none text-destructive" data-testid="settings-tab-danger"><Warning className="mr-2" />Danger</TabsTrigger>
         </TabsList>
@@ -221,6 +231,34 @@ export default function Settings() {
           <BillingPanel />
         </TabsContent>
 
+        {/* API (Enterprise-only) */}
+        <TabsContent value="api" className="space-y-4">
+          <div className="bg-background border-2 border-ink p-6 space-y-4" data-testid="settings-api-panel">
+            <div className="flex items-center gap-2 label-eyebrow text-authority">
+              <PlugsConnected /> / API & Integrations
+            </div>
+            {isEnterprise ? (
+              <>
+                <div className="font-display font-bold text-xl">Your API keys</div>
+                <p className="text-sm text-muted-foreground">Generate long-lived tokens below. Full REST docs at <a href="/integrations" className="underline">/integrations</a>.</p>
+                <Button className="btn-sharp bg-ink text-white hover:bg-authority h-11" data-testid="api-generate-key">Generate new key</Button>
+              </>
+            ) : (
+              <>
+                <div className="font-display font-bold text-xl">API access is an Enterprise feature</div>
+                <p className="text-sm text-muted-foreground">Connect SafeTradie to your ERP, HRIS or BI stack with our full REST API, webhooks and priority integration support. Available on Enterprise — A$1,299/mo + GST.</p>
+                <Button
+                  className="btn-sharp bg-ink text-white hover:bg-authority h-11"
+                  onClick={() => setApiUpsellOpen(true)}
+                  data-testid="api-upsell-trigger"
+                >
+                  See Enterprise features
+                </Button>
+              </>
+            )}
+          </div>
+        </TabsContent>
+
         {/* DATA */}
         <TabsContent value="data" className="space-y-4">
           <div className="bg-background border border-border p-6 space-y-4">
@@ -252,6 +290,7 @@ export default function Settings() {
           </div>
         </TabsContent>
       </Tabs>
+      <EnterpriseUpsellModal open={apiUpsellOpen} onOpenChange={setApiUpsellOpen} trigger="api" />
     </div>
   );
 }

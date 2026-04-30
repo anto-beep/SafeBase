@@ -6,8 +6,13 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   ArrowRight, FileText, Warning, IdentificationBadge, Users, ChartLineUp, Sparkle,
-  Lightbulb, Siren, Clock, CheckCircle, Bell
+  Lightbulb, Siren, Clock, CheckCircle, Bell, Buildings
 } from "@phosphor-icons/react";
+import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
+import useTier from "@/hooks/useTier";
+
+// Growing Business plan covers 5 active sites — 6+ triggers Enterprise upsell banner.
+const GROWING_SITES_CAP = 5;
 
 function ScoreRing({ value }) {
   const r = 56;
@@ -46,6 +51,8 @@ export default function Dashboard() {
   const [licences, setLicences] = useState([]);
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
+  const [sitesUpsellOpen, setSitesUpsellOpen] = useState(false);
+  const { isEnterprise } = useTier();
 
   // Stripe checkout return handler: poll billing status until paid (up to ~20s)
   useEffect(() => {
@@ -88,6 +95,10 @@ export default function Dashboard() {
     .slice(0, 5);
 
   const recentIncidents = incidents.slice(0, 5);
+
+  // Trigger 4: unique sites across incidents — surfaces Enterprise upsell when >5.
+  const uniqueSites = Array.from(new Set(incidents.map((i) => (i.site || "").trim()).filter(Boolean)));
+  const showSitesUpsell = !isEnterprise && uniqueSites.length > GROWING_SITES_CAP;
 
   const aiAlerts = [];
   const expSoon = licences.filter((l) => l.status === "expiring_soon" || l.status === "expired");
@@ -235,6 +246,30 @@ export default function Dashboard() {
         </Link>
       </div>
 
+      {/* Sites upsell banner (Trigger 4: >5 active sites) */}
+      {showSitesUpsell && (
+        <div
+          className="bg-ink text-warning border-2 border-ink p-6 flex items-center justify-between flex-wrap gap-4"
+          data-testid="sites-upsell-banner"
+        >
+          <div className="flex items-start gap-3">
+            <Buildings size={28} weight="duotone" className="shrink-0" />
+            <div>
+              <div className="label-eyebrow text-warning">/ Multi-site detected</div>
+              <div className="font-display font-bold text-lg mt-1 text-white">You're running {uniqueSites.length} active sites.</div>
+              <div className="text-sm text-white/70">Growing Business caps at 5. Enterprise unlocks unlimited sites + regional rollups — A$1,299/mo + GST.</div>
+            </div>
+          </div>
+          <Button
+            onClick={() => setSitesUpsellOpen(true)}
+            className="btn-sharp bg-warning text-ink hover:bg-warning/90 h-11"
+            data-testid="sites-upsell-cta"
+          >
+            See Enterprise plan <ArrowRight className="ml-2" />
+          </Button>
+        </div>
+      )}
+
       {/* Plan upsell */}
       <div className="bg-warning border-2 border-ink p-6 flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -244,6 +279,7 @@ export default function Dashboard() {
         </div>
         <Link to="/pricing"><Button className="btn-sharp bg-ink text-white hover:bg-authority h-11" data-testid="upgrade-plan-btn">Upgrade plan <ArrowRight className="ml-2" /></Button></Link>
       </div>
+      <EnterpriseUpsellModal open={sitesUpsellOpen} onOpenChange={setSitesUpsellOpen} trigger="sites" />
     </div>
   );
 }

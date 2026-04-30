@@ -4,6 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChartLineUp, FileText, Printer, Download, Sparkle } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
+import useTier from "@/hooks/useTier";
+
+// Growing Business plan covers 5 report generations/month — 6th triggers Enterprise upsell.
+const GROWING_REPORTS_CAP = 5;
+const monthKey = () => {
+  const d = new Date();
+  return `reports_count_${d.getFullYear()}_${d.getMonth() + 1}`;
+};
+const readMonthCount = () => parseInt(localStorage.getItem(monthKey()) || "0", 10);
+const incMonthCount = () => {
+  const k = monthKey();
+  const n = readMonthCount() + 1;
+  localStorage.setItem(k, String(n));
+  return n;
+};
 
 const ICONS = {
   compliance_score: ChartLineUp,
@@ -159,6 +175,8 @@ export default function Reports() {
   const [loading, setLoading] = useState(false);
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [upsellOpen, setUpsellOpen] = useState(false);
+  const { isEnterprise } = useTier();
 
   useEffect(() => {
     api.get("/reports").then((r) => setCatalog(r.data)).catch(() => {});
@@ -172,6 +190,8 @@ export default function Reports() {
     try {
       const r = await api.get(`/reports/${type}`);
       setReport(r.data);
+      const n = incMonthCount();
+      if (!isEnterprise && n > GROWING_REPORTS_CAP) setUpsellOpen(true);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Failed to generate");
     } finally {
@@ -303,6 +323,7 @@ export default function Reports() {
           </div>
         </DialogContent>
       </Dialog>
+      <EnterpriseUpsellModal open={upsellOpen} onOpenChange={setUpsellOpen} trigger="reports" />
     </div>
   );
 }

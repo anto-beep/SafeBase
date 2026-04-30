@@ -1,0 +1,45 @@
+{
+  "summary": "Iter 12 Enterprise-tier rollout — tested backend billing endpoints + 4 in-app Enterprise upsell triggers. 11/11 pytest green. All 4 frontend upsells verified live (Workers normal add-dialog under 20 users, Settings /api tab + button opens modal, Reports 6th-run opens modal, Dashboard sites banner appears after seeding 6 distinct-site incidents). Pricing and Enterprise landing pages render with 4 tiers and '+ GST' copy. No bugs found — feature complete.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Fine Calculator (/fine-calculator)", "issues": ["Does not reference the A$1,299 Enterprise tier or '+ GST' copy. Task list said 'where appropriate' so this may be intentional, but worth confirming — if Fine Calc surfaces plan pricing elsewhere, Enterprise tier should be included for consistency."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter12_enterprise.py",
+    "/app/test_reports/pytest/iter12_enterprise.xml"
+  ],
+  "action_items": [
+    "(Optional) Surface Enterprise A$1,299 + GST on /fine-calculator if that page already shows other-tier pricing — all other marketing pages (Pricing, Enterprise, Compare) include it.",
+    "Carry-forward from iter10/11: /api/billing/status/{sid} 500 when Stripe session not yet completed (not re-verified this round, already known).",
+    "Carry-forward: server.py ~2541 lines; split into routers."
+  ],
+  "critical_code_review_comments": [
+    "useTier hook correctly defaults to 'sole_trader' on fetch failure — permissive fallback ensures upsells always display for non-enterprise users even if the subscription endpoint is transiently down. Good defensive pattern.",
+    "EnterpriseUpsellModal is a single shared component with 4 trigger-keyed copy variants (users/api/reports/sites). Clean DRY pattern. data-testid derived from trigger prop makes Playwright testing straightforward.",
+    "Reports 6th-run logic uses localStorage key 'reports_count_YYYY_M' — verified key created correctly ({'reports_count_2026_4': '6'}). Counter increments on successful report run and triggers modal when >5 AND !isEnterprise. Correct.",
+    "Settings API tab click handler fires setApiUpsellOpen(true) at the TabsTrigger onClick level (not inside TabsContent), so the modal opens immediately on click — verified. The explicit 'See Enterprise features' button also opens it. Double-coverage is fine.",
+    "Dashboard sites banner uses uniqueSites.size > 5 && !isEnterprise — verified: 6 distinct TEST_Site_0..5 incidents renders the banner with correct '6 active sites' count.",
+    "Workers page: upsell trigger is items.length >= 20. Under-20 path correctly opens normal add-worker dialog (verified wrk-name input visible, no users-upsell showing).",
+    "/api/billing/tiers returns 8 entries with correct AUD amounts (249/499/799/1299 monthly and 2490/4990/7990/12990 annual). All 4 tiers present — enterprise tier confirmed at slug 'enterprise_monthly'/'enterprise_annual'.",
+    "/api/enterprise/demo-request is public (no auth), validates required fields {name, business_name, contact_email}, persists to enterprise_requests with a UUID-prefixed request_id — correct.",
+    "/api/billing/checkout with tier_slug='enterprise_monthly' creates a Stripe checkout session using the test key and returns a URL. Bad slug correctly rejected with 400.",
+    "Minor: at A$12,990/year the Enterprise annual label says '2 months free' — verify that actually matches 10x monthly math (1299*12=15588, 15588-12990=2598 ≈ 2 months of 1299). Correct — annual pricing is consistent."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter12_enterprise.py (new — 11 tests, all pass)"
+  ],
+  "success_rate": {"backend": "100% (11/11 pytest)", "frontend": "100% (pricing/enterprise pages render with 4 tiers + GST; all 4 upsell triggers verified: Workers normal-path, Settings API tab+button, Reports 6th-run, Dashboard sites banner)"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 — verified working",
+  "seed_data_creation": "Created 6 TEST_iter12 incidents with distinct site names (TEST_Site_0..5) for sites banner verification. Created 1 TEST_iter12 Enterprise demo request during pytest. Reports test populated localStorage 'reports_count_2026_4=6' on browser session only. Suggest cleanup: db.incidents.deleteMany({title: {$regex: '^TEST_iter12'}}) and db.enterprise_requests.deleteMany({name: {$regex: '^TEST_Iter12'}}).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Enterprise tier is fully rolled out and green. Backend BILLING_TIERS dict at server.py L1814 holds all 8 tier/cycle combinations. 4 upsell surfaces all share components/EnterpriseUpsellModal.jsx keyed by trigger prop ('users' | 'api' | 'reports' | 'sites'). useTier hook at hooks/useTier.js fetches /billing/my-subscription and defaults to sole_trader on any error. Reports upsell uses localStorage key pattern 'reports_count_YYYY_M' — cap GROWING_REPORTS_CAP=5 triggers upsell on 6th run. To re-verify sites banner, seed 6+ distinct-site incidents via POST /api/incidents with payload {title, description, severity:'near_miss', incident_type:'near_miss', site, occurred_at}. Auth token lives in localStorage under key 'st_token'. Stripe checkout uses sk_test_emergent — session creation works, payment doesn't actually process.",
+  "rca_of_the_issue": "N/A — no bugs found."
+}

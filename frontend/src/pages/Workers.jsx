@@ -3,14 +3,29 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, Plus, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
+import useTier from "@/hooks/useTier";
+
+// Growing Business plan caps at 20 users — 21st triggers Enterprise upsell.
+const GROWING_USER_CAP = 20;
 
 export default function Workers() {
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
+  const [upsellOpen, setUpsellOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", role: "Tradesperson", trade: "" });
+  const { isEnterprise } = useTier();
+
+  const handleAddClick = () => {
+    if (!isEnterprise && items.length >= GROWING_USER_CAP) {
+      setUpsellOpen(true);
+      return;
+    }
+    setOpen(true);
+  };
 
   const load = () => api.get("/workers").then((r) => setItems(r.data)).catch(() => {});
   useEffect(() => { load(); }, []);
@@ -37,9 +52,13 @@ export default function Workers() {
           <p className="text-muted-foreground mt-2 max-w-xl">Track every worker's role, trade and licences.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="open-worker-dialog"><Plus className="mr-2" weight="bold" />Add worker</Button>
-          </DialogTrigger>
+          <Button
+            onClick={handleAddClick}
+            className="btn-sharp h-12 bg-ink text-white hover:bg-authority"
+            data-testid="open-worker-dialog"
+          >
+            <Plus className="mr-2" weight="bold" />Add worker
+          </Button>
           <DialogContent className="rounded-none max-w-md border-ink">
             <DialogHeader><DialogTitle className="font-display text-2xl">Add worker</DialogTitle></DialogHeader>
             <form onSubmit={submit} className="space-y-3">
@@ -77,6 +96,7 @@ export default function Workers() {
           ))}
         </div>
       )}
+      <EnterpriseUpsellModal open={upsellOpen} onOpenChange={setUpsellOpen} trigger="users" />
     </div>
   );
 }
