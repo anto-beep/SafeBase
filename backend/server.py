@@ -839,14 +839,25 @@ def _compute_risk_level(likelihood: int, consequence: int) -> str:
     return "extreme"
 
 
+def _safe_int(v):
+    try:
+        return int(v) if v not in (None, "") else 0
+    except (TypeError, ValueError):
+        return 0
+
+
 def _enrich(module: str, item: dict) -> dict:
     """Add computed fields by module type."""
     if module == "risks":
-        item["inherent_score"] = (item.get("likelihood") or 0) * (item.get("consequence") or 0)
-        item["inherent_level"] = _compute_risk_level(item.get("likelihood"), item.get("consequence"))
-        if item.get("residual_likelihood") and item.get("residual_consequence"):
-            item["residual_score"] = item["residual_likelihood"] * item["residual_consequence"]
-            item["residual_level"] = _compute_risk_level(item["residual_likelihood"], item["residual_consequence"])
+        lk = _safe_int(item.get("likelihood"))
+        cq = _safe_int(item.get("consequence"))
+        item["inherent_score"] = lk * cq
+        item["inherent_level"] = _compute_risk_level(lk, cq)
+        rlk = _safe_int(item.get("residual_likelihood"))
+        rcq = _safe_int(item.get("residual_consequence"))
+        if rlk and rcq:
+            item["residual_score"] = rlk * rcq
+            item["residual_level"] = _compute_risk_level(rlk, rcq)
     if module in ("plant", "ppe"):
         # status based on next_inspection / next_service
         now = datetime.now(timezone.utc)
@@ -886,6 +897,11 @@ async def list_safety_items(module: str, current_user: User = Depends(get_curren
 @api_router.post("/safety/{module}")
 async def create_safety_item(module: str, body: dict, current_user: User = Depends(get_current_user)):
     _validate_module(module)
+    # coerce numeric fields per module so storage is well-typed
+    if module == "risks":
+        for k in ("likelihood", "consequence", "residual_likelihood", "residual_consequence"):
+            if k in body and body[k] not in (None, ""):
+                body[k] = _safe_int(body[k])
     item_id = f"{_ID_PREFIX[module]}_{uuid.uuid4().hex[:10]}"
     doc = {
         "item_id": item_id,
@@ -903,6 +919,10 @@ async def create_safety_item(module: str, body: dict, current_user: User = Depen
 async def update_safety_item(module: str, item_id: str, body: dict, current_user: User = Depends(get_current_user)):
     _validate_module(module)
     updates = {k: v for k, v in body.items() if k not in ("_id", "user_id", "item_id", "created_at")}
+    if module == "risks":
+        for k in ("likelihood", "consequence", "residual_likelihood", "residual_consequence"):
+            if k in updates and updates[k] not in (None, ""):
+                updates[k] = _safe_int(updates[k])
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db[f"safety_{module}"].update_one(
         {"item_id": item_id, "user_id": current_user.user_id},

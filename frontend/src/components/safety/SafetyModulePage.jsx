@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -76,7 +76,10 @@ export default function SafetyModulePage({
             </Button>
           </DialogTrigger>
           <DialogContent className="rounded-none max-w-2xl border-ink max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle className="font-display text-2xl tracking-tight">Add {title.toLowerCase()}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl tracking-tight">Add {title.toLowerCase()}</DialogTitle>
+              <DialogDescription className="sr-only">Form to add a new {title.toLowerCase()} entry.</DialogDescription>
+            </DialogHeader>
             <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {fields.map((f) => (
                 <div key={f.key} className={f.span === 2 ? "md:col-span-2" : ""}>

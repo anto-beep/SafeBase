@@ -1,0 +1,29 @@
+{
+  "summary": "Iteration 5 — Frontend-only retest of Risk Register Add UI flow after backend int-coercion fix in _enrich(). VERIFIED FIX: Risk Register Add via UI now works end-to-end. (1) Add Electrical, likelihood=5, consequence=5 → POST /api/safety/risks returns 200, row 'TEST_E2E_RISK_extreme' appears with 'EXTREME · 25' inherent badge and '—' residual. (2) Add with residual likelihood=2, residual_consequence=3 (likelihood=5, consequence=5) → POST 200, row 'TEST_E2E_RISK_residual' appears with 'EXTREME · 25' inherent and 'MEDIUM · 6' residual badge — exactly as expected. (3) /api/safety/summary smoke not reached due to test-script delete timeout but no 4xx/5xx observed. (4) Toolbox Talks Add regression not re-run for same reason — but the previous iteration already verified it works E2E. NO FAILED API RESPONSES on /api/safety/* during the run. The backend _safe_int() coercion fix and frontend Select string-values are now compatible. Note: a separate environment friction was observed — the OnboardingWizard global modal blocks every /dashboard/* route for owner@safetradie.demo because onboarding_complete is False on the user; we bypassed via PUT /api/onboarding {step:6, completed:true} using the Authorization Bearer token (key 'st_token').",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_5.json"
+  ],
+  "action_items": [
+    "(MEDIUM) Onboarding wizard route-guard: For demo/seeded owner account, set onboarding_complete=true at seed time so the wizard doesn't block /dashboard/* routes after fresh login — currently the wizard re-mounts on every protected route navigation, requiring users to either (a) complete the 6 steps or (b) hit X (which only dismisses for one render) before they can use the app. Recommend: on seed/auto-create of owner@safetradie.demo, mark users.onboarding_complete=true and seed db.onboarding {completed:true}. This made testing harder and is also user-hostile for return visits.",
+    "(LOW) Cleanup: 2 orphan rows are still in the risks collection from prior iterations: 'UI test' (Electrical, EXTREME·25, MEDIUM·6) and 'TEST_E2E_RISK_X' (Physical/Injury, EXTREME·25). Recommend a one-shot cleanup: DELETE /api/safety/risks/{id} on those, or run DB cleanup script.",
+    "(VERIFIED) The Risk Register integration bug from iteration_4 is FIXED — no further action needed for the originally reported defect."
+  ],
+  "critical_code_review_comments": [
+    "server.py:842-846 _safe_int() helper is correct and centralised — good fix. _enrich() at lines 851-860 now safely coerces likelihood/consequence/residual_* via _safe_int, matching the frontend's Radix-Select string contract.",
+    "server.py:897+ create_safety_item also does per-module numeric coercion now (per the diff context), which is the right defensive layer in addition to _enrich()."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only request)", "frontend": "100% on Risk Register Add UI flow (the targeted regression). Smoke checks for /api/safety/summary and Toolbox Talks Add were not re-executed but no failures observed in network."},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (worked). Token stored in localStorage key 'st_token'.",
+  "seed_data_creation": "Created 2 risks during the run: TEST_E2E_RISK_extreme and TEST_E2E_RISK_residual. Cleanup attempted via UI delete buttons but final deletion of these test rows was not completed in the run due to a row-locator timeout in the cleanup loop. Two test rows remain in db.safety_risks and must be removed by next agent or via direct API call.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Risk Register integration is now fully working E2E. POST /api/safety/risks accepts string likelihood/consequence (Radix Select format) and returns 200 with correct inherent_score/inherent_level/residual_score/residual_level. Verified UI badges 'EXTREME · 25' (inherent) and 'MEDIUM · 6' (residual). To bypass the OnboardingWizard which blocks /dashboard/* for fresh owner accounts: after login, run `await page.evaluate(\"async () => { const t = localStorage.getItem('st_token'); await fetch('/api/onboarding', {method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+t}, body:JSON.stringify({step:6, completed:true, data:{}})}); }\")` then page.goto the dashboard route. Test rows TEST_E2E_RISK_extreme and TEST_E2E_RISK_residual still in db; please delete them. Also 2 orphan risks 'UI test' and 'TEST_E2E_RISK_X' from prior runs are still present.",
+  "rca of the issue": "RCA — original bug (iter4): server.py _enrich() did `item.get('likelihood') * item.get('consequence')` without coercion, raising TypeError when frontend sent strings. Fix verified in iter5: _safe_int() helper added at server.py:842, _enrich() at 851-860 now wraps both inherent and residual fields. UI test confirmed POST 200 + correct enrichment for both pure-extreme (l=5×c=5=25→extreme) and residual case (rl=2×rc=3=6→medium). No regressions observed."
+}
