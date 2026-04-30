@@ -23,7 +23,7 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     if (user && !user.onboarding_complete && user.auth_provider !== "google") {
-      // Auto-trigger wizard for new email/password users on first login
+      if (sessionStorage.getItem("onb_dismissed") === "1") return;
       api.get("/onboarding").then((r) => {
         if (!r.data?.completed) setShowOnboarding(true);
       }).catch(() => {});
@@ -46,7 +46,7 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-muted">
-      {showOnboarding && <OnboardingWizard onClose={() => setShowOnboarding(false)} />}
+      {showOnboarding && <OnboardingWizard onClose={() => { sessionStorage.setItem("onb_dismissed", "1"); setShowOnboarding(false); }} />}
       <aside className="fixed left-0 top-0 bottom-0 w-64 bg-ink text-white hidden lg:flex flex-col" data-testid="dashboard-sidebar">
         <Link to="/dashboard" className="h-16 flex items-center gap-2 px-6 border-b border-white/10">
           <div className="w-8 h-8 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={20} /></div>

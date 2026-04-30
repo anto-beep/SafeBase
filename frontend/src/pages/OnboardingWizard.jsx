@@ -222,9 +222,12 @@ export default function OnboardingWizard({ onClose }) {
             </div>
             <div className="mt-8 flex justify-between">
               <Button variant="outline" onClick={back} className="btn-sharp h-12 border-ink"><ArrowLeft className="mr-2" /> Back</Button>
-              <Button onClick={submitSwms} disabled={loading || !swmsForm.job_description} className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="onb-step3-next">
-                {loading ? "Generating…" : <>Generate with AI <Sparkle className="ml-2" weight="fill" /></>}
-              </Button>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={next} className="btn-sharp h-12" data-testid="onb-step3-skip">Skip for now</Button>
+                <Button onClick={submitSwms} disabled={loading || !swmsForm.job_description} className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="onb-step3-next">
+                  {loading ? "Generating…" : <>Generate with AI <Sparkle className="ml-2" weight="fill" /></>}
+                </Button>
+              </div>
             </div>
           </div>
         )}
