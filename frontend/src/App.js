@@ -45,6 +45,11 @@ import Integrations from "@/pages/Integrations";
 import Enterprise from "@/pages/Enterprise";
 import Webhooks from "@/pages/Webhooks";
 import Automations from "@/pages/Automations";
+import LibraryPage from "@/pages/risk/LibraryPage";
+import RiskRegisterPage from "@/pages/risk/RiskRegisterPage";
+import RiskForm from "@/pages/risk/RiskForm";
+import RiskDetail from "@/pages/risk/RiskDetail";
+import ReviewForm from "@/pages/risk/ReviewForm";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -130,6 +135,16 @@ function AppRouter() {
         <Route path="academy" element={<AcademyLMS />} />
         <Route path="partner" element={<PartnerPortal />} />
         <Route path="partner/branding" element={<PartnerBranding />} />
+        <Route path="library/processes" element={<LibraryPage kind="process" />} />
+        <Route path="library/activities" element={<LibraryPage kind="activity" />} />
+        <Route path="library/tasks" element={<LibraryPage kind="task" />} />
+        <Route path="library/controls" element={<LibraryPage kind="control" />} />
+        <Route path="risk-register" element={<RiskRegisterPage />} />
+        <Route path="risk-register/new" element={<RiskForm />} />
+        <Route path="risk-register/reviews/new" element={<ReviewForm />} />
+        <Route path="risk-register/reviews/:review_id" element={<ReviewForm />} />
+        <Route path="risk-register/:risk_id" element={<RiskDetail />} />
+        <Route path="risk-register/:risk_id/edit" element={<RiskForm />} />
         <Route path="webhooks" element={<Webhooks />} />
         <Route path="automations" element={<Automations />} />
       </Route>

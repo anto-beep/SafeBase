@@ -2628,6 +2628,22 @@ async def test_all_automations(current_user: User = Depends(get_current_user)):
 
 
 
+# ----------- RISK REGISTER & LIBRARY MODULE -----------
+# Mounted under /api via api_router below. AI helpers reuse the same Emergent
+# LLM key + Claude Sonnet pattern as other modules.
+from risk_module import register_library_routes  # noqa: E402
+
+_risk_router, _register_risk_ai, _HRCW_CATEGORIES = register_library_routes(db, get_current_user)
+_register_risk_ai(LlmChat, UserMessage, EMERGENT_LLM_KEY)
+api_router.include_router(_risk_router)
+
+
+@api_router.get("/risks/meta/hrcw")
+async def list_hrcw():
+    """Return the 19 High Risk Construction Work categories for the Task form."""
+    return {"categories": _HRCW_CATEGORIES}
+
+
 # ----------- INCLUDE & MIDDLEWARE -----------
 app.include_router(api_router)
 

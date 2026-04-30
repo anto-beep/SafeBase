@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 
 const NAV = [
@@ -20,8 +20,15 @@ const SAFETY_NAV = [
   { to: "/dashboard/plant", label: "Plant", icon: Truck },
   { to: "/dashboard/substances", label: "Substances", icon: Flask },
   { to: "/dashboard/inspections", label: "Inspections", icon: ClipboardText },
-  { to: "/dashboard/risks", label: "Risk Register", icon: Warning },
+  { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning },
   { to: "/dashboard/first-aid-ppe", label: "First Aid & PPE", icon: FirstAidKit },
+];
+
+const LIBRARY_NAV = [
+  { to: "/dashboard/library/processes", label: "Process Library", icon: Books },
+  { to: "/dashboard/library/activities", label: "Activity Library", icon: Books },
+  { to: "/dashboard/library/tasks", label: "Task Library", icon: Books },
+  { to: "/dashboard/library/controls", label: "Control Library", icon: Books },
 ];
 
 const WORKFLOW_NAV = [
@@ -124,6 +131,21 @@ export default function DashboardLayout() {
               key={item.to}
               to={item.to}
               data-testid={`nav-wf-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 text-sm ${
+                  isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                }`
+              }
+            >
+              <item.icon size={18} weight="bold" /> {item.label}
+            </NavLink>
+          ))}
+          <div className="mt-5 px-3 label-eyebrow text-white/40">Library</div>
+          {LIBRARY_NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              data-testid={`nav-lib-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 text-sm ${
                   isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
