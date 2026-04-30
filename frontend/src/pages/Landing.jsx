@@ -201,31 +201,40 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
           <div className="text-center mb-12">
             <div className="label-eyebrow mb-3">/ Pricing</div>
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Simple pricing.<br />No per-user fees.</h2>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Simple pricing.<br />No per-user fees on our first three plans.</h2>
+            <p className="text-sm text-muted-foreground mt-3">All prices exclude GST.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-border border border-border">
             {[
-              { n: "Sole Trader", p: "150", u: "1 user", features: ["Unlimited SWMS", "Incident register", "10 worker profiles", "Licence tracking"] },
-              { n: "Small Business", p: "250", u: "up to 5 users", highlight: true, features: ["Everything in Sole Trader", "Contractor compliance", "AI pattern detection", "TradeInduct included"] },
-              { n: "Growing Business", p: "400", u: "up to 20 users", features: ["Everything in Small Business", "Multi-site", "TradeCheck included", "Academy included"] },
+              { n: "Sole Trader", p: "249", u: "1 user", features: ["Unlimited SWMS", "Incident register", "10 worker profiles", "Licence tracking"] },
+              { n: "Small Business", p: "499", u: "up to 5 users", features: ["Everything in Sole Trader", "Contractor compliance", "AI pattern detection", "TradeInduct included"] },
+              { n: "Growing Business", p: "799", u: "up to 20 users", highlight: true, features: ["Everything in Small Business", "Multi-site", "TradeCheck included", "Academy included"] },
+              { n: "Enterprise", p: "1,299", u: "up to 50 users", accent: true, features: ["All add-ons included", "Dedicated Account Manager", "API · SSO · Webhooks", "Quarterly Business Reviews"] },
             ].map((t) => (
-              <div key={t.n} className={`p-8 ${t.highlight ? "bg-ink text-white" : "bg-background"}`} data-testid={`pricing-preview-${t.n.toLowerCase().replace(/\s+/g, '-')}`}>
+              <div
+                key={t.n}
+                className={`p-8 flex flex-col ${t.highlight ? "bg-ink text-white" : t.accent ? "bg-[#1B3A5C] text-white" : "bg-background"}`}
+                data-testid={`pricing-preview-${t.n.toLowerCase().replace(/\s+/g, '-')}`}
+              >
                 {t.highlight && <div className="label-eyebrow text-warning mb-3">MOST POPULAR</div>}
+                {t.accent && <div className="label-eyebrow text-warning mb-3">FOR LARGER OPERATIONS</div>}
                 <div className="font-display font-bold text-2xl">{t.n}</div>
-                <div className={`text-sm mt-1 ${t.highlight ? "text-white/60" : "text-muted-foreground"}`}>{t.u}</div>
+                <div className={`text-sm mt-1 ${t.highlight || t.accent ? "text-white/60" : "text-muted-foreground"}`}>{t.u}</div>
                 <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-xl">A$</span><span className="font-display font-black text-6xl">{t.p}</span>
-                  <span className={t.highlight ? "text-white/60" : "text-muted-foreground"}>/mo</span>
+                  <span className="text-xl">A$</span><span className="font-display font-black text-5xl">{t.p}</span>
+                  <span className={t.highlight || t.accent ? "text-white/60" : "text-muted-foreground"}>/mo</span>
                 </div>
+                <div className={`text-xs mt-1 ${t.highlight || t.accent ? "text-white/60" : "text-muted-foreground"}`}>+ GST</div>
                 <ul className="mt-6 space-y-2 text-sm">
-                  {t.features.map((f) => <li key={f} className="flex gap-2"><CheckCircle weight="fill" className={`shrink-0 ${t.highlight ? "text-warning" : "text-ink"}`} />{f}</li>)}
+                  {t.features.map((f) => <li key={f} className="flex gap-2"><CheckCircle weight="fill" className={`shrink-0 ${t.highlight ? "text-warning" : t.accent ? "text-warning" : "text-ink"}`} />{f}</li>)}
                 </ul>
               </div>
             ))}
           </div>
-          <p className="mt-8 text-center text-muted-foreground text-sm">All plans include free SWMS generation, incident register, and licence tracking. 14-day free trial. No credit card required.<br />Pay annually and get 2 months free — Sole Trader A$1,500/yr · Small Business A$2,500/yr · Growing Business A$4,000/yr</p>
-          <div className="mt-8 text-center">
+          <p className="mt-8 text-center text-muted-foreground text-sm">All plans include free SWMS generation, incident register, and licence tracking. 14-day free trial. No credit card required.<br />Pay annually and get 2 months free — Sole Trader A$2,490/yr · Small Business A$4,990/yr · Growing Business A$7,990/yr · Enterprise A$12,990/yr (all + GST)</p>
+          <div className="mt-8 text-center flex flex-wrap gap-3 justify-center">
             <Link to="/pricing"><Button className="btn-sharp bg-ink text-white hover:bg-authority h-12 px-6" data-testid="cta-pricing">See full pricing <ArrowRight className="ml-2" /></Button></Link>
+            <Link to="/enterprise"><Button variant="outline" className="btn-sharp border-[#1B3A5C] text-[#1B3A5C] hover:bg-[#1B3A5C] hover:text-white h-12 px-6" data-testid="cta-enterprise">Enterprise & demo <ArrowRight className="ml-2" /></Button></Link>
           </div>
         </div>
       </section>
