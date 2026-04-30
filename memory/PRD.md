@@ -39,6 +39,12 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - Frontend `/dashboard/automations`: recipe gallery with one-click enable dialogs (action-aware config fields) + My Automations list with toggle/test/delete
 - Events fire through both webhook subscriptions AND matching automations (both async, non-blocking)
 
+### Iteration 11 — Automation Analytics Dashboard (Feb 2026)
+- `/api/automations/analytics/summary` — 30-day daily counts, success_rate, top_rules, slowest endpoint (avg duration_ms)
+- `/api/automations/test-all` — parallel batch test of every enabled automation
+- Frontend: 4 KPI cards + 30-bar stacked chart (success/fail) + "Test all enabled" button
+- Execution layer now records `duration_ms` on every run for latency analytics
+
 ---
 
 ## Backend endpoints (current summary)
