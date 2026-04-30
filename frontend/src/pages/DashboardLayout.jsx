@@ -21,6 +21,7 @@ const SAFETY_NAV = [
   { to: "/dashboard/substances", label: "Substances", icon: Flask },
   { to: "/dashboard/inspections", label: "Inspections", icon: ClipboardText },
   { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning },
+  { to: "/dashboard/swms-revisions", label: "SWMS Revisions", icon: FileText },
   { to: "/dashboard/first-aid-ppe", label: "First Aid & PPE", icon: FirstAidKit },
 ];
 

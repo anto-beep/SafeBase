@@ -6,7 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkle, FloppyDisk, Plus, Trash, CheckCircle, Warning, PaperPlaneTilt } from "@phosphor-icons/react";
+import { Sparkle, FloppyDisk, Plus, Trash, CheckCircle, Warning, PaperPlaneTilt, ChatCircleText, FileText, X, ArrowRight } from "@phosphor-icons/react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Link as RLink } from "react-router-dom";
 import { toast } from "sonner";
 import {
   REVIEW_REASONS, ACTION_TYPES, LIKELIHOOD_SCALE, CONSEQUENCE_SCALE, riskLevel,
@@ -16,6 +21,314 @@ const SECTIONS = [
   "1. Identification", "2. Evidence", "3. Control Effectiveness",
   "4. Re-evaluation", "5. New Actions", "6. Summary & Sign-off",
 ];
+
+// ---- Reverse loop: Risk → Workers remediation prompt ----
+const _FAIL_EFF = new Set(["not", "partial"]);
+const _FAIL_CHANGE = new Set(["improve", "replace", "remove", "supplement"]);
+const _FAIL_PLACE = new Set(["no", "partial"]);
+
+function detectFailing(controlReviews = []) {
+  return controlReviews.filter((c) =>
+    _FAIL_EFF.has(c.effectiveness) ||
+    _FAIL_CHANGE.has(c.recommended_change) ||
+    _FAIL_PLACE.has(c.still_in_place)
+  );
+}
+
+function RemediationPrompt({ review, reviewId, failing, onAccepted }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [tab, setTab] = useState("toolbox");
+  const dismissKey = `remediation_prompt_dismissed_${reviewId}`;
+  const [dismissed, setDismissed] = useState(
+    typeof window !== "undefined" && localStorage.getItem(dismissKey) === "1"
+  );
+
+  const remediation = review.remediation || {};
+  const alreadyCreated = !!(remediation.toolbox_talk_id || remediation.swms_revision_id);
+
+  if (alreadyCreated) {
+    return (
+      <div className="bg-emerald-50 border-2 border-emerald-600 p-4 space-y-2" data-testid="remediation-linked-card">
+        <div className="flex items-center gap-2">
+          <CheckCircle weight="fill" className="text-emerald-700" size={22} />
+          <div className="font-display font-black text-emerald-900">Remediation created from this review</div>
+        </div>
+        <div className="text-xs text-emerald-800 space-y-1">
+          {remediation.toolbox_talk_id && (
+            <div><ChatCircleText className="inline mr-1" weight="fill" /> Toolbox Talk: <strong>{remediation.toolbox_talk_topic || remediation.toolbox_talk_id}</strong> — scheduled in <RLink to="/dashboard/toolbox-talks" className="underline" data-testid="linked-tbt">Toolbox Talks</RLink>.</div>
+          )}
+          {remediation.swms_revision_id && (
+            <div><FileText className="inline mr-1" /> SWMS Revision: <strong>{remediation.swms_revision_title || remediation.swms_revision_id}</strong> — track in <RLink to="/dashboard/swms-revisions" className="underline" data-testid="linked-swr">SWMS Revisions</RLink>.</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (dismissed) return null;
+  if (!failing || failing.length === 0) return null;
+
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const r = await api.post(`/risk-reviews/${reviewId}/ai/draft-remediation`);
+      const d = r.data || {};
+      setDraft({
+        toolbox_talk: {
+          topic: d.toolbox_talk?.topic || "",
+          duration_mins: d.toolbox_talk?.duration_mins || 10,
+          objective: d.toolbox_talk?.objective || "",
+          key_points: d.toolbox_talk?.key_points || [],
+          worker_questions: d.toolbox_talk?.worker_questions || [],
+          sign_off_prompt: d.toolbox_talk?.sign_off_prompt || "",
+        },
+        swms_revision: {
+          title: d.swms_revision?.title || "",
+          summary: d.swms_revision?.summary || "",
+          changes: d.swms_revision?.changes || [],
+          priority: d.swms_revision?.priority || "medium",
+          target_swms: d.swms_revision?.target_swms || "",
+        },
+        fallback: !!d.fallback,
+      });
+      setOpen(true);
+    } catch { toast.error("AI draft failed — please try again"); }
+    setLoading(false);
+  };
+
+  const dismiss = () => {
+    try { localStorage.setItem(dismissKey, "1"); } catch { /* noop */ }
+    setDismissed(true);
+    toast.info("Prompt dismissed for this review");
+  };
+
+  const patchTbt = (k, v) => setDraft((d) => ({ ...d, toolbox_talk: { ...d.toolbox_talk, [k]: v } }));
+  const patchSwms = (k, v) => setDraft((d) => ({ ...d, swms_revision: { ...d.swms_revision, [k]: v } }));
+  const patchKP = (i, v) => setDraft((d) => {
+    const arr = [...d.toolbox_talk.key_points]; arr[i] = v;
+    return { ...d, toolbox_talk: { ...d.toolbox_talk, key_points: arr } };
+  });
+  const addKP = () => setDraft((d) => ({ ...d, toolbox_talk: { ...d.toolbox_talk, key_points: [...d.toolbox_talk.key_points, ""] } }));
+  const removeKP = (i) => setDraft((d) => ({ ...d, toolbox_talk: { ...d.toolbox_talk, key_points: d.toolbox_talk.key_points.filter((_, x) => x !== i) } }));
+  const patchQ = (i, v) => setDraft((d) => {
+    const arr = [...d.toolbox_talk.worker_questions]; arr[i] = v;
+    return { ...d, toolbox_talk: { ...d.toolbox_talk, worker_questions: arr } };
+  });
+  const removeQ = (i) => setDraft((d) => ({ ...d, toolbox_talk: { ...d.toolbox_talk, worker_questions: d.toolbox_talk.worker_questions.filter((_, x) => x !== i) } }));
+  const addQ = () => setDraft((d) => ({ ...d, toolbox_talk: { ...d.toolbox_talk, worker_questions: [...d.toolbox_talk.worker_questions, ""] } }));
+  const patchChange = (i, v) => setDraft((d) => {
+    const arr = [...d.swms_revision.changes]; arr[i] = v;
+    return { ...d, swms_revision: { ...d.swms_revision, changes: arr } };
+  });
+  const addChange = () => setDraft((d) => ({ ...d, swms_revision: { ...d.swms_revision, changes: [...d.swms_revision.changes, ""] } }));
+  const removeChange = (i) => setDraft((d) => ({ ...d, swms_revision: { ...d.swms_revision, changes: d.swms_revision.changes.filter((_, x) => x !== i) } }));
+
+  const save = async ({ tbt, swms }) => {
+    if (!draft) return;
+    setSaving(true);
+    try {
+      const body = {};
+      if (tbt) body.toolbox_talk = {
+        topic: draft.toolbox_talk.topic,
+        objective: draft.toolbox_talk.objective,
+        key_points: draft.toolbox_talk.key_points.filter(Boolean),
+        worker_questions: draft.toolbox_talk.worker_questions.filter(Boolean),
+        sign_off_prompt: draft.toolbox_talk.sign_off_prompt,
+        duration_mins: Number(draft.toolbox_talk.duration_mins) || 10,
+      };
+      if (swms) body.swms_revision = {
+        title: draft.swms_revision.title,
+        summary: draft.swms_revision.summary,
+        changes: draft.swms_revision.changes.filter(Boolean),
+        priority: draft.swms_revision.priority,
+        target_swms: draft.swms_revision.target_swms,
+      };
+      const r = await api.post(`/risk-reviews/${reviewId}/accept-remediation`, body);
+      toast.success("Remediation created — workers will see this on the ground");
+      setOpen(false);
+      onAccepted?.(r.data);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Failed to create remediation");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <>
+      <div className="bg-red-700 text-white border-2 border-red-700 p-5 space-y-3 relative" data-testid="remediation-prompt">
+        <button type="button" onClick={dismiss} className="absolute top-2 right-2 text-white/70 hover:text-white" aria-label="Dismiss" data-testid="remediation-dismiss-x">
+          <X size={18} />
+        </button>
+        <div className="flex items-start gap-3">
+          <Warning weight="fill" className="text-warning shrink-0 mt-1" size={28} />
+          <div className="flex-1">
+            <div className="label-eyebrow text-warning">REVERSE LOOP · RISK → WORKERS</div>
+            <h3 className="font-display text-xl md:text-2xl font-black mt-1">
+              {failing.length} control{failing.length === 1 ? "" : "s"} flagged — close the loop with a Toolbox Talk &amp; SWMS revision?
+            </h3>
+            <p className="text-sm text-white/80 mt-1">
+              Auto-draft a worker toolbox talk and a SWMS revision task from the failing
+              controls, so the findings reach the tools on-site — not just the risk register.
+            </p>
+            <ul className="mt-2 text-xs text-white/80 list-disc pl-5 space-y-0.5" data-testid="failing-list">
+              {failing.slice(0, 4).map((c, i) => (
+                <li key={i}><strong>{c.name}</strong> — {c.effectiveness}{c.recommended_change && c.recommended_change !== "no_change" ? ` · ${c.recommended_change.replace("_", " ")}` : ""}</li>
+              ))}
+              {failing.length > 4 && <li>+ {failing.length - 4} more</li>}
+            </ul>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button
+            className="btn-sharp bg-warning text-ink hover:bg-yellow-400 h-11"
+            onClick={generate}
+            disabled={loading}
+            data-testid="generate-remediation-btn"
+          >
+            <Sparkle weight="fill" className="mr-2" />
+            {loading ? "Drafting with AI…" : "Generate toolbox talk & SWMS revision"}
+          </Button>
+          <Button
+            variant="outline"
+            className="btn-sharp border-white/40 text-white bg-transparent hover:bg-white/10 h-11"
+            onClick={dismiss}
+            data-testid="remediation-skip-btn"
+          >
+            Not now
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-none border-ink" data-testid="remediation-modal">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-black tracking-tighter">Review AI-drafted remediation</DialogTitle>
+            <DialogDescription>
+              Derived from {failing.length} failing control{failing.length === 1 ? "" : "s"} on this review. Edit either tab before creating.
+              {draft?.fallback && <span className="block mt-1 text-amber-600 font-bold">AI unavailable — showing safe defaults. Review carefully.</span>}
+            </DialogDescription>
+          </DialogHeader>
+
+          {draft && (
+            <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+              <TabsList className="bg-muted rounded-none border border-border p-1 h-auto flex flex-wrap gap-1">
+                <TabsTrigger value="toolbox" className="rounded-none" data-testid="rem-tab-toolbox">
+                  <ChatCircleText className="mr-2" weight="fill" />Toolbox Talk
+                </TabsTrigger>
+                <TabsTrigger value="swms" className="rounded-none" data-testid="rem-tab-swms">
+                  <FileText className="mr-2" />SWMS Revision
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="toolbox" className="space-y-3">
+                <div>
+                  <Label className="label-eyebrow">Topic</Label>
+                  <Input value={draft.toolbox_talk.topic} onChange={(e) => patchTbt("topic", e.target.value)} className="mt-1 h-11 rounded-none border-ink" data-testid="rem-tbt-topic" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="label-eyebrow">Objective</Label>
+                    <Input value={draft.toolbox_talk.objective} onChange={(e) => patchTbt("objective", e.target.value)} className="mt-1 h-11 rounded-none border-ink" data-testid="rem-tbt-objective" />
+                  </div>
+                  <div>
+                    <Label className="label-eyebrow">Duration (mins)</Label>
+                    <Input type="number" min="5" max="30" value={draft.toolbox_talk.duration_mins} onChange={(e) => patchTbt("duration_mins", e.target.value)} className="mt-1 h-11 rounded-none border-ink" data-testid="rem-tbt-duration" />
+                  </div>
+                </div>
+                <div>
+                  <div className="label-eyebrow mb-1">Key points</div>
+                  <div className="space-y-2" data-testid="rem-tbt-points">
+                    {draft.toolbox_talk.key_points.map((p, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input value={p} onChange={(e) => patchKP(i, e.target.value)} className="h-9 rounded-none border-ink flex-1" />
+                        <Button variant="ghost" size="sm" onClick={() => removeKP(i)} className="text-destructive"><Trash /></Button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={addKP} className="btn-sharp border-ink mt-2"><Plus className="mr-1" />Add point</Button>
+                </div>
+                <div>
+                  <div className="label-eyebrow mb-1">Worker questions</div>
+                  <div className="space-y-2" data-testid="rem-tbt-questions">
+                    {draft.toolbox_talk.worker_questions.map((q, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input value={q} onChange={(e) => patchQ(i, e.target.value)} className="h-9 rounded-none border-ink flex-1" />
+                        <Button variant="ghost" size="sm" onClick={() => removeQ(i)} className="text-destructive"><Trash /></Button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={addQ} className="btn-sharp border-ink mt-2"><Plus className="mr-1" />Add question</Button>
+                </div>
+                <div>
+                  <Label className="label-eyebrow">Sign-off prompt</Label>
+                  <Textarea rows={2} value={draft.toolbox_talk.sign_off_prompt} onChange={(e) => patchTbt("sign_off_prompt", e.target.value)} className="mt-1 rounded-none border-ink" />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="swms" className="space-y-3">
+                <div>
+                  <Label className="label-eyebrow">Title</Label>
+                  <Input value={draft.swms_revision.title} onChange={(e) => patchSwms("title", e.target.value)} className="mt-1 h-11 rounded-none border-ink" data-testid="rem-swr-title" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label className="label-eyebrow">Priority</Label>
+                    <Select value={draft.swms_revision.priority} onValueChange={(v) => patchSwms("priority", v)}>
+                      <SelectTrigger className="mt-1 h-11 rounded-none border-ink" data-testid="rem-swr-priority"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label className="label-eyebrow">Target SWMS (activity)</Label>
+                    <Input value={draft.swms_revision.target_swms} onChange={(e) => patchSwms("target_swms", e.target.value)} placeholder="e.g. Electrical rough-in" className="mt-1 h-11 rounded-none border-ink" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="label-eyebrow">Summary</Label>
+                  <Textarea rows={2} value={draft.swms_revision.summary} onChange={(e) => patchSwms("summary", e.target.value)} className="mt-1 rounded-none border-ink" data-testid="rem-swr-summary" />
+                </div>
+                <div>
+                  <div className="label-eyebrow mb-1">Specific changes to make</div>
+                  <div className="space-y-2" data-testid="rem-swr-changes">
+                    {draft.swms_revision.changes.map((c, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input value={c} onChange={(e) => patchChange(i, e.target.value)} className="h-9 rounded-none border-ink flex-1" />
+                        <Button variant="ghost" size="sm" onClick={() => removeChange(i)} className="text-destructive"><Trash /></Button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={addChange} className="btn-sharp border-ink mt-2"><Plus className="mr-1" />Add change</Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+
+          <DialogFooter className="gap-2 flex-wrap">
+            <Button variant="outline" className="btn-sharp border-ink h-11" onClick={() => setOpen(false)} disabled={saving} data-testid="rem-cancel-btn">
+              Cancel
+            </Button>
+            <Button variant="outline" className="btn-sharp border-ink h-11" onClick={() => save({ tbt: true, swms: false })} disabled={saving || !draft?.toolbox_talk?.topic} data-testid="rem-save-tbt-btn">
+              <ChatCircleText className="mr-2" weight="fill" />Create Toolbox Talk only
+            </Button>
+            <Button variant="outline" className="btn-sharp border-ink h-11" onClick={() => save({ tbt: false, swms: true })} disabled={saving || !draft?.swms_revision?.title} data-testid="rem-save-swms-btn">
+              <FileText className="mr-2" />Create SWMS revision only
+            </Button>
+            <Button className="btn-sharp bg-red-700 text-white hover:bg-red-800 h-11" onClick={() => save({ tbt: true, swms: true })} disabled={saving || !(draft?.toolbox_talk?.topic && draft?.swms_revision?.title)} data-testid="rem-save-both-btn">
+              {saving ? "Creating…" : "Create both"} <ArrowRight className="ml-2" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export default function ReviewForm() {
   const { review_id } = useParams();
@@ -294,6 +607,19 @@ export default function ReviewForm() {
         ))}
         <Textarea rows={3} value={form.observations} onChange={(e) => patch("observations", e.target.value)} placeholder="Observations about the overall control set…" className="rounded-none border-ink" />
       </section>
+
+      {/* Reverse loop — Risk → Workers (only shown when failing controls detected) */}
+      {editing && (
+        <RemediationPrompt
+          review={form}
+          reviewId={form.review_id || review_id}
+          failing={detectFailing(form.control_reviews)}
+          onAccepted={(data) => {
+            // Merge remediation onto the local form so the linked card renders
+            patch("remediation", data?.remediation || form.remediation);
+          }}
+        />
+      )}
 
       {/* 4 */}
       <section id="rsec4" className="bg-background border border-border p-6 space-y-3">

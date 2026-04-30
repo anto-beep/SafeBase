@@ -26,6 +26,21 @@ risk_router = APIRouter()
 
 LIBRARY_KINDS = {"process", "activity", "task", "control"}
 
+_FAIL_EFF = {"not", "partial"}
+_FAIL_CHANGE = {"improve", "replace", "remove", "supplement"}
+_FAIL_PLACE = {"no", "partial"}
+
+
+def _failing_controls(review: dict) -> list[dict]:
+    """Return control_reviews rows flagged as failing in a review."""
+    out = []
+    for c in (review or {}).get("control_reviews", []) or []:
+        if (c.get("effectiveness") in _FAIL_EFF
+            or c.get("recommended_change") in _FAIL_CHANGE
+            or c.get("still_in_place") in _FAIL_PLACE):
+            out.append(c)
+    return out
+
 HRCW_CATEGORIES = [
     "Risk of a person falling more than 2 metres",
     "Work on a telecommunications tower",
@@ -627,6 +642,160 @@ def register_library_routes(app_db, get_current_user):
         r = await app_db.risk_reviews.find_one({"review_id": review_id, "user_id": current_user.user_id}, {"_id": 0})
         return r
 
+    @risk_router.post("/risk-reviews/{review_id}/accept-remediation")
+    async def accept_remediation(review_id: str, body: dict, current_user=Depends(get_current_user)):
+        """Create a Toolbox Talk and/or SWMS Revision Task from the AI-drafted
+        remediation payload. Links both back onto the review + risk record and
+        emits a notification. Used when a Risk Review has flagged failing
+        controls and the Safety Manager accepts the reverse-loop draft."""
+        review = await app_db.risk_reviews.find_one(
+            {"review_id": review_id, "user_id": current_user.user_id}, {"_id": 0}
+        )
+        if not review:
+            raise HTTPException(404, "review not found")
+        now = datetime.now(timezone.utc).isoformat()
+        created = {}
+
+        # 1) Toolbox Talk  → inserts into safety_toolbox_talks (generic module)
+        tbt = body.get("toolbox_talk") or None
+        if tbt and tbt.get("topic"):
+            tbt_id = f"tbt_{uuid.uuid4().hex[:10]}"
+            notes_parts = []
+            if tbt.get("objective"):
+                notes_parts.append(f"Objective: {tbt['objective']}")
+            if tbt.get("key_points"):
+                notes_parts.append("Key points:\n- " + "\n- ".join(tbt["key_points"]))
+            if tbt.get("worker_questions"):
+                notes_parts.append("Worker questions:\n- " + "\n- ".join(tbt["worker_questions"]))
+            if tbt.get("sign_off_prompt"):
+                notes_parts.append(f"Sign-off: {tbt['sign_off_prompt']}")
+            scheduled = tbt.get("scheduled_at") or (
+                datetime.now(timezone.utc) + timedelta(days=7)
+            ).isoformat()
+            tbt_doc = {
+                "item_id": tbt_id,
+                "user_id": current_user.user_id,
+                "module": "toolbox_talks",
+                "topic": tbt["topic"],
+                "site": tbt.get("site", ""),
+                "scheduled_at": scheduled,
+                "conducted_by": tbt.get("conducted_by", ""),
+                "status": "scheduled",
+                "attendees_count": tbt.get("attendees_count"),
+                "notes": "\n\n".join(notes_parts),
+                "source": "risk_review_remediation",
+                "linked_review_id": review_id,
+                "linked_risk_id": review.get("risk_id"),
+                "created_at": now,
+                "updated_at": now,
+            }
+            await app_db.safety_toolbox_talks.insert_one({**tbt_doc})
+            created["toolbox_talk_id"] = tbt_id
+            created["toolbox_talk_topic"] = tbt["topic"]
+
+        # 2) SWMS Revision Task → dedicated collection
+        swms = body.get("swms_revision") or None
+        if swms and swms.get("title"):
+            swr_id = f"swr_{uuid.uuid4().hex[:10]}"
+            swr_doc = {
+                "swms_revision_id": swr_id,
+                "user_id": current_user.user_id,
+                "title": swms["title"],
+                "summary": swms.get("summary", ""),
+                "changes": swms.get("changes", []),
+                "priority": swms.get("priority", "medium"),
+                "target_swms": swms.get("target_swms", ""),
+                "status": "open",
+                "assigned_to": swms.get("assigned_to", review.get("assigned_to", "")),
+                "due_date": swms.get("due_date") or (
+                    datetime.now(timezone.utc) + timedelta(days=14)
+                ).isoformat(),
+                "linked_review_id": review_id,
+                "linked_risk_id": review.get("risk_id"),
+                "linked_risk_title": review.get("risk_title"),
+                "created_at": now,
+                "updated_at": now,
+                "completed_at": None,
+            }
+            await app_db.swms_revision_tasks.insert_one({**swr_doc})
+            created["swms_revision_id"] = swr_id
+            created["swms_revision_title"] = swms["title"]
+
+        if not created:
+            raise HTTPException(400, "Provide toolbox_talk and/or swms_revision payload")
+
+        # Link onto the review
+        remediation = (review.get("remediation") or {}).copy()
+        remediation.update({
+            "drafted_at": remediation.get("drafted_at") or now,
+            "accepted_at": now,
+            **created,
+        })
+        await app_db.risk_reviews.update_one(
+            {"review_id": review_id, "user_id": current_user.user_id},
+            {"$set": {"remediation": remediation, "updated_at": now}},
+        )
+
+        # Link onto the risk (audit trail so the RiskDetail page can show it)
+        if review.get("risk_id"):
+            risk_audit = {
+                "at": now, "user_id": current_user.user_id, "user_name": current_user.name,
+                "field": "remediation_created",
+                "old": review_id,
+                "new": _json.dumps({k: v for k, v in created.items() if k.endswith("_id")}),
+            }
+            await app_db.risks.update_one(
+                {"risk_id": review["risk_id"], "user_id": current_user.user_id},
+                {"$push": {"audit_log": risk_audit}, "$set": {"updated_at": now}},
+            )
+
+        # In-app notification
+        await app_db.notifications.insert_one({
+            "user_id": current_user.user_id,
+            "channel": "in_app",
+            "type": "risk_remediation_created",
+            "title": f"Remediation drafted from review {review_id}",
+            "body": (
+                (f"Toolbox Talk '{created.get('toolbox_talk_topic')}' scheduled · "
+                 if created.get("toolbox_talk_topic") else "")
+                + (f"SWMS revision '{created.get('swms_revision_title')}' raised"
+                   if created.get("swms_revision_title") else "")
+            ).strip(" ·"),
+            "severity": "info",
+            "review_id": review_id,
+            "risk_id": review.get("risk_id"),
+            "created_at": now,
+            "read": False,
+        })
+
+        return {"created": True, **created, "remediation": remediation}
+
+    # ---------------- SWMS Revision Tasks (reverse loop) ----------------
+    @risk_router.get("/swms-revisions")
+    async def list_swms_revisions(current_user=Depends(get_current_user)):
+        rows = await app_db.swms_revision_tasks.find(
+            {"user_id": current_user.user_id}, {"_id": 0}
+        ).sort("created_at", -1).to_list(1000)
+        return rows
+
+    @risk_router.patch("/swms-revisions/{swms_revision_id}")
+    async def update_swms_revision(swms_revision_id: str, body: dict,
+                                    current_user=Depends(get_current_user)):
+        body.pop("_id", None); body.pop("user_id", None); body.pop("swms_revision_id", None)
+        body["updated_at"] = datetime.now(timezone.utc).isoformat()
+        if body.get("status") == "completed" and not body.get("completed_at"):
+            body["completed_at"] = body["updated_at"]
+        res = await app_db.swms_revision_tasks.update_one(
+            {"swms_revision_id": swms_revision_id, "user_id": current_user.user_id},
+            {"$set": body},
+        )
+        if res.matched_count == 0:
+            raise HTTPException(404, "not found")
+        doc = await app_db.swms_revision_tasks.find_one(
+            {"swms_revision_id": swms_revision_id, "user_id": current_user.user_id}, {"_id": 0}
+        )
+        return doc
+
     @risk_router.post("/risk-reviews/{review_id}/submit")
     async def submit_review(review_id: str, current_user=Depends(get_current_user)):
         now = datetime.now(timezone.utc).isoformat()
@@ -827,6 +996,99 @@ def register_library_routes(app_db, get_current_user):
                 "Return JSON: {summary: string (4-6 sentences)}. No prose outside JSON."
             )
             res = await _call_claude(sys, prompt, fallback, llm_chat_cls, user_message_cls, llm_key)
+            return res
+
+        @risk_router.post("/risk-reviews/{review_id}/ai/draft-remediation")
+        async def ai_draft_remediation(review_id: str, current_user=Depends(get_current_user)):
+            """Given a risk review, identify failing controls and AI-draft a
+            Toolbox Talk + SWMS Revision Task so the learning flows from the
+            risk register back to the workers on the ground."""
+            review = await app_db.risk_reviews.find_one(
+                {"review_id": review_id, "user_id": current_user.user_id}, {"_id": 0}
+            )
+            if not review:
+                raise HTTPException(404, "review not found")
+            failing = _failing_controls(review)
+            risk = await app_db.risks.find_one(
+                {"risk_id": review.get("risk_id"), "user_id": current_user.user_id}, {"_id": 0}
+            ) or {}
+
+            fallback_topic = f"Review of failing controls — {risk.get('title') or review.get('risk_title') or 'Risk review'}"
+            fallback_points = [
+                (f"Control '{c.get('name')}' rated as {c.get('effectiveness') or 'needs review'}. "
+                 f"{c.get('evidence_text') or 'Re-brief workers on correct application.'}")
+                for c in (failing or [])[:6]
+            ] or [
+                "Review current controls and reinforce correct use on site.",
+                "Invite worker feedback on barriers to correct application.",
+            ]
+            fallback = {
+                "failing_controls": failing,
+                "toolbox_talk": {
+                    "topic": fallback_topic[:80],
+                    "duration_mins": 10,
+                    "objective": f"Reinforce effective application of controls for '{risk.get('title') or 'this risk'}'.",
+                    "key_points": fallback_points,
+                    "worker_questions": [
+                        "Which controls do you find hardest to apply consistently?",
+                        "Have you encountered any situations where the control didn't work?",
+                        "What would help you apply this control reliably?",
+                    ],
+                    "sign_off_prompt": "Confirm attendees understand revised controls and their application.",
+                },
+                "swms_revision": {
+                    "title": f"Revise SWMS for {risk.get('title') or review.get('risk_title') or 'failing risk controls'}",
+                    "summary": "Update SWMS hazard + controls sections to reflect findings from the risk review.",
+                    "changes": [
+                        f"Update control '{c.get('name')}' based on observed effectiveness ({c.get('effectiveness')})."
+                        for c in (failing or [])[:6]
+                    ] or ["Re-examine control set against recent site evidence."],
+                    "priority": "high" if any(c.get("effectiveness") == "not" for c in failing) else "medium",
+                    "target_swms": "",
+                },
+                "fallback": True,
+            }
+
+            if not failing:
+                # Nothing failing; return safe default w/ informational flag so UI can skip
+                return {**fallback, "no_failing": True}
+
+            sys = (
+                "You are a senior WHS safety trainer for Australian tradie businesses. "
+                "Your job is to translate a risk review's failing controls into (1) a punchy "
+                "pre-start Toolbox Talk workers will actually engage with, and (2) a SWMS "
+                "revision task list that a supervisor can action the same week. Keep the "
+                "language direct, plain-English, and action-oriented."
+            )
+            payload = {
+                "risk_title": risk.get("title") or review.get("risk_title"),
+                "primary_hazard": risk.get("primary_hazard"),
+                "activity": risk.get("activity_name"),
+                "residual_score": risk.get("residual_score"),
+                "review_observations": review.get("observations"),
+                "review_summary": review.get("summary"),
+                "failing_controls": [{
+                    "name": c.get("name"),
+                    "hierarchy_level": c.get("hierarchy_level"),
+                    "effectiveness": c.get("effectiveness"),
+                    "still_in_place": c.get("still_in_place"),
+                    "recommended_change": c.get("recommended_change"),
+                    "evidence": c.get("evidence_text"),
+                } for c in failing],
+            }
+            prompt = (
+                f"Review data: {_json.dumps(payload)[:4000]}\n\n"
+                "Return JSON: {\n"
+                "  toolbox_talk: {topic (<=80 chars), duration_mins (5-15), objective "
+                "(one sentence), key_points: [5-7 short bullets referencing specific failing "
+                "controls], worker_questions: [3 open questions], sign_off_prompt (one sentence)},\n"
+                "  swms_revision: {title (<=80 chars), summary (one short paragraph), "
+                "changes: [4-7 concrete edits to make to the SWMS], priority (low|medium|high), "
+                "target_swms (activity name if inferable else empty string)}\n"
+                "}. No prose outside JSON."
+            )
+            res = await _call_claude(sys, prompt, fallback, llm_chat_cls, user_message_cls, llm_key)
+            res["failing_controls"] = failing
             return res
 
         @risk_router.post("/risks/ai/from-incident")
