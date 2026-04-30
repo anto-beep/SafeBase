@@ -45,6 +45,17 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - Frontend: 4 KPI cards + 30-bar stacked chart (success/fail) + "Test all enabled" button
 - Execution layer now records `duration_ms` on every run for latency analytics
 
+### Iteration 12 — Enterprise Pricing Tier (Feb 2026)
+- **4-tier pricing** launched: Sole Trader A$249 · Small Business A$499 · Growing Business A$799 · **Enterprise A$1,299** /mo + GST (annual = 2 months free)
+- `/api/billing/tiers` returns 8 slugs (4 tiers × monthly/annual); `/api/enterprise/demo-request` public endpoint for demo captures
+- Dedicated `/enterprise` marketing landing page
+- **4 in-app Enterprise upsell triggers** (shared `<EnterpriseUpsellModal>` + `useTier()` hook):
+  1. Workers: 21st worker add click → users-variant modal
+  2. Settings: new **API** tab → api-variant modal for non-enterprise users
+  3. Reports: 6th report in calendar month (localStorage counter) → reports-variant modal
+  4. Dashboard: unique incident sites > 5 → sites-variant upsell banner
+- All prices across /pricing, /enterprise, /compare, /fine-calculator, /dashboard plan banner, Billing panel show "+ GST" strictly
+
 ---
 
 ## Backend endpoints (current summary)
