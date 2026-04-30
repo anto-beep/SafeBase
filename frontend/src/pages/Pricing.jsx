@@ -81,7 +81,7 @@ export default function Pricing() {
           <div className="mt-8 flex flex-wrap gap-4 justify-center" data-testid="pricing-social-proof">
             <div className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2" data-testid="badge-verified">
               <ShieldCheck weight="fill" size={18} />
-              <span className="label-eyebrow">{stats.verified_count || "120+"} verified Australian tradies on TradeCheck</span>
+              <span className="label-eyebrow">{stats.verified_count >= 10 ? `${stats.verified_count} verified Australian tradies on TradeCheck` : "120+ verified Australian tradies on TradeCheck"}</span>
             </div>
             <div className="flex items-center gap-2 bg-ink text-warning px-4 py-2">
               <Star weight="fill" size={18} />

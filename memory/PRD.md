@@ -1,90 +1,85 @@
 # SafeTradie — PRD
 
 ## Original problem
-WHS compliance SaaS for Australian trade businesses. Four core functions (SWMS gen, Incidents, People/Licences, Intelligence) + ecosystem (TradeInduct, TradeCheck, Academy, Franchise, Consulting). Pricing A$150/250/400 per month.
+WHS compliance SaaS for Australian trade businesses. Four core functions + ecosystem products. Priced A$150/250/400/mo.
 
 ## Users
-- Business owner (primary buyer)
-- Safety manager
-- Supervisor (site-assigned)
-- Worker (mobile app)
-- WHS consultant (white-label partner)
-- Franchisor
+- Business owner (primary buyer) · Safety manager · Supervisor · Worker · WHS consultant · Franchisor
 
 ## Batching roadmap
-User provided 34-prompt + 5-workflow blueprint; built in batches (a, b, c, d, e).
+Built in 5 batches (a, b, c, d, e) from a 34-prompt + 5-workflow blueprint. **All batches complete as of Feb 2026.**
 
 ---
 
-## Implemented
+## Implemented (chronological)
 
-### Iteration 1-2 — Foundation (Dec 2025)
-- Backend: JWT + Emergent Google Auth, Workers, Licences, Incidents, Documents (Claude Sonnet 4.5), Compliance score
-- Frontend: Landing, Login, Register, Dashboard, Documents, Incidents, Workers, Licences
+### Iteration 1-3 — Foundation + Marketing (Dec 2025)
+- JWT + Google auth, Workers/Licences/Incidents/Documents CRUD, SWMS AI gen, Compliance score
+- 15 public marketing routes + Pricing + MarketingNav
 
-### Iteration 3 — Marketing expansion
-- 15 public routes + Pricing A$150/250/400 + MarketingNav
-
-### Iteration 4 — Batch (a) Foundation + Onboarding
+### Iteration 4 — Batch (a) Onboarding (Feb 2026)
 - OnboardingWizard (6 steps), Settings (6 tabs), Notifications Centre, enhanced Register
 
 ### Iteration 5 — Batch (b) Core Safety Modules (Feb 2026)
-- Generic `/api/safety/{module}` + `/api/safety/summary`
-- 6 modules: Toolbox Talks, Plant, Substances, Inspections, Risk Register, First Aid/PPE
-- Shared `SafetyModulePage.jsx`; Risk auto-computes inherent + residual scores
-- Bugs fixed: route ordering for /summary, int coercion via `_safe_int()`
+- Generic `/api/safety/{module}` + 6 modules: Toolbox Talks, Plant, Substances, Inspections, Risks, First Aid/PPE
+- Fixes: summary route ordering, int coercion in risks
 
 ### Iteration 6 — Batch (c) Reports + Workflows (Feb 2026)
-- **Reports**: 10 live-computed reports (catalog + detail endpoints)
-- **Workflows engine**: stepped progress, 5 workflows (W1 New Employee, W2 Incident Resolution, W3 SWMS→Job Start, W4 Annual WHS Review, W5 Subcontractor)
-- Shared `WorkflowPage.jsx`; sidebar Reports + Workflows sections
+- 10 live-computed reports (catalog + detail)
+- Workflows engine + 5 stepped workflows (W1 New Employee, W2 Incident Resolution, W3 SWMS→Job, W4 Annual Review, W5 Subcontractor)
 
-### Iteration 7 — Batch (d) Ecosystem + AI Insights (Feb 2026)
-- **AI Insights on Reports** (Claude Sonnet 4.5 via Emergent LLM Key): `POST /api/reports/{type}/insights` returns `{summary, actions:[{priority, action, why}]}` with 24h cache and graceful fallback
-- **TradeInduct** (`/dashboard/tradeinduct` + public `/induct/:code`): create induction programs with auto-generated invite codes, worker submits form unauthenticated, certificate_id issued
-- **TradeCheck** public marketplace (`/tradecheck`) + owner listing mgmt (`/dashboard/tradecheck`): filter by trade/state, verification flow (pending → verified)
-- **Academy LMS** (`/dashboard/academy`): 8 seeded courses, enrol → module progress → auto-issued certificate on completion
-- **Partner/Consultant Portal** (`/dashboard/partner`): client book with MRR, status dropdowns, auto-enriched docs/incidents/licences snapshots
-- **Mobile Worker PWA** (`/worker`): dark mobile-optimised dashboard, site check-in, my-licences, upcoming toolbox, recent SWMS, my-courses
-- Sidebar: new Ecosystem section with 5 links
+### Iteration 7 — Batch (d) Ecosystem Apps + AI Insights (Feb 2026)
+- AI-powered report insights (Claude Sonnet 4.5, 24h cache, graceful fallback)
+- TradeInduct (invite codes + public form at /induct/:code)
+- TradeCheck (public marketplace /tradecheck + owner mgmt)
+- Academy LMS (8 courses, enrolment→progress→certificate)
+- Partner/Consultant portal (client book + MRR tracking)
+- Mobile Worker PWA (/worker)
+
+### Iteration 8 — Batch (e) Marketing SEO blitz (Feb 2026)
+- **Blog** (/blog + /blog/:slug) with 20 seed SEO articles
+- **Templates Library** (/templates) with 13 downloadable .txt templates
+- **Competitor Comparison** (/compare) — SafeTradie vs HammerTech, HazardCo, SiteDocs, Donesafe
+- **State Guides** (/guides + /guides/:state) for all 8 AU jurisdictions
+- **WorkSafe Fine Calculator** (/tools/fine-calculator) — interactive estimator with slider
+- **Integrations** (/integrations) — Xero, MYOB, ServiceM8, Tradify, Deputy, Slack, Teams, Zapier etc.
+- **Social-proof badges** on /pricing (live verified-count from /api/tradecheck/stats)
 
 ---
 
-## Backend endpoints (current, by module)
-- **Auth**: POST /api/auth/{register,login,google-session,logout}, GET /api/auth/me
-- **Core**: Workers/Licences/Incidents/Documents CRUD, /api/compliance/score
-- **Settings**: /api/settings/{business,notifications}, /api/team CRUD
-- **Notifications/Onboarding**: /api/notifications, /api/onboarding
-- **Safety (batch b)**: /api/safety/summary, /api/safety/{module} CRUD ×7 modules
-- **Reports (batch c)**: /api/reports (catalog), /api/reports/{type}, **POST /api/reports/{type}/insights** (AI, cached)
-- **Workflows (batch c)**: /api/workflows/{catalog,summary}, /api/workflows/{wtype} CRUD + step toggle
-- **Batch (d)**:
-  - TradeInduct: /api/tradeinduct/programs CRUD, /api/tradeinduct/public/{code} (GET+submit, no auth), /api/tradeinduct/programs/{id}/submissions
-  - TradeCheck: /api/tradecheck/listings (public list), /api/tradecheck/my, /api/tradecheck/listings (POST upsert), /api/tradecheck/verify/{id}
-  - Academy: /api/academy/courses, /api/academy/enrolments (GET/POST), /api/academy/enrolments/{id}/progress
-  - Partner: /api/partner/{clients,summary} CRUD
-  - Worker: /api/worker/{my-summary,checkin,checkins}
+## Backend endpoints (current)
+- Auth: /api/auth/{register,login,google-session,logout}, /api/auth/me
+- Core CRUD: Workers, Licences, Incidents, Documents
+- Compliance: /api/compliance/score
+- Settings / Notifications / Onboarding
+- **Safety (b)**: /api/safety/summary, /api/safety/{module} CRUD
+- **Reports (c)**: /api/reports, /api/reports/{type}, **POST /api/reports/{type}/insights** (AI, cached)
+- **Workflows (c)**: /api/workflows/{catalog,summary,{wtype}} CRUD + step toggle
+- **Batch (d)**: /api/tradeinduct/* (+ public /induct/), /api/tradecheck/{listings,my,verify,stats (public)}, /api/academy/{courses,enrolments}, /api/partner/{clients,summary}, /api/worker/{my-summary,checkin,checkins}
+
+## Frontend routes
+- Public: /, /ecosystem, /services/*, /products/*, /consulting, /pricing, /partners, /franchises, /resources, /about, /tradecheck, /induct/:code, /blog(+/:slug), /templates, /compare, /guides(+/:state), /tools/fine-calculator, /integrations
+- Auth: /login, /register, /auth/callback, /worker (protected)
+- Dashboard (protected): /dashboard/{overview, documents, incidents, workers, licences, notifications, settings, reports, toolbox-talks, plant, substances, inspections, risks, first-aid-ppe, workflows/*, tradeinduct, tradecheck, academy, partner}
 
 ---
 
 ## Backlog
 
-### Next: batch e — Marketing SEO blitz
-- Blog + 20 seed articles
-- Free Templates Library
-- Competitor Comparison page
-- State-by-State Guides
-- WorkSafe Fine Calculator
-- Integrations page
-- Partner Program LP
-
 ### Refactoring backlog
-- Split `server.py` (1720+ lines) into `/app/backend/routes/{auth,safety,reports,workflows,tradeinduct,tradecheck,academy,partner,worker}.py`
-- Typed Pydantic models per module (replace `body: dict`)
-- Add ESLint rule for unresolved imports (would have caught TradecheckMarketplace default-import bug)
+- Split server.py (~1730 lines) into /app/backend/routes/*.py modules
+- Typed Pydantic models per module (replace body: dict)
+- Add ESLint rule for unresolved imports
+
+### Possible future batches (P2/P3)
+- Native mobile apps (React Native / Capacitor from existing PWA)
+- Stripe billing integration
+- Zapier actual triggers (beyond catalog page)
+- Multi-language (translations for worker PWA)
+- Advanced analytics dashboards (D3/Recharts)
 
 ---
 
 ## Known environmental constraints
-- EMERGENT_LLM_KEY budget may deplete — SWMS + AI insights have fallback placeholder
+- EMERGENT_LLM_KEY budget may deplete — SWMS + AI insights have graceful fallback
 - K8s ingress 60s timeout → backend AI timeout 50s
