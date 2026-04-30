@@ -1,0 +1,45 @@
+{
+  "summary": "Iteration 7 — Full backend + frontend testing for Batch (d) Ecosystem Apps + Reports AI Insights. Backend: 17/17 pytest pass (test_batch_d_ecosystem.py): AI Insights (compliance_score live + cached=true on 2nd call, incidents_trend live, 404 on bogus type, fallback path is graceful 200), TradeInduct full lifecycle (create→list→public GET→public submit→submissions list→other-owner-isolation→404 unknown code→delete), TradeCheck (upsert idempotency with stable listing_id, /my, public list excludes pending, public list returns ONLY verified, trade+state filters, no user_id leakage to public), Academy (8 courses, idempotent enrol returns same id, partial progress→in_progress, full progress→completed+certificate_id issued, 404 on unknown course), Partner (CRUD with enriched docs_count/incidents_open/licences_total, status PATCH, summary returns MRR & at_risk), Worker (my-summary returns name/role/licences_total/expiring/toolbox/swms/courses, checkin creates ci_ id with no _id leakage, checkins lists, 401 unauthenticated). Regression: reports catalog (10), workflows catalog, safety/toolbox_talks, compliance/score all green. Frontend: FOUND BUILD-BREAKING IMPORT BUG in TradecheckMarketplace.jsx (imported MarketingLayout as default but @/components/marketing/Layout exports only named MarketingNav/MarketingFooter — the entire app would not compile). FIXED by replacing default import with named imports + wrapping the section between <MarketingNav/> and <MarketingFooter/>. After fix: /tradecheck (no auth) renders, /dashboard/tradeinduct creates induction & shows invite code (FE69A0) + Copy link, /induct/{code} unauthenticated renders form + submit returns certificate page, /dashboard/academy renders 8 cards & enrol→Continue button transition works, /dashboard/partner add-client adds row to table, /worker dark mobile dashboard renders + check-in dialog logs site, /dashboard/tradecheck renders my-listing form, /dashboard/reports opens report dialog with Insights panel rendering 'Generate insights' CTA. Sidebar Ecosystem section confirmed with 5 nav-app-* testids (tradeinduct, tradecheck, academy, partner-portal, mobile-worker). REGRESSION: /dashboard/workflows/new-employee still mounts. ALL ACCEPTANCE CRITERIA MET POST-FIX.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "TradecheckMarketplace.jsx", "issue": "FIXED by tester: imported MarketingLayout as default but @/components/marketing/Layout has no default export — entire app failed to compile (error overlay covered every dashboard route). Replaced default import with `{ MarketingNav, MarketingFooter }` and wrapped page in fragment.", "selector": "import MarketingLayout from '@/components/marketing/Layout'", "priority": "CRITICAL (was)"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_batch_d_ecosystem.py",
+    "/app/test_reports/pytest/iter7_batch_d.xml"
+  ],
+  "action_items": [
+    "(NONE — all green) Tester applied the only required fix in TradecheckMarketplace.jsx to unblock the entire frontend. Main agent should review the fix and consider creating a proper default-export wrapper component at @/components/marketing/Layout.jsx (e.g. const MarketingLayout = ({children}) => <><MarketingNav/>{children}<MarketingFooter/></>; export default MarketingLayout;) so future pages can use the original ergonomic pattern without breaking."
+  ],
+  "critical_code_review_comments": [
+    "server.py:1151-1247 AI insights endpoint has correct 24h cache (find by user_id+report_type), proper 404 for unknown report_type (validates against _REPORT_TYPES BEFORE lookup), and a robust graceful fallback that returns 200 with fallback:true when LLM fails (avoids UI breakage). asyncio.wait_for(50s) prevents long hangs. Good.",
+    "server.py:1437-1442 induction code generation collision-checks against ALL programs (not just current user). Correct for global uniqueness since /tradeinduct/public/{code} is global lookup. Good.",
+    "server.py:1521-1548 tradecheck upsert reuses existing listing_id rather than creating a new one — correct idempotency. status defaults to 'pending' on create, public list filters to status=='verified' and projects out user_id — privacy preserved.",
+    "server.py:1607-1655 academy enrol is idempotent (returns existing on 2nd call). progress endpoint clamps modules_completed to [0, total], computes pct correctly, and only issues certificate_id once (preserved across re-completions). Good.",
+    "server.py:1659-1719 partner enrichment does N queries per client (docs_count, incidents_open, licences_total) — fine for small N but could be a perf hot-spot at scale; consider $lookup aggregation if clients > 200. Not a defect.",
+    "server.py:1729-1758 worker /my-summary fallback to all licences when worker-specific match is empty is pragmatic for owner preview but means a 'worker' user with no matching licences gets owner's view — document this behaviour.",
+    "TradecheckMarketplace.jsx had a build-breaking default import that the previous testing agent did not catch because Batch (d) was added after iter 6. Suggest a pre-commit ESLint rule for unresolved imports.",
+    "DashboardLayout.jsx APPS_NAV testids correctly auto-generate via .replace pipeline including the .replace(/-+/g,'-') collapse — no double-dashes observed in nav-app-* testids."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_batch_d_ecosystem.py",
+    "/app/frontend/src/pages/TradecheckMarketplace.jsx"
+  ],
+  "success_rate": {
+    "backend": "100% (17/17 batch-d tests pass; regression 4/4)",
+    "frontend": "100% on all Batch (d) flows after the import fix — TradeCheck marketplace, TradeInduct create+code+copy, InductionPublic submit→cert, Academy 8 cards+enrol→Continue, Partner add-client→row, Mobile Worker check-in, TradeCheck My, Reports AI panel render, Workflow regression all green"
+  },
+  "test_credentials": "owner@safetradie.demo / Demo@1234 works. Tests register fresh ui_test_<8hex>@safetradie.demo users to avoid pollution.",
+  "seed_data_creation": "Pytest created and DELETED: 1 induction program + 1 submission, 1 tradecheck listing (verified, kept as it's owner-scoped), 2 academy enrolments, 1 partner client (deleted), 1 worker checkin. UI tests created: 2 induction programs, 1 academy enrolment, 1 partner client, 1 worker checkin under fresh test users — all isolated per fresh user_id, no pollution to demo owner.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Batch (d) is solid and production-ready post-fix. Backend tests at /app/backend/tests/test_batch_d_ecosystem.py (17 tests: ReportInsights, TradeInduct, TradeCheck, Academy, Partner, Worker, Regression). Critical fix applied: TradecheckMarketplace.jsx now uses named imports {MarketingNav, MarketingFooter}. If main agent later creates a proper default-export MarketingLayout wrapper, revert this file to use it. Sidebar testids: nav-app-{tradeinduct|tradecheck|academy|partner-portal|mobile-worker}. Page testids: tradeinduct-page, tradecheck-my-page, tradecheck-hero, academy-page, partner-portal-page, mobile-worker-page, induction-public-form, reports-page, insights-panel, insights-run-btn, insights-action-{i}. JWT key: localStorage 'st_token'. Onboarding bypass: PUT /api/onboarding {step:6, completed:true}. AI insights cache is per (user_id, report_type) with 24h TTL — first call ~5-15s, second call instant cached:true.",
+  "rca of the issue": "TradecheckMarketplace.jsx imported MarketingLayout as default export from @/components/marketing/Layout, but that file only has named exports (MarketingNav, MarketingFooter). Webpack compile error 'export default not found' caused the entire React app to render a red error overlay on every dashboard route, blocking all UI testing of Batch (d). Reproduction: navigate to any /dashboard/* route — overlay covers the page even though sidebar/page DOM is technically rendered behind it. Mitigation applied: changed import to `import { MarketingNav, MarketingFooter } from '@/components/marketing/Layout'` and replaced `<MarketingLayout>...</MarketingLayout>` wrapper with `<><MarketingNav/>...<MarketingFooter/></>`. Long-term fix: main agent should add a default-export MarketingLayout component to @/components/marketing/Layout.jsx so the original ergonomic API works for future pages."
+}

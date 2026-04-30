@@ -1118,6 +1118,135 @@ async def get_report(report_type: str, current_user: User = Depends(get_current_
     return {"meta": meta, "generated_at": now.isoformat(), "rows": []}
 
 
+def _summarise_report_for_llm(report_type: str, data: dict) -> str:
+    """Produces a compact JSON-like string of key facts for the LLM — avoids sending full rows."""
+    meta = data.get("meta", {})
+    parts = [f"Report: {meta.get('title', report_type)}"]
+    if report_type == "compliance_score":
+        parts.append(f"Score: {data.get('score')}/100")
+        parts.append("Pillars:")
+        for p in data.get("pillars", []):
+            parts.append(f"  - {p['label']}: {p['value']} ({p['status']})")
+    elif report_type == "incidents_trend":
+        parts.append(f"Total incidents: {data.get('total')}")
+        parts.append(f"By severity: {data.get('by_severity')}")
+        parts.append(f"By type: {data.get('by_type')}")
+        parts.append(f"By month: {data.get('by_month')}")
+    elif report_type == "licence_expiry":
+        parts.append(f"Counts: {data.get('counts')}")
+        top_exp = data.get("expired", [])[:5] + data.get("expiring", [])[:5]
+        for lic in top_exp:
+            parts.append(f"  - {lic.get('licence_type')} for {lic.get('worker_name') or lic.get('holder_name') or '—'}: {lic.get('days_to_expiry')}d")
+    elif report_type == "training_matrix":
+        parts.append(f"Workers: {data.get('workers_count')} · Licence types: {len(data.get('licence_types', []))}")
+        for w in data.get("rows", [])[:10]:
+            parts.append(f"  - {w.get('name')} ({w.get('trade')}): gaps = {w.get('gaps')}")
+    else:
+        parts.append(f"Total rows: {data.get('total', len(data.get('rows', [])))}")
+        if data.get("by_outcome"):
+            parts.append(f"By outcome: {data.get('by_outcome')}")
+    return "\n".join(parts)
+
+
+@api_router.post("/reports/{report_type}/insights")
+async def get_report_insights(report_type: str, current_user: User = Depends(get_current_user)):
+    """Claude Sonnet 4.5 analyses the report and returns summary + 3 recommended actions. 24h cache."""
+    if report_type not in _REPORT_TYPES:
+        raise HTTPException(404, f"Unknown report type: {report_type}")
+
+    # 24h cache
+    cached = await db.report_insights.find_one(
+        {"user_id": current_user.user_id, "report_type": report_type}, {"_id": 0}
+    )
+    if cached:
+        try:
+            gen = datetime.fromisoformat(cached["generated_at"])
+            if (datetime.now(timezone.utc) - gen).total_seconds() < 86400:
+                cached["cached"] = True
+                return cached
+        except Exception:
+            pass
+
+    # Regenerate report data (reuse the same path)
+    report_data = await get_report(report_type, current_user)  # type: ignore
+    summary_text = _summarise_report_for_llm(report_type, report_data)
+
+    sys_msg = (
+        "You are a senior Australian WHS consultant analysing a compliance report for a trade business. "
+        "Respond in plain English, practical and specific. Reference WHS Act/Regulations or AS/NZS only when relevant."
+    )
+    user_prompt = (
+        f"Analyse this report data and provide:\n"
+        f"1) A 2–3 sentence plain-English summary of the current state.\n"
+        f"2) Exactly 3 prioritised, specific recommended actions the business owner should take next.\n"
+        f"Return pure JSON with keys: summary (string), actions (array of 3 objects each with "
+        f"{{priority: 'high'|'medium'|'low', action: string, why: string}}). No prose outside the JSON.\n\n"
+        f"REPORT DATA:\n{summary_text}"
+    )
+
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"insights_{uuid.uuid4().hex[:8]}",
+            system_message=sys_msg,
+        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+
+        def _run_llm():
+            return asyncio.run(chat.send_message(UserMessage(text=user_prompt)))
+
+        raw = await asyncio.wait_for(asyncio.to_thread(_run_llm), timeout=50.0)
+    except asyncio.TimeoutError:
+        raise HTTPException(503, "AI provider is slow/unavailable — please retry shortly.")
+    except Exception as e:
+        logger.exception("AI insights failed")
+        # Graceful fallback so UI doesn't crash when LLM budget exhausted etc.
+        fallback = {
+            "user_id": current_user.user_id,
+            "report_type": report_type,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary": "AI insights are temporarily unavailable. Review the raw report and prioritise overdue licences, open incidents, and overdue inspections first.",
+            "actions": [
+                {"priority": "high", "action": "Review the report data below", "why": "AI provider unavailable — human review recommended."},
+                {"priority": "medium", "action": "Check /dashboard/notifications for any unread alerts", "why": "Time-sensitive items often surface there first."},
+                {"priority": "low", "action": "Retry AI insights later", "why": f"Last error: {str(e)[:120]}"},
+            ],
+            "cached": False,
+            "fallback": True,
+        }
+        return fallback
+
+    # Try parse JSON
+    import json as _json, re as _re
+    parsed = None
+    try:
+        parsed = _json.loads(raw)
+    except Exception:
+        m = _re.search(r"\{[\s\S]*\}", raw or "")
+        if m:
+            try:
+                parsed = _json.loads(m.group(0))
+            except Exception:
+                parsed = None
+    if not parsed or "summary" not in parsed or "actions" not in parsed:
+        parsed = {"summary": (raw or "")[:500], "actions": []}
+
+    result = {
+        "user_id": current_user.user_id,
+        "report_type": report_type,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": parsed.get("summary", ""),
+        "actions": parsed.get("actions", []),
+        "cached": False,
+    }
+    # upsert
+    await db.report_insights.update_one(
+        {"user_id": current_user.user_id, "report_type": report_type},
+        {"$set": result},
+        upsert=True,
+    )
+    return result
+
+
 # ============================================================
 # WORKFLOWS (Batch c) — W1..W5 instances with stepped progress
 # ============================================================
@@ -1291,6 +1420,366 @@ async def delete_workflow(wtype: str, instance_id: str, current_user: User = Dep
         {"instance_id": instance_id, "user_id": current_user.user_id, "workflow_type": wtype}
     )
     return {"deleted": res.deleted_count}
+
+
+# ============================================================
+# BATCH (d) — Ecosystem Apps
+# ============================================================
+
+# -------- TradeInduct: induction programs + invite codes --------
+@api_router.get("/tradeinduct/programs")
+async def list_induction_programs(current_user: User = Depends(get_current_user)):
+    rows = await db.induction_programs.find({"user_id": current_user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return rows
+
+
+@api_router.post("/tradeinduct/programs")
+async def create_induction_program(body: dict, current_user: User = Depends(get_current_user)):
+    pid = f"ip_{uuid.uuid4().hex[:10]}"
+    code = body.get("code") or uuid.uuid4().hex[:6].upper()
+    # ensure uniqueness across ALL programs
+    while await db.induction_programs.find_one({"code": code}):
+        code = uuid.uuid4().hex[:6].upper()
+    doc = {
+        "program_id": pid,
+        "user_id": current_user.user_id,
+        "code": code,
+        "title": body.get("title") or "Site induction",
+        "site": body.get("site", ""),
+        "trade": body.get("trade", ""),
+        "questions": body.get("questions") or [
+            {"q": "Have you read the site-specific SWMS?", "required": True},
+            {"q": "Do you hold a valid White Card?", "required": True},
+            {"q": "Do you have the PPE required for this site?", "required": True},
+            {"q": "Have you been briefed on emergency procedures?", "required": True},
+            {"q": "Any pre-existing medical conditions we should know about?", "required": False},
+        ],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.induction_programs.insert_one({**doc})
+    return doc
+
+
+@api_router.delete("/tradeinduct/programs/{program_id}")
+async def delete_induction_program(program_id: str, current_user: User = Depends(get_current_user)):
+    res = await db.induction_programs.delete_one({"program_id": program_id, "user_id": current_user.user_id})
+    return {"deleted": res.deleted_count}
+
+
+@api_router.get("/tradeinduct/programs/{program_id}/submissions")
+async def list_submissions(program_id: str, current_user: User = Depends(get_current_user)):
+    rows = await db.induction_submissions.find(
+        {"user_id": current_user.user_id, "program_id": program_id}, {"_id": 0}
+    ).sort("submitted_at", -1).to_list(500)
+    return rows
+
+
+# Public endpoint — worker completes induction via invite code (no auth)
+@api_router.get("/tradeinduct/public/{code}")
+async def public_induction_program(code: str):
+    prog = await db.induction_programs.find_one({"code": code.upper()}, {"_id": 0})
+    if not prog:
+        raise HTTPException(404, "Unknown induction code")
+    return {"program_id": prog["program_id"], "title": prog["title"], "site": prog.get("site"),
+            "trade": prog.get("trade"), "questions": prog.get("questions", []), "code": prog["code"]}
+
+
+@api_router.post("/tradeinduct/public/{code}/submit")
+async def submit_induction(code: str, body: dict):
+    prog = await db.induction_programs.find_one({"code": code.upper()}, {"_id": 0})
+    if not prog:
+        raise HTTPException(404, "Unknown induction code")
+    sub_id = f"sub_{uuid.uuid4().hex[:10]}"
+    doc = {
+        "submission_id": sub_id,
+        "program_id": prog["program_id"],
+        "user_id": prog["user_id"],
+        "worker_name": body.get("worker_name", ""),
+        "worker_email": body.get("worker_email", ""),
+        "worker_phone": body.get("worker_phone", ""),
+        "answers": body.get("answers", []),
+        "signature": body.get("signature", ""),
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "certificate_id": f"cert_{uuid.uuid4().hex[:10]}",
+    }
+    await db.induction_submissions.insert_one({**doc})
+    return {"certificate_id": doc["certificate_id"], "submitted_at": doc["submitted_at"],
+            "program_title": prog["title"], "worker_name": doc["worker_name"]}
+
+
+# -------- TradeCheck: verified contractor marketplace --------
+@api_router.get("/tradecheck/listings")
+async def list_tradecheck(trade: Optional[str] = None, state: Optional[str] = None):
+    """Public listing — returns verified contractors."""
+    q = {"status": "verified"}
+    if trade: q["trade"] = trade
+    if state: q["state"] = state
+    rows = await db.tradecheck_listings.find(q, {"_id": 0, "user_id": 0}).sort("rating", -1).to_list(200)
+    return rows
+
+
+@api_router.post("/tradecheck/listings")
+async def create_tradecheck(body: dict, current_user: User = Depends(get_current_user)):
+    """Business owner creates their own listing."""
+    existing = await db.tradecheck_listings.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    listing_id = existing.get("listing_id") if existing else f"tc_{uuid.uuid4().hex[:10]}"
+    doc = {
+        "listing_id": listing_id,
+        "user_id": current_user.user_id,
+        "business_name": body.get("business_name", ""),
+        "trade": body.get("trade", ""),
+        "state": body.get("state", ""),
+        "abn": body.get("abn", ""),
+        "years_trading": body.get("years_trading", 0),
+        "team_size": body.get("team_size", 0),
+        "licences": body.get("licences", []),
+        "insurance": body.get("insurance", []),
+        "certifications": body.get("certifications", []),
+        "description": body.get("description", ""),
+        "contact_email": body.get("contact_email", ""),
+        "contact_phone": body.get("contact_phone", ""),
+        "rating": body.get("rating", 0),
+        "status": body.get("status", "pending"),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.tradecheck_listings.update_one(
+        {"listing_id": listing_id}, {"$set": doc}, upsert=True
+    )
+    return doc
+
+
+@api_router.get("/tradecheck/my")
+async def get_my_tradecheck(current_user: User = Depends(get_current_user)):
+    doc = await db.tradecheck_listings.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return doc or {}
+
+
+@api_router.post("/tradecheck/verify/{listing_id}")
+async def verify_tradecheck(listing_id: str, current_user: User = Depends(get_current_user)):
+    """Mark own listing as verified (simplified — real flow would require admin review)."""
+    await db.tradecheck_listings.update_one(
+        {"listing_id": listing_id, "user_id": current_user.user_id},
+        {"$set": {"status": "verified", "verified_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"ok": True}
+
+
+# -------- Academy LMS: courses, enrolments, certificates --------
+_ACADEMY_COURSES = [
+    {"course_id": "c_whs_fundamentals", "title": "WHS Fundamentals for Tradies", "duration_mins": 60, "modules": 6,
+     "description": "Essential WHS duties, rights and responsibilities under the Australian WHS Act.",
+     "topics": ["Duty of care", "Consultation", "Risk management", "Incident reporting", "First aid", "Recordkeeping"]},
+    {"course_id": "c_working_heights", "title": "Working Safely at Heights", "duration_mins": 45, "modules": 5,
+     "description": "Working above 2m — controls, equipment, rescue, and legal obligations.",
+     "topics": ["Fall-prevention hierarchy", "Scaffold vs edge protection", "Harness inspection", "Rescue plans", "Recordkeeping"]},
+    {"course_id": "c_electrical_safety", "title": "Electrical Safety Essentials", "duration_mins": 40, "modules": 4,
+     "description": "Electrical hazards on trade sites — isolation, test-before-touch, and RCDs.",
+     "topics": ["Isolation procedures", "Test and tag", "Portable appliance testing", "Emergency response"]},
+    {"course_id": "c_manual_handling", "title": "Manual Handling & Musculoskeletal", "duration_mins": 30, "modules": 4,
+     "description": "Reduce the #1 cause of worker injury in construction.",
+     "topics": ["Risk assessment", "Lifting technique", "Team lifts", "Mechanical aids"]},
+    {"course_id": "c_mental_health", "title": "Mental Health & Psychosocial", "duration_mins": 50, "modules": 5,
+     "description": "Recognising and responding to psychosocial hazards — mandated since 2023.",
+     "topics": ["Psychosocial hazards", "Workload & control", "Bullying prevention", "Talking to mates", "Support resources"]},
+    {"course_id": "c_confined_space", "title": "Confined Space Entry", "duration_mins": 55, "modules": 5,
+     "description": "Permit-to-work, gas testing, and rescue plans for confined spaces.",
+     "topics": ["Permit system", "Atmospheric testing", "Stand-by person", "Rescue drill", "Recordkeeping"]},
+    {"course_id": "c_incident_investigation", "title": "Incident Investigation", "duration_mins": 45, "modules": 4,
+     "description": "Root-cause analysis and 5-Whys for real site incidents.",
+     "topics": ["Sequence of events", "5-Whys", "Corrective actions", "Learnings and share-back"]},
+    {"course_id": "c_sds_hazardous", "title": "Hazardous Substances & SDS", "duration_mins": 35, "modules": 4,
+     "description": "Read an SDS in 60 seconds and manage chemical risks.",
+     "topics": ["SDS structure", "Labelling (GHS)", "PPE selection", "Spill response"]},
+]
+
+
+@api_router.get("/academy/courses")
+async def list_academy_courses(current_user: User = Depends(get_current_user)):
+    return _ACADEMY_COURSES
+
+
+@api_router.get("/academy/enrolments")
+async def my_enrolments(current_user: User = Depends(get_current_user)):
+    rows = await db.academy_enrolments.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(200)
+    return rows
+
+
+@api_router.post("/academy/enrolments")
+async def enrol_course(body: dict, current_user: User = Depends(get_current_user)):
+    course_id = body.get("course_id")
+    course = next((c for c in _ACADEMY_COURSES if c["course_id"] == course_id), None)
+    if not course:
+        raise HTTPException(404, "Unknown course")
+    existing = await db.academy_enrolments.find_one({"user_id": current_user.user_id, "course_id": course_id}, {"_id": 0})
+    if existing:
+        return existing
+    doc = {
+        "enrolment_id": f"en_{uuid.uuid4().hex[:10]}",
+        "user_id": current_user.user_id,
+        "course_id": course_id,
+        "course_title": course["title"],
+        "modules_completed": 0,
+        "modules_total": course["modules"],
+        "progress_pct": 0,
+        "status": "enrolled",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "completed_at": None,
+        "certificate_id": None,
+    }
+    await db.academy_enrolments.insert_one({**doc})
+    return doc
+
+
+@api_router.post("/academy/enrolments/{enrolment_id}/progress")
+async def update_progress(enrolment_id: str, body: dict, current_user: User = Depends(get_current_user)):
+    modules_completed = int(body.get("modules_completed", 0))
+    doc = await db.academy_enrolments.find_one({"enrolment_id": enrolment_id, "user_id": current_user.user_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Not found")
+    total = doc.get("modules_total") or 1
+    modules_completed = max(0, min(modules_completed, total))
+    pct = round(modules_completed / total * 100)
+    updates = {"modules_completed": modules_completed, "progress_pct": pct}
+    if modules_completed >= total:
+        updates["status"] = "completed"
+        updates["completed_at"] = datetime.now(timezone.utc).isoformat()
+        if not doc.get("certificate_id"):
+            updates["certificate_id"] = f"cert_{uuid.uuid4().hex[:10]}"
+    else:
+        updates["status"] = "in_progress" if modules_completed > 0 else "enrolled"
+    await db.academy_enrolments.update_one(
+        {"enrolment_id": enrolment_id, "user_id": current_user.user_id},
+        {"$set": updates}
+    )
+    doc.update(updates)
+    return doc
+
+
+# -------- Partner / Consultant white-label portal --------
+@api_router.get("/partner/clients")
+async def list_partner_clients(current_user: User = Depends(get_current_user)):
+    rows = await db.partner_clients.find({"user_id": current_user.user_id}, {"_id": 0}).sort("added_at", -1).to_list(500)
+    # enrich with quick compliance snapshot
+    for r in rows:
+        cid = r.get("client_id")
+        r["docs_count"] = await db.documents.count_documents({"user_id": cid})
+        r["incidents_open"] = await db.incidents.count_documents({"user_id": cid, "status": {"$nin": ["closed", "resolved"]}})
+        r["licences_total"] = await db.licences.count_documents({"user_id": cid})
+    return rows
+
+
+@api_router.post("/partner/clients")
+async def add_partner_client(body: dict, current_user: User = Depends(get_current_user)):
+    cid = f"pc_{uuid.uuid4().hex[:10]}"
+    doc = {
+        "client_id": cid,
+        "user_id": current_user.user_id,  # partner's user id
+        "business_name": body.get("business_name", ""),
+        "contact_name": body.get("contact_name", ""),
+        "contact_email": body.get("contact_email", ""),
+        "contact_phone": body.get("contact_phone", ""),
+        "state": body.get("state", ""),
+        "trade": body.get("trade", ""),
+        "retainer_monthly": body.get("retainer_monthly", 0),
+        "status": body.get("status", "active"),
+        "notes": body.get("notes", ""),
+        "added_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.partner_clients.insert_one({**doc})
+    return doc
+
+
+@api_router.patch("/partner/clients/{client_id}")
+async def update_partner_client(client_id: str, body: dict, current_user: User = Depends(get_current_user)):
+    updates = {k: v for k, v in body.items() if k not in ("_id", "user_id", "client_id", "added_at")}
+    await db.partner_clients.update_one(
+        {"client_id": client_id, "user_id": current_user.user_id}, {"$set": updates}
+    )
+    doc = await db.partner_clients.find_one(
+        {"client_id": client_id, "user_id": current_user.user_id}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(404, "Not found")
+    return doc
+
+
+@api_router.delete("/partner/clients/{client_id}")
+async def delete_partner_client(client_id: str, current_user: User = Depends(get_current_user)):
+    res = await db.partner_clients.delete_one({"client_id": client_id, "user_id": current_user.user_id})
+    return {"deleted": res.deleted_count}
+
+
+@api_router.get("/partner/summary")
+async def partner_summary(current_user: User = Depends(get_current_user)):
+    clients = await db.partner_clients.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(500)
+    total = len(clients)
+    active = sum(1 for c in clients if c.get("status") == "active")
+    mrr = sum(c.get("retainer_monthly", 0) for c in clients if c.get("status") == "active")
+    return {"total_clients": total, "active_clients": active, "monthly_recurring_revenue": mrr,
+            "at_risk": sum(1 for c in clients if c.get("status") == "at_risk")}
+
+
+# -------- Mobile Worker app — lightweight "my stuff" endpoints --------
+@api_router.get("/worker/my-summary")
+async def worker_summary(current_user: User = Depends(get_current_user)):
+    uid = current_user.user_id
+    now = datetime.now(timezone.utc)
+    # "my" data: for a worker role, return assignments.
+    # For owner previewing, return aggregate. Simple and pragmatic.
+    my_licences = await db.licences.find({"user_id": uid, "worker_email": current_user.email}, {"_id": 0}).to_list(50)
+    if not my_licences:
+        # fallback to all licences (owner preview)
+        my_licences = await db.licences.find({"user_id": uid}, {"_id": 0}).to_list(50)
+    expiring = []
+    for lic in my_licences:
+        exp = lic.get("expiry_date")
+        if exp:
+            try:
+                d = datetime.fromisoformat(exp).replace(tzinfo=timezone.utc)
+                days = (d - now).days
+                if days <= 60:
+                    lic["days_to_expiry"] = days
+                    expiring.append(lic)
+            except Exception:
+                pass
+    toolbox = await db.safety_toolbox_talks.find(
+        {"user_id": uid}, {"_id": 0}
+    ).sort("scheduled_at", -1).to_list(10)
+    swms = await db.documents.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).to_list(10)
+    enrolments = await db.academy_enrolments.find({"user_id": uid}, {"_id": 0}).to_list(20)
+    return {
+        "name": current_user.name,
+        "role": current_user.role,
+        "licences_total": len(my_licences),
+        "licences_expiring_soon": expiring,
+        "upcoming_toolbox": toolbox[:5],
+        "recent_swms": swms[:5],
+        "my_courses": enrolments,
+    }
+
+
+@api_router.post("/worker/checkin")
+async def worker_checkin(body: dict, current_user: User = Depends(get_current_user)):
+    doc = {
+        "checkin_id": f"ci_{uuid.uuid4().hex[:10]}",
+        "user_id": current_user.user_id,
+        "worker_email": current_user.email,
+        "worker_name": current_user.name,
+        "site": body.get("site", ""),
+        "notes": body.get("notes", ""),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.worker_checkins.insert_one({**doc})
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/worker/checkins")
+async def worker_checkins(current_user: User = Depends(get_current_user)):
+    rows = await db.worker_checkins.find(
+        {"user_id": current_user.user_id}, {"_id": 0}
+    ).sort("timestamp", -1).to_list(50)
+    return rows
 
 
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChartLineUp, FileText, Printer, Download } from "@phosphor-icons/react";
+import { ChartLineUp, FileText, Printer, Download, Sparkle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 const ICONS = {
@@ -157,6 +157,8 @@ export default function Reports() {
   const [selected, setSelected] = useState(null);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [insights, setInsights] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
 
   useEffect(() => {
     api.get("/reports").then((r) => setCatalog(r.data)).catch(() => {});
@@ -165,6 +167,7 @@ export default function Reports() {
   const run = async (type) => {
     setSelected(type);
     setReport(null);
+    setInsights(null);
     setLoading(true);
     try {
       const r = await api.get(`/reports/${type}`);
@@ -173,6 +176,20 @@ export default function Reports() {
       toast.error(e?.response?.data?.detail || "Failed to generate");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runInsights = async () => {
+    if (!selected) return;
+    setInsightsLoading(true);
+    try {
+      const r = await api.post(`/reports/${selected}/insights`);
+      setInsights(r.data);
+      if (r.data.fallback) toast.info("AI temporarily unavailable — showing fallback.");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "AI insights failed");
+    } finally {
+      setInsightsLoading(false);
     }
   };
 
@@ -236,7 +253,49 @@ export default function Reports() {
           {loading ? (
             <div className="py-10 text-center text-sm text-muted-foreground">Generating…</div>
           ) : (
-            <ReportBody type={selected} data={report} />
+            <>
+              <ReportBody type={selected} data={report} />
+
+              {/* AI insights panel */}
+              {report && (
+                <div className="mt-6 border-2 border-ink bg-ink text-white p-5 print:bg-white print:text-ink print:border-border" data-testid="insights-panel">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkle weight="fill" className="text-warning" />
+                      <span className="label-eyebrow text-warning">/ AI INSIGHTS (CLAUDE SONNET 4.5)</span>
+                    </div>
+                    {!insights && !insightsLoading && (
+                      <Button onClick={runInsights} className="btn-sharp bg-warning text-ink hover:bg-warning/90 print:hidden" data-testid="insights-run-btn">
+                        <Sparkle className="mr-2" weight="fill" />Generate insights
+                      </Button>
+                    )}
+                    {insights?.cached && <span className="label-eyebrow text-white/60">CACHED · {new Date(insights.generated_at).toLocaleString("en-AU")}</span>}
+                  </div>
+                  {insightsLoading && <div className="py-4 text-sm text-white/70">Claude is reviewing your data…</div>}
+                  {insights && (
+                    <div className="mt-3 space-y-4">
+                      <p className="text-sm leading-relaxed">{insights.summary}</p>
+                      {insights.actions?.length > 0 && (
+                        <div>
+                          <div className="label-eyebrow text-warning mb-2">Recommended actions</div>
+                          <div className="space-y-2">
+                            {insights.actions.map((a, i) => (
+                              <div key={i} className="border border-white/20 p-3" data-testid={`insights-action-${i}`}>
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-0.5 text-[10px] font-bold tracking-widest ${a.priority === "high" ? "bg-red-600 text-white" : a.priority === "medium" ? "bg-warning text-ink" : "bg-white/20 text-white"}`}>{(a.priority || "med").toUpperCase()}</span>
+                                  <span className="font-bold text-sm">{a.action}</span>
+                                </div>
+                                {a.why && <p className="text-xs text-white/70 mt-2">{a.why}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
           <div className="flex justify-end gap-2 pt-4 border-t border-border print:hidden">
             <Button variant="outline" className="btn-sharp border-ink" onClick={downloadJson} data-testid="report-download-btn"><Download className="mr-2" />JSON</Button>

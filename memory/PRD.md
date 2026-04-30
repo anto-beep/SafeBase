@@ -19,67 +19,57 @@ User provided 34-prompt + 5-workflow blueprint; built in batches (a, b, c, d, e)
 ## Implemented
 
 ### Iteration 1-2 — Foundation (Dec 2025)
-- Backend: JWT + Emergent Google Auth, Workers, Licences (expiry), Incidents (auto notify_regulator), Documents (Claude Sonnet 4.5), Compliance score
+- Backend: JWT + Emergent Google Auth, Workers, Licences, Incidents, Documents (Claude Sonnet 4.5), Compliance score
 - Frontend: Landing, Login, Register, Dashboard, Documents, Incidents, Workers, Licences
 
 ### Iteration 3 — Marketing expansion
-- 15 public routes: /, /ecosystem, /services/{swms,incidents,people,intelligence}, /products/{tradeinduct,tradecheck,academy}, /consulting, /pricing, /partners, /franchises, /resources, /about
-- Pricing A$150/250/400 (monthly + annual toggle)
-- MarketingNav with Products dropdown
+- 15 public routes + Pricing A$150/250/400 + MarketingNav
 
-### Iteration 4 — Batch (a): Foundation + Onboarding
-- OnboardingWizard (6 steps, auto-trigger, save & exit)
-- Settings (6 tabs: Business, Users & Roles, Notifications, Billing, Data, Danger Zone)
-- Notifications Centre (6 filter tabs, live synthesis)
-- Enhanced Register with trade/state/workers + trust column
-- Bell icon with unread badge
+### Iteration 4 — Batch (a) Foundation + Onboarding
+- OnboardingWizard (6 steps), Settings (6 tabs), Notifications Centre, enhanced Register
 
-### Iteration 5 — Batch (b): Core Safety Modules (Feb 2026)
-- Generic `/api/safety/{module}` CRUD pattern + `/api/safety/summary`
-- 6 modules: Toolbox Talks, Plant & Equipment, Hazardous Substances, Inspections, Risk Register, First Aid + PPE
-- Shared `SafetyModulePage.jsx` component
-- Risk Register auto-computes inherent + residual scores (L×C) with level (low/medium/high/extreme)
-- Fixed route-ordering bug (`/api/safety/summary` now before generic)
-- Fixed string-coercion bug in `_enrich()` via `_safe_int()` helper
+### Iteration 5 — Batch (b) Core Safety Modules (Feb 2026)
+- Generic `/api/safety/{module}` + `/api/safety/summary`
+- 6 modules: Toolbox Talks, Plant, Substances, Inspections, Risk Register, First Aid/PPE
+- Shared `SafetyModulePage.jsx`; Risk auto-computes inherent + residual scores
+- Bugs fixed: route ordering for /summary, int coercion via `_safe_int()`
 
-### Iteration 6 — Batch (c): Reports + Workflows (Feb 2026)
-- **Reports Module** (`/api/reports` + `/api/reports/{type}`): 10 live-computed reports — compliance_score, incidents_trend, licence_expiry, training_matrix, swms_register, toolbox_talks_log, risk_register_export, inspections_summary, plant_register, worker_roster
-- **Reports page** (`/dashboard/reports`) — card grid, dialog viewer, JSON download, Print/PDF export
-- **Workflows engine** (`/api/workflows/{wtype}` CRUD + step toggle): stepped progress tracking with progress_pct, status (not_started/in_progress/complete)
-- **5 Workflows**:
-  - W1 New Employee Onboarding (7 steps: profile → induction → licences → PPE → toolbox → SWMS sign → ready)
-  - W2 Incident Resolution (7 steps: reported → triage → regulator → investigation → corrective → implemented → closed)
-  - W3 SWMS to Job Start (6 steps: draft → reviewed → approved → site-brief → sign-off → started)
-  - W4 Annual WHS Review (7 steps: scope → policies → registers → incidents → training → audit → sign-off)
-  - W5 Subcontractor Engagement (7 steps: invite → company → insurance → licences → SWMS → induction → engaged)
-- Shared `WorkflowPage.jsx` component
-- Sidebar: new Reports link + Workflows section (5 links)
+### Iteration 6 — Batch (c) Reports + Workflows (Feb 2026)
+- **Reports**: 10 live-computed reports (catalog + detail endpoints)
+- **Workflows engine**: stepped progress, 5 workflows (W1 New Employee, W2 Incident Resolution, W3 SWMS→Job Start, W4 Annual WHS Review, W5 Subcontractor)
+- Shared `WorkflowPage.jsx`; sidebar Reports + Workflows sections
+
+### Iteration 7 — Batch (d) Ecosystem + AI Insights (Feb 2026)
+- **AI Insights on Reports** (Claude Sonnet 4.5 via Emergent LLM Key): `POST /api/reports/{type}/insights` returns `{summary, actions:[{priority, action, why}]}` with 24h cache and graceful fallback
+- **TradeInduct** (`/dashboard/tradeinduct` + public `/induct/:code`): create induction programs with auto-generated invite codes, worker submits form unauthenticated, certificate_id issued
+- **TradeCheck** public marketplace (`/tradecheck`) + owner listing mgmt (`/dashboard/tradecheck`): filter by trade/state, verification flow (pending → verified)
+- **Academy LMS** (`/dashboard/academy`): 8 seeded courses, enrol → module progress → auto-issued certificate on completion
+- **Partner/Consultant Portal** (`/dashboard/partner`): client book with MRR, status dropdowns, auto-enriched docs/incidents/licences snapshots
+- **Mobile Worker PWA** (`/worker`): dark mobile-optimised dashboard, site check-in, my-licences, upcoming toolbox, recent SWMS, my-courses
+- Sidebar: new Ecosystem section with 5 links
 
 ---
 
-## Backend endpoints (current)
-- Auth: POST /api/auth/{register,login,google-session,logout}, GET /api/auth/me
-- Workers/Licences/Incidents/Documents: CRUD
-- Compliance: GET /api/compliance/score
-- Settings: GET/PUT /api/settings/{business,notifications}, /api/team CRUD
-- Notifications: GET/POST /api/notifications (+ read/read-all)
-- Onboarding: GET/PUT /api/onboarding
-- **Safety (batch b)**: /api/safety/summary, /api/safety/{module} CRUD for 7 modules
-- **Reports (batch c)**: /api/reports (catalog), /api/reports/{type}
-- **Workflows (batch c)**: /api/workflows/catalog, /api/workflows/summary, /api/workflows/{wtype} CRUD + /api/workflows/{wtype}/{id}/step
+## Backend endpoints (current, by module)
+- **Auth**: POST /api/auth/{register,login,google-session,logout}, GET /api/auth/me
+- **Core**: Workers/Licences/Incidents/Documents CRUD, /api/compliance/score
+- **Settings**: /api/settings/{business,notifications}, /api/team CRUD
+- **Notifications/Onboarding**: /api/notifications, /api/onboarding
+- **Safety (batch b)**: /api/safety/summary, /api/safety/{module} CRUD ×7 modules
+- **Reports (batch c)**: /api/reports (catalog), /api/reports/{type}, **POST /api/reports/{type}/insights** (AI, cached)
+- **Workflows (batch c)**: /api/workflows/{catalog,summary}, /api/workflows/{wtype} CRUD + step toggle
+- **Batch (d)**:
+  - TradeInduct: /api/tradeinduct/programs CRUD, /api/tradeinduct/public/{code} (GET+submit, no auth), /api/tradeinduct/programs/{id}/submissions
+  - TradeCheck: /api/tradecheck/listings (public list), /api/tradecheck/my, /api/tradecheck/listings (POST upsert), /api/tradecheck/verify/{id}
+  - Academy: /api/academy/courses, /api/academy/enrolments (GET/POST), /api/academy/enrolments/{id}/progress
+  - Partner: /api/partner/{clients,summary} CRUD
+  - Worker: /api/worker/{my-summary,checkin,checkins}
 
 ---
 
 ## Backlog
 
-### Next: batch d — Ecosystem Apps (product verticals)
-- Mobile Worker PWA
-- TradeInduct module (contractor/worker induction portal)
-- TradeCheck module (licence/insurance verification marketplace)
-- SafeTradie Academy module (training LMS)
-- Partner/Consultant white-label portal
-
-### Then: batch e — Marketing SEO blitz
+### Next: batch e — Marketing SEO blitz
 - Blog + 20 seed articles
 - Free Templates Library
 - Competitor Comparison page
@@ -89,12 +79,12 @@ User provided 34-prompt + 5-workflow blueprint; built in batches (a, b, c, d, e)
 - Partner Program LP
 
 ### Refactoring backlog
-- Split `server.py` into `/app/backend/routes/{auth,safety,reports,workflows,settings,...}.py`
-- Split routes models into `/app/backend/models/`
-- Move Pydantic validation for safety modules (typed `RiskCreate`, etc.) to replace `body: dict`
+- Split `server.py` (1720+ lines) into `/app/backend/routes/{auth,safety,reports,workflows,tradeinduct,tradecheck,academy,partner,worker}.py`
+- Typed Pydantic models per module (replace `body: dict`)
+- Add ESLint rule for unresolved imports (would have caught TradecheckMarketplace default-import bug)
 
 ---
 
 ## Known environmental constraints
-- EMERGENT_LLM_KEY budget may deplete — SWMS generation has fallback placeholder
+- EMERGENT_LLM_KEY budget may deplete — SWMS + AI insights have fallback placeholder
 - K8s ingress 60s timeout → backend AI timeout 50s

@@ -87,3 +87,18 @@ export function MarketingFooter() {
     </footer>
   );
 }
+
+
+/**
+ * Default-export wrapper that renders MarketingNav + children + MarketingFooter.
+ * Use for marketing/public pages: <MarketingLayout>{your content}</MarketingLayout>
+ */
+export default function MarketingLayout({ children }) {
+  return (
+    <>
+      <MarketingNav />
+      {children}
+      <MarketingFooter />
+    </>
+  );
+}

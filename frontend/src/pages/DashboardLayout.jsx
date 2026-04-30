@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 
 const NAV = [
@@ -30,6 +30,14 @@ const WORKFLOW_NAV = [
   { to: "/dashboard/workflows/swms-job-start", label: "SWMS to Job Start", icon: FlowArrow },
   { to: "/dashboard/workflows/annual-review", label: "Annual WHS Review", icon: Calendar },
   { to: "/dashboard/workflows/subcontractor", label: "Subcontractor", icon: Handshake },
+];
+
+const APPS_NAV = [
+  { to: "/dashboard/tradeinduct", label: "TradeInduct", icon: QrCode },
+  { to: "/dashboard/tradecheck", label: "TradeCheck", icon: ShieldCheck },
+  { to: "/dashboard/academy", label: "Academy", icon: GraduationCap },
+  { to: "/dashboard/partner", label: "Partner Portal", icon: Briefcase },
+  { to: "/worker", label: "Mobile Worker", icon: DeviceMobile },
 ];
 
 export default function DashboardLayout() {
@@ -112,7 +120,22 @@ export default function DashboardLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              data-testid={`nav-wf-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '')}`}
+              data-testid={`nav-wf-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 text-sm ${
+                  isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                }`
+              }
+            >
+              <item.icon size={18} weight="bold" /> {item.label}
+            </NavLink>
+          ))}
+          <div className="mt-5 px-3 label-eyebrow text-white/40">Ecosystem</div>
+          {APPS_NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              data-testid={`nav-app-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 text-sm ${
                   isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"

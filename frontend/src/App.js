@@ -27,6 +27,13 @@ import IncidentResolution from "@/pages/workflows/IncidentResolution";
 import SwmsJobStart from "@/pages/workflows/SwmsJobStart";
 import AnnualReview from "@/pages/workflows/AnnualReview";
 import Subcontractor from "@/pages/workflows/Subcontractor";
+import Tradeinduct from "@/pages/Tradeinduct";
+import InductionPublic from "@/pages/InductionPublic";
+import TradecheckMarketplace from "@/pages/TradecheckMarketplace";
+import TradecheckMy from "@/pages/TradecheckMy";
+import AcademyLMS from "@/pages/AcademyLMS";
+import PartnerPortal from "@/pages/PartnerPortal";
+import MobileWorker from "@/pages/MobileWorker";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -74,6 +81,9 @@ function AppRouter() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/tradecheck" element={<TradecheckMarketplace />} />
+      <Route path="/induct/:code" element={<InductionPublic />} />
+      <Route path="/worker" element={<Protected><MobileWorker /></Protected>} />
       <Route path="/dashboard" element={<Protected><DashboardLayout /></Protected>}>
         <Route index element={<Dashboard />} />
         <Route path="documents" element={<Documents />} />
@@ -95,6 +105,10 @@ function AppRouter() {
         <Route path="workflows/swms-job-start" element={<SwmsJobStart />} />
         <Route path="workflows/annual-review" element={<AnnualReview />} />
         <Route path="workflows/subcontractor" element={<Subcontractor />} />
+        <Route path="tradeinduct" element={<Tradeinduct />} />
+        <Route path="tradecheck" element={<TradecheckMy />} />
+        <Route path="academy" element={<AcademyLMS />} />
+        <Route path="partner" element={<PartnerPortal />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
