@@ -2633,6 +2633,7 @@ async def test_all_automations(current_user: User = Depends(get_current_user)):
 # LLM key + Claude Sonnet pattern as other modules.
 from risk_module import register_library_routes  # noqa: E402
 from incident_workflow import register_incident_workflow  # noqa: E402
+from competency_module import register_competency_routes  # noqa: E402
 
 _risk_router, _register_risk_ai, _HRCW_CATEGORIES = register_library_routes(db, get_current_user)
 _register_risk_ai(LlmChat, UserMessage, EMERGENT_LLM_KEY)
@@ -2641,6 +2642,9 @@ api_router.include_router(_risk_router)
 _inc_router, _register_inc_ai, _REGULATORS = register_incident_workflow(db, get_current_user)
 _register_inc_ai(LlmChat, UserMessage, EMERGENT_LLM_KEY)
 api_router.include_router(_inc_router)
+
+_comp_router = register_competency_routes(db, get_current_user)
+api_router.include_router(_comp_router)
 
 
 @api_router.get("/incident-workflow/meta/regulators")

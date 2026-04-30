@@ -22,7 +22,7 @@ import { toast } from "sonner";
  */
 export default function SafetyModulePage({
   module, title, eyebrow, lead, icon: Icon,
-  fields, columns, emptyMessage, dataTestid,
+  fields, columns, emptyMessage, dataTestid, rowActions,
 }) {
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
@@ -128,8 +128,9 @@ export default function SafetyModulePage({
                       {c.render ? c.render(it) : (it[c.key] ?? "—")}
                     </td>
                   ))}
-                  <td className="px-4 py-3 text-right">
-                    <Button variant="ghost" size="sm" onClick={() => remove(it.item_id)} className="text-destructive" data-testid={`${module}-del-${it.item_id}`}><Trash /></Button>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    {rowActions && rowActions(it, load)}
+                    <Button variant="ghost" size="sm" onClick={() => remove(it.item_id)} className="text-destructive ml-1" data-testid={`${module}-del-${it.item_id}`}><Trash /></Button>
                   </td>
                 </tr>
               ))}

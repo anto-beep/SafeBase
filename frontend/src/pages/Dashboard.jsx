@@ -52,6 +52,7 @@ export default function Dashboard() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [sitesUpsellOpen, setSitesUpsellOpen] = useState(false);
+  const [competency, setCompetency] = useState(null);
   const { isEnterprise } = useTier();
 
   // Stripe checkout return handler: poll billing status until paid (up to ~20s)
@@ -87,6 +88,7 @@ export default function Dashboard() {
     api.get("/compliance/score").then((r) => setData(r.data)).catch(() => {});
     api.get("/incidents").then((r) => setIncidents(r.data)).catch(() => {});
     api.get("/licences").then((r) => setLicences(r.data)).catch(() => {});
+    api.get("/competency/dashboard").then((r) => setCompetency(r.data)).catch(() => {});
   }, []);
 
   const upcomingExpiries = [...licences]
@@ -163,6 +165,57 @@ export default function Dashboard() {
           </Link>
         ))}
       </div>
+
+      {/* Unbriefed workers × active hazards (reverse-loop telemetry) */}
+      {competency && competency.active_hazards?.length > 0 && (
+        <div className="bg-red-700 text-white border-2 border-red-700 p-5" data-testid="competency-widget">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <div className="label-eyebrow text-warning">/ UNBRIEFED WORKERS × ACTIVE HAZARDS</div>
+              <h2 className="font-display text-xl md:text-2xl font-black mt-1">
+                {competency.active_hazards.reduce((s, h) => s + h.unbriefed_count, 0)} worker briefing{" "}
+                gap{competency.active_hazards.length === 1 ? "" : "s"} across{" "}
+                {competency.active_hazards.length} hazard{competency.active_hazards.length === 1 ? "" : "s"}
+              </h2>
+              <p className="text-sm text-white/80 mt-1 max-w-2xl">
+                Hazards with open SWMS revisions or recent failing controls — who on the tools
+                still hasn't been briefed?
+              </p>
+            </div>
+            <Link to="/dashboard/competency-matrix">
+              <Button variant="outline" className="btn-sharp border-white text-white bg-transparent hover:bg-white/10 h-10" data-testid="open-matrix-btn">
+                <Users className="mr-2" />Open matrix
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+            {competency.active_hazards.map((h, i) => (
+              <div key={i} className="bg-white/10 border border-white/20 p-3" data-testid={`hazard-${i}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-display font-black text-lg leading-tight">{h.hazard}</div>
+                  <span className={`px-2 py-0.5 text-[10px] font-bold tracking-widest ${h.coverage_pct >= 80 ? "bg-emerald-600" : h.coverage_pct >= 50 ? "bg-amber-500 text-ink" : "bg-red-900"}`}>
+                    {h.coverage_pct}% BRIEFED
+                  </span>
+                </div>
+                <div className="mt-2 text-sm">
+                  <strong className="text-warning">{h.unbriefed_count}</strong> of {h.total_workers} workers unbriefed
+                </div>
+                <div className="text-[11px] text-white/70 mt-1">
+                  {h.source_count} active source{h.source_count === 1 ? "" : "s"} ·{" "}
+                  {h.sources.map((s) => s.type === "swms_revision" ? "SWMS rev" : "Risk review").join(" · ")}
+                </div>
+                <Link
+                  to="/dashboard/toolbox-talks"
+                  className="mt-3 inline-flex items-center gap-1 text-xs underline hover:text-warning"
+                  data-testid={`hazard-schedule-${i}`}
+                >
+                  Schedule toolbox <ArrowRight size={12} />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Incidents + Expiries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

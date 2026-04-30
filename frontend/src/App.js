@@ -54,6 +54,7 @@ import RiskForm from "@/pages/risk/RiskForm";
 import RiskDetail from "@/pages/risk/RiskDetail";
 import ReviewForm from "@/pages/risk/ReviewForm";
 import SwmsRevisionsPage from "@/pages/risk/SwmsRevisionsPage";
+import CompetencyMatrix from "@/pages/CompetencyMatrix";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -153,6 +154,7 @@ function AppRouter() {
         <Route path="risk-register/:risk_id" element={<RiskDetail />} />
         <Route path="risk-register/:risk_id/edit" element={<RiskForm />} />
         <Route path="swms-revisions" element={<SwmsRevisionsPage />} />
+        <Route path="competency-matrix" element={<CompetencyMatrix />} />
         <Route path="webhooks" element={<Webhooks />} />
         <Route path="automations" element={<Automations />} />
       </Route>

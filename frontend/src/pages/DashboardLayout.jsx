@@ -11,6 +11,7 @@ const NAV = [
   { to: "/dashboard/documents", label: "Documents", icon: FileText },
   { to: "/dashboard/incidents", label: "Incidents", icon: Warning },
   { to: "/dashboard/workers", label: "Workers", icon: Users },
+  { to: "/dashboard/competency-matrix", label: "Competency Matrix", icon: GraduationCap },
   { to: "/dashboard/licences", label: "Licences", icon: IdentificationBadge },
   { to: "/dashboard/notifications", label: "Alerts", icon: Bell },
 ];
