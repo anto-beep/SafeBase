@@ -48,11 +48,12 @@ class TestBillingTiers:
         assert r.status_code == 200
         data = r.json()
         assert isinstance(data, list)
-        assert len(data) == 6
+        # 4 tiers × monthly/annual since iter12 (Enterprise added) — was 6 pre-iter12
+        assert len(data) == 8
         slugs = {t["slug"] for t in data}
         expected = {
-            "sole_trader_monthly", "small_business_monthly", "growing_business_monthly",
-            "sole_trader_annual", "small_business_annual", "growing_business_annual",
+            "sole_trader_monthly", "small_business_monthly", "growing_business_monthly", "enterprise_monthly",
+            "sole_trader_annual", "small_business_annual", "growing_business_annual", "enterprise_annual",
         }
         assert slugs == expected
         for t in data:

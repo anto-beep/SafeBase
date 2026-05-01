@@ -183,6 +183,19 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - Added `signal: {pulse, featured}` to each of the 5 industries in `industries.config.js` so the homepage preview block surfaces a per-industry momentum/social-proof row + spotlight.
 - Pulsing green `• LIVE` badge on each direct industry page hero.
 
+### Iteration 28 — server.py refactor complete + in-app industry adaptations (Feb 2026)
+- **`server.py` 2714 → 2036 lines** — `/billing/*` + `/enterprise/demo-request` + `/webhook/stripe` extracted to `/app/backend/routes/billing.py` via `register_billing_routes(api_router, db=…, User=…, get_current_user=…, logger=…, stripe_api_key=…, resend_api_key=…, trial_length_days=14, trial_reminder_day=10)`. Factory also owns the three trial helpers (`_ensure_trial_fields`, `_compute_trial`, `_maybe_send_trial_reminder`). `/automations/*` (9 routes incl. `recipes`, CRUD, `test`, `runs`, `analytics/summary`, `test-all`) extracted to `/app/backend/routes/automations.py` via `register_automations_routes(…, webhook_events=WEBHOOK_EVENTS)`, which returns `run_automations_for_event` so `server.py`'s `trigger_webhook_event` can still fan-out alongside outbound webhook deliveries.
+- **Industry-aware Dashboard** — new `/app/frontend/src/hooks/useIndustry.js` returns `{slug, term, meta}` derived from `user.industry`. Terminology map covers greeting, `site_singular/plural`, `worker_singular/plural`, `primary_doc_label`, `primary_doc_cta_label`, `primary_doc_cta_blurb`, `primary_doc_route`, and a 2–3-card `starter_actions` array per industry.
+  - Dashboard eyebrow now renders `/ Overview · {industryBadge} · {date}`.
+  - Primary CTA button (`quick-generate-btn`) swaps between `Generate SWMS` / `Create HACCP plan` / `Generate CoR plan` / `Track AHPRA registrations` / `Quick-induct a casual`.
+  - Stat cards `Active SWMS` → `HACCP & plans` / `Active trip plans` / `AHPRA & compliance` / `Inductions & logs`; `Workers` → `Crew` / `Team` / `Drivers` / `Team` / `Team`.
+  - Sites upsell banner vocabulary adapts (Multi-venue / Multi-depot / Multi-clinic / Multi-store detected).
+  - New **"Industry starter"** card (`industry-starter-{slug}`) sits between the competency widget and Apps & Add-ons — lists 2–3 shortcut links into the industry-gated doc types.
+  - First quick-action card (`quick-action-primary`) mirrors the primary CTA; "Add worker" card reads "Add driver / clinician / team member".
+  - Competency widget sub-copy swaps "on the tools" → "on your {worker_plural}".
+- **Settings → Business tab** — new Industry card (`settings-industry-card`) with `settings-industry-select` Select at top. Changing value fires `PATCH /api/auth/me/industry`, updates `AuthContext` in-memory, and the dashboard re-tunes on next navigation.
+- **Backend regression** — new `/app/backend/tests/test_iter28_routes_split.py` (12 tests covering billing tier list, my-subscription, enterprise demo, automations CRUD+analytics+test, worker-create fan-out, industry PATCH). 65/65 tests pass across iter28 + iter27 regression + iter10 + iter19 + iter9 (stale `test_tiers_public` updated 6→8 tiers). Testing agent iter27 confirmed live industry switch round-trips across all 5 verticals.
+
 ### Iteration 27 — 5 P1 items + live-signal backend + full rebrand polish (Feb 2026)
 - **`by_status` breakdown** on `/api/docs/stats` (draft / in_use / issued / archived counts).
 - **Industry field on user model** — captured at `/register`, persisted to `users.industry`, surfaced in `/auth/me` + `/auth/login` responses. New `PATCH /api/auth/me/industry` endpoint for in-app industry change.
@@ -229,10 +242,10 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 
 ## Backlog (Deferred)
 
-### P1 (next session — complete the server.py refactor)
-- **Extract remaining server.py route groups** — auth is already split (iter24). Remaining to split: `/api/billing/*` + `/api/webhook/stripe` + `/api/webhooks/*` + `/api/automations/*` + `/api/documents/*` (legacy) into `/app/backend/routes/{billing,webhooks,automations,legacy_docs}.py`. Pattern already established via `register_auth_routes` factory.
+### P1 (next session)
 - **Further docs_pdf / docs_registry split** — both still >700 lines. Group renderers + registrations per-category (`docs_pdf_safety.py`, `docs_pdf_trade.py`, `docs_pdf_plant.py`, `docs_pdf_worker.py`) for surgical edits later.
 - **Per-type Pydantic models** — build `DocCreate_<type>` / `DocUpdate_<type>` BaseModels dynamically from `spec['fields']` at registration time so bad payloads 422 instead of silently-stripping (current allowlist is a weaker defence).
+- **Deeper industry adaptations (phase 2)** — iter28 covered Dashboard + Settings; next surfaces: sidebar nav labels (`Workers` → `Drivers`), per-industry dashboard widget visibility (e.g. hospitality → temperature-alert widget; transport → fatigue-alert widget), per-industry notification templates, per-industry onboarding wizard copy.
 - **Debug-log dropped keys** on POST/PATCH so silent-strip doesn't mask client-side typos.
 - **Expose test-ids on new UI**: `doc-save-toast`, `doc-row-{doc_id}`, `date-popover-trigger-{field_key}`, `date-popover-day-{iso}` for deterministic QA automation.
 - **`by_status` breakdown** on `/api/docs/stats` so hub can surface draft/in_use/issued/archived pill counts.
