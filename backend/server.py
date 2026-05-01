@@ -67,6 +67,7 @@ class User(BaseModel):
     role_variant: Optional[str] = "owner"
     active_industries: Optional[List[str]] = None
     primary_industry: Optional[str] = None
+    account_id: Optional[str] = None
 
 
 class WorkerIn(BaseModel):
@@ -248,32 +249,55 @@ from permissions import make_require_feature  # noqa: E402
 require_feature = make_require_feature(get_current_user, db)
 
 
+# ----------- DATA ISOLATION (account_id + role-tier visibility + audit log) -----------
+from data_isolation import (  # noqa: E402
+    account_id_for, visibility_filter, assert_account, stamp_account,
+    log_audit, register_audit_routes,
+)
+register_audit_routes(api_router, db=db, get_current_user_dep=get_current_user)
+
+
 # ----------- WORKERS -----------
 @api_router.get("/workers")
 async def list_workers(current_user: User = Depends(get_current_user)):
-    workers = await db.workers.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(500)
+    q = {"account_id": account_id_for(current_user)}
+    q.update(visibility_filter(current_user, "workers"))
+    workers = await db.workers.find(q, {"_id": 0}).to_list(500)
+    # Backwards-compat: include legacy records still keyed by user_id only.
+    if not workers:
+        workers = await db.workers.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(500)
     return workers
 
 
 @api_router.post("/workers")
-async def create_worker(body: WorkerIn, current_user: User = Depends(get_current_user)):
+async def create_worker(body: WorkerIn, request: Request, current_user: User = Depends(get_current_user)):
     worker_id = f"wrk_{uuid.uuid4().hex[:10]}"
-    doc = {
+    doc = stamp_account({
         "worker_id": worker_id,
         "user_id": current_user.user_id,
         **body.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
+    }, current_user)
     await db.workers.insert_one({**doc})
+    await log_audit(db, user=current_user, action="create", record_type="worker", record_id=worker_id, request=request, detail={"name": doc.get("name")})
     await trigger_webhook_event(current_user.user_id, "worker.added", {"worker_id": worker_id, "name": doc.get("name")})
     return doc
 
 
 @api_router.delete("/workers/{worker_id}")
-async def delete_worker(worker_id: str, current_user: User = Depends(get_current_user)):
-    res = await db.workers.delete_one({"worker_id": worker_id, "user_id": current_user.user_id})
-    await db.licences.delete_many({"worker_id": worker_id, "user_id": current_user.user_id})
+async def delete_worker(worker_id: str, request: Request, current_user: User = Depends(get_current_user)):
+    rec = await db.workers.find_one({"worker_id": worker_id}, {"_id": 0})
+    if rec:
+        assert_account(rec, current_user)
+    res = await db.workers.delete_one({"worker_id": worker_id, "$or": [
+        {"account_id": account_id_for(current_user)},
+        {"user_id": current_user.user_id},
+    ]})
+    await db.licences.delete_many({"worker_id": worker_id, "$or": [
+        {"account_id": account_id_for(current_user)},
+        {"user_id": current_user.user_id},
+    ]})
     if res.deleted_count:
+        await log_audit(db, user=current_user, action="delete", record_type="worker", record_id=worker_id, request=request)
         await trigger_webhook_event(current_user.user_id, "worker.removed", {"worker_id": worker_id})
     return {"deleted": res.deleted_count}
 
@@ -324,35 +348,51 @@ async def delete_licence(licence_id: str, current_user: User = Depends(get_curre
 # ----------- INCIDENTS -----------
 @api_router.get("/incidents")
 async def list_incidents(current_user: User = Depends(get_current_user)):
-    return await db.incidents.find({"user_id": current_user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    # Account isolation + role-tier visibility (workers see own only)
+    q = {"account_id": account_id_for(current_user)}
+    q.update(visibility_filter(current_user, "incidents"))
+    rows = await db.incidents.find(q, {"_id": 0}).sort("created_at", -1).to_list(500)
+    if not rows:
+        # Legacy fallback for accounts that never got an account_id stamp.
+        legacy_q = {"user_id": current_user.user_id}
+        legacy_q.update(visibility_filter(current_user, "incidents"))
+        rows = await db.incidents.find(legacy_q, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return rows
 
 
 @api_router.post("/incidents")
-async def create_incident(body: IncidentIn, current_user: User = Depends(get_current_user)):
+async def create_incident(body: IncidentIn, request: Request, current_user: User = Depends(get_current_user)):
     incident_id = f"inc_{uuid.uuid4().hex[:10]}"
     notify_regulator = body.severity in ("serious", "critical")
-    doc = {
+    doc = stamp_account({
         "incident_id": incident_id,
         "user_id": current_user.user_id,
         "status": "open",
         "notify_regulator": notify_regulator,
         **body.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
+    }, current_user)
     await db.incidents.insert_one({**doc})
+    await log_audit(db, user=current_user, action="create", record_type="incident", record_id=incident_id, request=request, detail={"severity": body.severity})
     await trigger_webhook_event(current_user.user_id, "incident.created", {"incident_id": incident_id, "severity": body.severity, "notify_regulator": notify_regulator})
     return doc
 
 
 @api_router.patch("/incidents/{incident_id}")
-async def update_incident_status(incident_id: str, body: dict, current_user: User = Depends(get_current_user)):
+async def update_incident_status(incident_id: str, body: dict, request: Request, current_user: User = Depends(get_current_user)):
+    rec = await db.incidents.find_one({"incident_id": incident_id}, {"_id": 0})
+    if rec:
+        assert_account(rec, current_user)
     allowed = {k: v for k, v in body.items() if k in ("status", "corrective_actions")}
     await db.incidents.update_one(
-        {"incident_id": incident_id, "user_id": current_user.user_id},
+        {"incident_id": incident_id, "$or": [
+            {"account_id": account_id_for(current_user)},
+            {"user_id": current_user.user_id},
+        ]},
         {"$set": allowed},
     )
-    doc = await db.incidents.find_one({"incident_id": incident_id, "user_id": current_user.user_id}, {"_id": 0})
+    doc = await db.incidents.find_one({"incident_id": incident_id}, {"_id": 0})
     if doc:
+        await log_audit(db, user=current_user, action="update", record_type="incident", record_id=incident_id, request=request, detail=allowed)
         evt = "incident.closed" if allowed.get("status") in ("closed", "resolved") else "incident.updated"
         await trigger_webhook_event(current_user.user_id, evt, {"incident_id": incident_id, "status": doc.get("status")})
     return doc
@@ -2211,6 +2251,38 @@ api_router.include_router(_swms_router)
 
 _docs_router = register_docs_routes(db, get_current_user, LlmChat, UserMessage, EMERGENT_LLM_KEY)
 api_router.include_router(_docs_router)
+
+
+# ----------- AI document generator (Part 2 of multi-industry brief) -----------
+from ai_docs_module import register_ai_docs_routes  # noqa: E402
+register_ai_docs_routes(
+    api_router,
+    db=db,
+    get_current_user_dep=get_current_user,
+    llm_chat_cls=LlmChat,
+    user_message_cls=UserMessage,
+    llm_key=EMERGENT_LLM_KEY,
+    account_id_for_fn=account_id_for,
+    stamp_account_fn=stamp_account,
+    log_audit_fn=log_audit,
+    logger=logger,
+)
+
+
+# ----------- ADD-ON MARKETPLACE (Part 4) -----------
+from addons_module import register_addons_routes  # noqa: E402
+register_addons_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, log_audit_fn=log_audit,
+)
+
+
+# ----------- ACADEMY (Part 5) -----------
+from academy_module import register_academy_routes  # noqa: E402
+register_academy_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, log_audit_fn=log_audit,
+)
 
 
 @api_router.get("/incident-workflow/meta/regulators")

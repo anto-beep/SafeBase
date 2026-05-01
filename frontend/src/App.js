@@ -36,8 +36,10 @@ import IncidentResolution from "@/pages/workflows/IncidentResolution";
 import SwmsJobStart from "@/pages/workflows/SwmsJobStart";
 import AnnualReview from "@/pages/workflows/AnnualReview";
 import Subcontractor from "@/pages/workflows/Subcontractor";
-import Tradeinduct from "@/pages/Tradeinduct";
-import InductionPublic from "@/pages/InductionPublic";
+import Tradeinduct from "@/pages/Tradeinduct";import InductionPublic from "@/pages/InductionPublic";
+import AddOnsMarketplace from "@/pages/AddOnsMarketplace";
+import AcademyApp from "@/pages/Academy";
+import AIDocsPage from "@/pages/AIDocsPage";
 import TradecheckMarketplace from "@/pages/TradecheckMarketplace";
 import TradecheckMy from "@/pages/TradecheckMy";
 import AcademyLMS from "@/pages/AcademyLMS";
@@ -185,7 +187,18 @@ function AppRouter() {
         <Route path="document-library/doc/:doc_id" element={<DocumentForm />} />
         <Route path="webhooks" element={<Webhooks />} />
         <Route path="automations" element={<Automations />} />
+        <Route path="addons" element={<AddOnsMarketplace />} />
+        <Route path="academy-app" element={<AcademyApp />} />
+        <Route path="ai-docs" element={<AIDocsPage />} />
       </Route>
+      <Route path="/products/safeinduct" element={<Navigate to="/addon/safeinduct" replace />} />
+      <Route path="/products/safecheck" element={<Navigate to="/addon/safecheck" replace />} />
+      <Route path="/addon/safeinduct" element={<Navigate to="/products/tradeinduct" replace />} />
+      <Route path="/addon/safecheck" element={<Navigate to="/products/tradecheck" replace />} />
+      <Route path="/addon/academy" element={<Navigate to="/products/academy" replace />} />
+      <Route path="/safetradie" element={<Navigate to="/" replace />} />
+      <Route path="/features" element={<Navigate to="/industries" replace />} />
+      <Route path="/contact" element={<Navigate to="/about" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -29,13 +29,13 @@ const INDUSTRIES = [
     ],
   },
   {
-    slug: "hospitality", label: "Hospitality", icon: ChefHat, accent: "#E87722",
+    slug: "hospitality", label: "Hospitality", icon: ChefHat, accent: "#0F4C5C",
     bg: "bg-[#5B2A0A]", text: "text-white",
     cta: "Create HACCP plan", primaryWidget: "Food Safety + WHS",
     score: 87, scoreLabel: "Safety + Food Safety",
     subs: [
-      { label: "WHS", v: 90, c: "#E87722" }, { label: "Food Safety", v: 85, c: "#E87722" },
-      { label: "Staff Certs", v: 92, c: "#E87722" }, { label: "Cleaning", v: 80, c: "#E87722" },
+      { label: "WHS", v: 90, c: "#0F4C5C" }, { label: "Food Safety", v: 85, c: "#0F4C5C" },
+      { label: "Staff Certs", v: 92, c: "#0F4C5C" }, { label: "Cleaning", v: 80, c: "#0F4C5C" },
     ],
     alerts: [
       "Walk-in fridge above target · 3 hours ago",

@@ -5,7 +5,7 @@ import { CaretDown, Check, Plus } from "@phosphor-icons/react";
 
 const INDUSTRY_META = {
   trades:      { label: "Trades & Construction", emoji: "🔨", accent: "bg-[#FFCC00]" },
-  hospitality: { label: "Hospitality",            emoji: "🍽️", accent: "bg-[#E87722]" },
+  hospitality: { label: "Hospitality",            emoji: "🍽️", accent: "bg-[#0F4C5C]" },
   transport:   { label: "Transport & Logistics",  emoji: "🚛", accent: "bg-[#0DC4B5]" },
   healthcare:  { label: "Healthcare & Aged Care", emoji: "🏥", accent: "bg-[#2196A6]" },
   retail:      { label: "Retail",                 emoji: "🛍️", accent: "bg-[#A855F7]" },

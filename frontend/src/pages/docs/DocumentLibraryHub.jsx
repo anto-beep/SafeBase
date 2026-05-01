@@ -21,7 +21,7 @@ const ICONS = { ShieldCheck, UserCircle, Handshake, Warning, Wrench, Clipboard: 
 
 const INDUSTRY_TABS = [
   { slug: "trades", label: "Trades", accent: "#FFCC00" },
-  { slug: "hospitality", label: "Hospitality", accent: "#E87722" },
+  { slug: "hospitality", label: "Hospitality", accent: "#0F4C5C" },
   { slug: "transport", label: "Transport", accent: "#0DC4B5" },
   { slug: "healthcare", label: "Healthcare", accent: "#2196A6" },
   { slug: "retail", label: "Retail", accent: "#A855F7" },

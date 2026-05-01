@@ -18,7 +18,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const INDUSTRIES = [
   { slug: "trades",      label: "Trades & Construction",  icon: HardHat,        bg: "bg-[#0A1F44]",   accent: "#FFCC00" },
-  { slug: "hospitality", label: "Hospitality",            icon: ChefHat,        bg: "bg-[#5B2A0A]",   accent: "#E87722" },
+  { slug: "hospitality", label: "Hospitality",            icon: ChefHat,        bg: "bg-[#5B2A0A]",   accent: "#0F4C5C" },
   { slug: "transport",   label: "Transport & Logistics",  icon: Truck,          bg: "bg-[#0E3B3B]",   accent: "#0DC4B5" },
   { slug: "healthcare",  label: "Healthcare & Aged Care", icon: HeartStraight,  bg: "bg-[#1E3A8A]",   accent: "#60A5FA" },
   { slug: "retail",      label: "Retail",                 icon: ShoppingBag,    bg: "bg-[#4C1D95]",   accent: "#A855F7" },

@@ -29,40 +29,28 @@ export function MarketingNav() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 outline-none uppercase tracking-widest" data-testid="nav-features">
-              FEATURES <CaretDown size={10} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="rounded-none border-ink w-64">
-              <DropdownMenuItem asChild><Link to="/services/swms">SWMS & Compliance</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/services/incidents">Incident Management</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/services/people">People & Licences</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/services/intelligence">Compliance Intelligence</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/products/tradeinduct">QR site inductions</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/products/tradecheck">Contractor credentials</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/products/academy">Worker training</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/consulting">WHS Consulting</Link></DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <Link to="/pricing" data-testid="nav-pricing" className="uppercase tracking-widest">PRICING</Link>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 outline-none uppercase tracking-widest" data-testid="nav-resources">
               RESOURCES <CaretDown size={10} />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="rounded-none border-ink w-64">
-              <DropdownMenuItem asChild><Link to="/blog" data-testid="nav-resources-blog">Blog · Articles & guides</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/compare" data-testid="nav-resources-compare">Compare · SafeBase vs others</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/templates">Free templates</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/guides">State guides</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/tools/fine-calculator">Fine calculator</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/integrations">Integrations</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/resources" data-testid="nav-resources-all">All resources</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/resources" data-testid="nav-resources-all" className="font-bold">All resources</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/resources/trades" data-testid="nav-resources-trades">Trades resources</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/resources/hospitality" data-testid="nav-resources-hospitality">Hospitality resources</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/resources/transport" data-testid="nav-resources-transport">Transport resources</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/resources/healthcare" data-testid="nav-resources-healthcare">Healthcare resources</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/resources/retail" data-testid="nav-resources-retail">Retail resources</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/templates" data-testid="nav-resources-templates">Free templates</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/resources#ai" data-testid="nav-resources-ai">Ask SafeBase AI</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Link to="/compare" data-testid="nav-compare" className="uppercase tracking-widest">COMPARE</Link>
           <a href="mailto:hello@safebase.com.au" data-testid="nav-contact" className="uppercase tracking-widest">CONTACT</a>
         </nav>
         <div className="flex items-center gap-2">
           <Link to="/login"><Button variant="ghost" className="btn-sharp uppercase tracking-widest" data-testid="nav-login-btn">Log in</Button></Link>
+          <Link to="/contact?type=demo"><Button variant="outline" className="btn-sharp border-ink uppercase tracking-widest hidden lg:inline-flex" data-testid="nav-demo-btn">Book a Demo</Button></Link>
           <Link to="/register"><Button className="btn-sharp bg-ink text-white hover:bg-authority uppercase tracking-widest" data-testid="nav-register-btn">Start Free Trial <ArrowRight className="ml-1" /></Button></Link>
         </div>
       </div>

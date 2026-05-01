@@ -23,6 +23,41 @@ MIN_REAL_COUNT = 10
 
 def register_industry_routes(api_router: APIRouter, *, db):
 
+    @api_router.get("/public/safebase-activity/today")
+    async def safebase_activity_today():
+        """Aggregate live activity counters across the entire SafeBase platform
+        for the last 24 hours. Used by the dashboard 'Today's Activity' ticker
+        to drive engagement / FOMO. No auth required — counts only, no data.
+        """
+        now = datetime.now(timezone.utc)
+        day_ago = (now - timedelta(days=1)).isoformat()
+        week_ago = (now - timedelta(days=7)).isoformat()
+        # Each counter is independent — failures fall through to 0.
+        async def _safe_count(coll, q):
+            try:
+                return await db[coll].count_documents(q)
+            except Exception:
+                return 0
+        swms_today = await _safe_count("swms", {"created_at": {"$gte": day_ago}})
+        incidents_today = await _safe_count("incidents", {"created_at": {"$gte": day_ago}})
+        incidents_workflow_today = await _safe_count("incident_workflow", {"created_at": {"$gte": day_ago}})
+        inductions_today = await _safe_count("induction_submissions", {"submitted_at": {"$gte": day_ago}})
+        docs_today = await _safe_count("compliance_docs", {"created_at": {"$gte": day_ago}})
+        risks_today = await _safe_count("safety_risks", {"created_at": {"$gte": day_ago}})
+        toolbox_today = await _safe_count("safety_toolbox_talks", {"created_at": {"$gte": day_ago}})
+        new_users_week = await _safe_count("users", {"created_at": {"$gte": week_ago}})
+        return {
+            "as_of": now.isoformat(),
+            "window": "last_24h",
+            "swms_generated": swms_today,
+            "incidents_logged": incidents_today + incidents_workflow_today,
+            "inductions_completed": inductions_today,
+            "documents_generated": docs_today,
+            "risks_added": risks_today,
+            "toolbox_talks_conducted": toolbox_today,
+            "new_businesses_this_week": new_users_week,
+        }
+
     @api_router.get("/industries")
     async def list_industries():
         return {"industries": [

@@ -16,8 +16,8 @@ import {
   ForkKnife, ShieldCheck, ArrowRight, CheckCircle, XCircle, Clock,
 } from "@phosphor-icons/react";
 
-const CREAM = "bg-[#FDF8F2]";
-const AMBER = "#E87722";
+const CREAM = "bg-[#F1ECE0]";
+const TEAL = "#0F4C5C";
 const BURGUNDY = "#7C1D3F";
 
 // Static shell for the food safety status bar — temperature monitoring isn't
@@ -99,7 +99,7 @@ export default function HospitalityOwnerDashboard() {
     <div className={`-mx-4 -my-4 sm:-mx-6 sm:-my-6 lg:-mx-8 lg:-my-8 ${CREAM} text-[#2C1810] min-h-screen`} data-testid="hospitality-owner-dashboard">
       <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-6">
         {/* Top header */}
-        <div className="flex items-end justify-between flex-wrap gap-4 border-b border-[#E87722]/30 pb-5">
+        <div className="flex items-end justify-between flex-wrap gap-4 border-b border-[#0F4C5C]/30 pb-5">
           <div>
             <div className="label-eyebrow text-[#7C1D3F]">/ Hospitality · {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</div>
             <h1 className="font-display text-4xl md:text-5xl font-black tracking-tighter mt-1" data-testid="hospitality-greeting">
@@ -107,14 +107,14 @@ export default function HospitalityOwnerDashboard() {
             </h1>
           </div>
           <Link to="/dashboard/document-library">
-            <Button className="btn-sharp h-12 text-white hover:opacity-90" style={{ background: AMBER }} data-testid="hospitality-quick-haccp">
+            <Button className="btn-sharp h-12 text-white hover:opacity-90" style={{ background: TEAL }} data-testid="hospitality-quick-haccp">
               <Sparkle className="mr-2" weight="fill" /> Create HACCP plan
             </Button>
           </Link>
         </div>
 
         {/* FULL-WIDTH FOOD SAFETY STATUS BAR */}
-        <div className="border-2 p-5" style={{ background: AMBER, borderColor: AMBER }} data-testid="hospitality-temp-bar">
+        <div className="border-2 p-5" style={{ background: TEAL, borderColor: TEAL }} data-testid="hospitality-temp-bar">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
               <div className="label-eyebrow text-white">/ Food safety status</div>
@@ -144,7 +144,7 @@ export default function HospitalityOwnerDashboard() {
           {/* LEFT 60% */}
           <div className="lg:col-span-3 space-y-5">
             {/* Dual compliance score */}
-            <div className="bg-white border-2 border-[#E87722] p-6" data-testid="hospitality-dual-score">
+            <div className="bg-white border-2 border-[#0F4C5C] p-6" data-testid="hospitality-dual-score">
               <div className="flex items-end justify-between flex-wrap gap-2 mb-4">
                 <div>
                   <div className="label-eyebrow text-[#7C1D3F]">/ Safety + Food safety score</div>
@@ -154,12 +154,12 @@ export default function HospitalityOwnerDashboard() {
               </div>
               <div className="space-y-4">
                 <HorizontalScoreBar label="WHS Safety" value={whsScore} color={BURGUNDY} />
-                <HorizontalScoreBar label="Food Safety" value={foodScore} color={AMBER} />
+                <HorizontalScoreBar label="Food Safety" value={foodScore} color={TEAL} />
               </div>
             </div>
 
             {/* Staff certifications */}
-            <div className="bg-white border border-[#E87722]/30 p-5" data-testid="hospitality-staff-certs">
+            <div className="bg-white border border-[#0F4C5C]/30 p-5" data-testid="hospitality-staff-certs">
               <div className="flex items-end justify-between flex-wrap gap-2 mb-3">
                 <div>
                   <div className="label-eyebrow text-[#7C1D3F]">/ Staff certifications</div>
@@ -170,7 +170,7 @@ export default function HospitalityOwnerDashboard() {
               {workers.length === 0 ? (
                 <div className="text-sm text-zinc-500 py-6 text-center">Add your team to start tracking RSA, Food Handler and First Aid expiries.</div>
               ) : (
-                <ul className="divide-y divide-[#E87722]/15">
+                <ul className="divide-y divide-[#0F4C5C]/15">
                   {workers.slice(0, 6).map((w) => {
                     const c = certByWorker[w.worker_id] || {};
                     return (
@@ -192,7 +192,7 @@ export default function HospitalityOwnerDashboard() {
             </div>
 
             {/* Recent food safety + WHS events */}
-            <div className="bg-white border border-[#E87722]/30 p-5" data-testid="hospitality-recent-events">
+            <div className="bg-white border border-[#0F4C5C]/30 p-5" data-testid="hospitality-recent-events">
               <div className="flex items-end justify-between flex-wrap gap-2 mb-3">
                 <div>
                   <div className="label-eyebrow text-[#7C1D3F]">/ Recent events</div>
@@ -203,7 +203,7 @@ export default function HospitalityOwnerDashboard() {
               {recentIncidents.length === 0 ? (
                 <div className="text-sm text-zinc-500 py-6 text-center">No events logged in the last 30 days. Stay vigilant.</div>
               ) : (
-                <ul className="divide-y divide-[#E87722]/15">
+                <ul className="divide-y divide-[#0F4C5C]/15">
                   {recentIncidents.map((i) => (
                     <li key={i.incident_id} className="py-3 flex items-start gap-3">
                       <Lightning size={18} weight="duotone" className="text-amber-600 shrink-0 mt-0.5" />
@@ -238,27 +238,27 @@ export default function HospitalityOwnerDashboard() {
             </div>
 
             {/* Today's cleaning schedule */}
-            <div className="bg-white border border-[#E87722]/30 p-5" data-testid="hospitality-cleaning">
+            <div className="bg-white border border-[#0F4C5C]/30 p-5" data-testid="hospitality-cleaning">
               <div className="label-eyebrow text-[#7C1D3F]">/ Today's cleaning</div>
               <div className="font-display font-bold text-lg mt-1">0 / 0 tasks complete</div>
               <div className="h-2 bg-black/10 mt-2 overflow-hidden">
-                <div className="h-full" style={{ width: "0%", background: AMBER }} />
+                <div className="h-full" style={{ width: "0%", background: TEAL }} />
               </div>
               <p className="text-sm text-zinc-500 mt-4">No cleaning schedule set up yet. Add tasks in the Document Library to get a daily checklist here.</p>
               <Link to="/dashboard/document-library">
-                <Button variant="outline" className="w-full mt-3 btn-sharp h-10 border-[#E87722] text-[#7C1D3F]" data-testid="hospitality-add-cleaning">
+                <Button variant="outline" className="w-full mt-3 btn-sharp h-10 border-[#0F4C5C] text-[#7C1D3F]" data-testid="hospitality-add-cleaning">
                   Set up cleaning schedule <ArrowRight className="ml-2" size={14} />
                 </Button>
               </Link>
             </div>
 
             {/* AI alerts */}
-            <div className="bg-white border border-[#E87722]/30 p-5" data-testid="hospitality-alerts">
+            <div className="bg-white border border-[#0F4C5C]/30 p-5" data-testid="hospitality-alerts">
               <div className="label-eyebrow text-[#7C1D3F]">/ AI alerts</div>
               <div className="font-display font-bold text-lg mt-1">{openIncidents.length} flagged</div>
               <ul className="mt-3 space-y-2 text-sm">
                 {openIncidents.slice(0, 3).map((i) => (
-                  <li key={i.incident_id} className="border-l-4 border-[#E87722] pl-3 py-1">
+                  <li key={i.incident_id} className="border-l-4 border-[#0F4C5C] pl-3 py-1">
                     <div className="font-bold text-sm">{i.title || i.incident_type}</div>
                     <div className="text-xs text-zinc-500">{i.severity} · {(i.created_at || "").slice(0, 10)}</div>
                   </li>

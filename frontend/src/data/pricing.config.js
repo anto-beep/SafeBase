@@ -83,7 +83,7 @@ export const INDUSTRY_PRICING = {
   },
   hospitality: {
     label: "Hospitality",
-    accent: "#E87722",
+    accent: "#0F4C5C",
     plan_names: ["Single Venue", "Small Group", "Multi-Venue", "Enterprise"],
     prices: {
       monthly: ["299", "579", "899", "1,499"],

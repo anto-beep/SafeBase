@@ -4,9 +4,10 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books, Plug } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 import IndustrySwitcher from "@/components/IndustrySwitcher";
+import ActivityTicker from "@/components/ActivityTicker";
 
 const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
@@ -55,6 +56,9 @@ const SAFETY_NAV = [
   { to: "/dashboard/inspections", label: "Inspections", icon: ClipboardText, feature: "inspection_checklists" },
   { to: "/dashboard/swms-revisions", label: "SWMS Revisions", icon: FileText, feature: "swms_generator" },
   { to: "/dashboard/first-aid-ppe", label: "First Aid & PPE", icon: FirstAidKit, feature: "first_aid_register" },
+  { to: "/dashboard/ai-docs", label: "AI Documents", icon: MagicWand },
+  { to: "/dashboard/academy-app", label: "SafeBase Academy", icon: GraduationCap },
+  { to: "/dashboard/addons", label: "Add-ons", icon: Plug },
   { to: "/dashboard/documents", label: "Legacy Documents", icon: FileText },
 ];
 
@@ -145,7 +149,7 @@ export default function DashboardLayout() {
   // Industry colour accent for active sidebar items per Part 3 of the brief.
   const industryAccent = {
     trades: "border-l-4 border-[#FFCC00]",
-    hospitality: "border-l-4 border-[#E87722]",
+    hospitality: "border-l-4 border-[#0F4C5C]",
     transport: "border-l-4 border-[#0DC4B5]",
     healthcare: "border-l-4 border-[#2196A6]",
     retail: "border-l-4 border-[#A855F7]",
@@ -268,6 +272,7 @@ export default function DashboardLayout() {
       </header>
 
       <main className="lg:ml-64 min-h-screen">
+        <ActivityTicker />
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-ink text-white z-40 grid grid-cols-5 border-t border-white/10">
           {NAV.slice(0, 5).map((item) => (
             <NavLink

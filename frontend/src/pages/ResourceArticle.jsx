@@ -12,7 +12,7 @@ import { ArrowLeft, Sparkle } from "@phosphor-icons/react";
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ACCENT = {
-  trades: "#FFCC00", hospitality: "#E87722", transport: "#0DC4B5",
+  trades: "#FFCC00", hospitality: "#0F4C5C", transport: "#0DC4B5",
   healthcare: "#2196A6", retail: "#A855F7",
 };
 
