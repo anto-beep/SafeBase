@@ -396,6 +396,307 @@ def render_toolbox_record(doc: dict) -> str:
                           body, "Toolbox Talk Record")
 
 
+# ========== WHS Management Plan ==========
+def render_whs_mgmt_plan(doc: dict) -> str:
+    state = doc.get("site_state", "NSW")
+    reg = STATE_REGULATORS.get(state, {"name": "", "phone": ""})
+    personnel = doc.get("key_personnel") or []
+    p_rows = "".join(
+        f"<tr><td>{_esc(p.get('name',''))}</td><td>{_esc(p.get('role',''))}</td><td>{_esc(p.get('phone',''))}</td></tr>"
+        for p in personnel)
+    resp = doc.get("responsibilities") or []
+    r_rows = "".join(
+        f"<tr><td>{_esc(r.get('role',''))}</td><td>{_esc(r.get('responsibility',''))}</td></tr>"
+        for r in resp)
+    body = (
+        _section("Project details", _kv([
+            ("Project", doc.get("project_name")),
+            ("Principal contractor", doc.get("principal_contractor")),
+            ("Site address", doc.get("site_address")),
+            ("State", state),
+            ("Project value", doc.get("project_value")),
+            ("Project duration", doc.get("project_duration")),
+            ("Prepared by", doc.get("prepared_by")),
+            ("Review date", doc.get("review_date")),
+        ]))
+        + _section("Scope of work", f"<p>{_esc(doc.get('scope_of_work',''))}</p>")
+        + _section("Regulator", f'<div class="emergency">'
+                   f"<div><strong>State WHS regulator:</strong> {_esc(reg['name'])} — {_esc(reg['phone'])}</div>"
+                   f"<div><strong>Emergency:</strong> 000</div></div>")
+        + _section("Key personnel",
+                   "<table><thead><tr><th>Name</th><th>Role</th><th>Phone</th></tr></thead>"
+                   f"<tbody>{p_rows or '<tr><td colspan=3>—</td></tr>'}</tbody></table>")
+        + _section("WHS responsibilities",
+                   "<table><thead><tr><th>Role</th><th>Responsibility</th></tr></thead>"
+                   f"<tbody>{r_rows or '<tr><td colspan=2>—</td></tr>'}</tbody></table>")
+        + _section("Risk management approach", f"<p>{_esc(doc.get('risk_management_approach',''))}</p>")
+        + _section("Consultation arrangements", f"<p>{_esc(doc.get('consultation_arrangements',''))}</p>")
+        + _section("Training requirements",
+                   "<ul>" + "".join(f"<li>{_esc(t)}</li>" for t in (doc.get("training_requirements") or [])) + "</ul>")
+        + _section("Monitoring & review", f"<p>{_esc(doc.get('monitoring_review',''))}</p>")
+    )
+    return _render_common(doc, "WHS Management Plan",
+                          "Principal Contractor WHS plan (WHS Reg 309)",
+                          body, "WHS Management Plan")
+
+
+# ========== Asbestos Register ==========
+def render_asbestos_register(doc: dict) -> str:
+    items = doc.get("items") or []
+    rows = "".join(
+        f"<tr><td>{_esc(a.get('location',''))}</td>"
+        f"<td>{_esc(a.get('material',''))}</td>"
+        f"<td>{_esc(a.get('friable',''))}</td>"
+        f"<td>{_esc(a.get('condition',''))}</td>"
+        f"<td>{_esc(a.get('risk',''))}</td>"
+        f"<td>{_esc(a.get('control',''))}</td>"
+        f"<td>{_esc(a.get('accessible',''))}</td></tr>" for a in items)
+    body = (
+        _section("Site details", _kv([
+            ("Site", doc.get("site_name")),
+            ("Address", doc.get("site_address")),
+            ("Prepared by", doc.get("prepared_by")),
+            ("Assessor name", doc.get("assessor_name")),
+            ("Inspection date", doc.get("inspection_date")),
+            ("Next review", doc.get("next_review")),
+        ]))
+        + _section("Asbestos-containing materials",
+                   "<table><thead><tr>"
+                   "<th>Location</th><th>Material</th><th>Friable</th>"
+                   "<th>Condition</th><th>Risk</th><th>Control</th><th>Accessible</th>"
+                   "</tr></thead>"
+                   f"<tbody>{rows or '<tr><td colspan=7>—</td></tr>'}</tbody></table>")
+        + _section("Note",
+                   "<p style='font-size:9pt;'>Required under WHS Regulations Reg 425 for any "
+                   "workplace where asbestos or ACM is identified or presumed. Keep current; "
+                   "reviewed at least every 5 years, or when asbestos is removed, disturbed, "
+                   "sealed or enclosed.</p>")
+    )
+    return _render_common(doc, "Asbestos Register",
+                          "WHS Regulations Reg 425",
+                          body, "Asbestos Register")
+
+
+# ========== CCEW (NSW Electrical Certificate) ==========
+def render_ccew(doc: dict) -> str:
+    tested = doc.get("test_results") or []
+    t_rows = "".join(
+        f"<tr><td>{_esc(t.get('test',''))}</td><td>{_esc(t.get('result',''))}</td></tr>"
+        for t in tested)
+    body = (
+        _section("Licensee details", _kv([
+            ("Licensee name", doc.get("licensee_name")),
+            ("Licence number", doc.get("licence_no")),
+            ("Contractor", doc.get("contractor_name")),
+        ]))
+        + _section("Customer & site", _kv([
+            ("Customer", doc.get("customer_name")),
+            ("Site address", doc.get("site_address")),
+            ("Work type", doc.get("work_type")),
+            ("Installation type", doc.get("installation_type")),
+            ("Work date", doc.get("work_date")),
+        ]))
+        + _section("Scope of work", f"<p>{_esc(doc.get('scope',''))}</p>")
+        + _section("Tested items",
+                   "<ul>" + "".join(f"<li>{_esc(t)}</li>" for t in (doc.get("tested_items") or [])) + "</ul>")
+        + _section("Test results",
+                   "<table><thead><tr><th>Test</th><th>Result</th></tr></thead>"
+                   f"<tbody>{t_rows or '<tr><td colspan=2>—</td></tr>'}</tbody></table>")
+        + _section("Compliance statement",
+                   f"<p>{_esc(doc.get('compliance_statement','') or 'I certify that the electrical installation work described above complies with AS/NZS 3000 and the Service and Installation Rules of NSW.')}</p>")
+        + _section("Sign-off", _kv([
+            ("Signed by", doc.get("signed_by")),
+            ("Signature/ID", doc.get("signature")),
+            ("Signed at", doc.get("signed_at")),
+        ]))
+    )
+    return _render_common(doc, "Certificate of Compliance — Electrical Work (CCEW)",
+                          "NSW — AS/NZS 3000",
+                          body, "CCEW")
+
+
+# ========== NOW/COC Plumbing ==========
+def render_plumbing_coc(doc: dict) -> str:
+    items = doc.get("work_items") or []
+    rows = "".join(
+        f"<tr><td>{_esc(it.get('item',''))}</td><td>{_esc(it.get('standard',''))}</td>"
+        f"<td>{_esc(it.get('result',''))}</td></tr>" for it in items)
+    body = (
+        _section("Licensee details", _kv([
+            ("Licensee name", doc.get("licensee_name")),
+            ("Licence number", doc.get("licence_no")),
+            ("Company", doc.get("company_name")),
+        ]))
+        + _section("Job details", _kv([
+            ("Job site", doc.get("job_site")),
+            ("Job type", doc.get("job_type")),
+            ("Council / authority", doc.get("authority")),
+            ("Inspection required", doc.get("inspection_required")),
+            ("Work date", doc.get("work_date")),
+            ("NOW reference", doc.get("now_reference")),
+        ]))
+        + _section("Scope of work", f"<p>{_esc(doc.get('scope',''))}</p>")
+        + _section("Work items + standards",
+                   "<table><thead><tr><th>Item</th><th>Standard</th><th>Result</th></tr></thead>"
+                   f"<tbody>{rows or '<tr><td colspan=3>—</td></tr>'}</tbody></table>")
+        + _section("Compliance statement",
+                   f"<p>{_esc(doc.get('compliance_statement','') or 'I certify that the plumbing/drainage work described above complies with AS/NZS 3500 and relevant state regulations.')}</p>")
+        + _section("Sign-off", _kv([
+            ("Signed by", doc.get("signed_by")),
+            ("Signature/ID", doc.get("signature")),
+            ("Signed at", doc.get("signed_at")),
+        ]))
+    )
+    return _render_common(doc, "Plumbing NOW / Certificate of Compliance",
+                          "AS/NZS 3500 — State plumbing regulations",
+                          body, "Plumbing COC")
+
+
+# ========== Hot Work Permit ==========
+def render_hot_work_permit(doc: dict) -> str:
+    checks = doc.get("precautions") or []
+    li = "".join(
+        f'<div class="ck"><span class="mono">{"☒" if c.get("done") else "☐"}</span> {_esc(c.get("item",""))}</div>'
+        for c in checks)
+    body = (
+        _section("Permit details", _kv([
+            ("Location", doc.get("location")),
+            ("Nature of work", doc.get("work_description")),
+            ("Date/time of start", doc.get("start_datetime")),
+            ("Duration", doc.get("duration")),
+            ("Rescinded at", doc.get("rescinded_at")),
+        ]))
+        + _section("Workers + fire watch", _kv([
+            ("Authorised workers", ", ".join(doc.get("authorised_workers", []) or [])),
+            ("Fire watch person", doc.get("fire_watch_person")),
+            ("Extinguisher on site", doc.get("extinguisher_on_site")),
+            ("Post-work watch (min)", doc.get("post_work_watch_mins")),
+        ]))
+        + _section("Pre-start precautions", f"<div>{li or '—'}</div>")
+        + _section("Atmosphere tested",
+                   _kv([("Tested", doc.get("atmosphere_tested")),
+                        ("Tested by", doc.get("atmosphere_tested_by")),
+                        ("Test time", doc.get("atmosphere_tested_at"))]))
+        + _section("Emergency procedures", f"<p>{_esc(doc.get('emergency_procedures',''))}</p>")
+        + _section("Authorisation", _kv([
+            ("Authorised by", doc.get("authorised_by")),
+            ("Signature/ID", doc.get("authorised_by_signature")),
+            ("Authorised at", doc.get("authorised_at")),
+        ]))
+    )
+    return _render_common(doc, "Hot Work Permit",
+                          "Welding, cutting, grinding — fire risk control",
+                          body, "Hot Work Permit")
+
+
+# ========== Excavation Permit ==========
+def render_excavation_permit(doc: dict) -> str:
+    services = doc.get("services_checked") or []
+    li = "".join(
+        f'<div class="ck"><span class="mono">{"☒" if c.get("done") else "☐"}</span> {_esc(c.get("item",""))}</div>'
+        for c in services)
+    body = (
+        _section("Permit details", _kv([
+            ("Location", doc.get("location")),
+            ("Nature of work", doc.get("work_description")),
+            ("Depth (metres)", doc.get("depth_metres")),
+            ("Start date/time", doc.get("start_datetime")),
+            ("Duration", doc.get("duration")),
+        ]))
+        + _section("Services check (Dial Before You Dig)", f"<div>{li or '—'}</div>")
+        + _section("Barricades & signage",
+                   "<ul>" + "".join(f"<li>{_esc(b)}</li>" for b in (doc.get("barricades") or [])) + "</ul>")
+        + _section("Spoil location", f"<p>{_esc(doc.get('spoil_location',''))}</p>")
+        + _section("Plant & equipment",
+                   "<ul>" + "".join(f"<li>{_esc(p)}</li>" for p in (doc.get("plant_equipment") or [])) + "</ul>")
+        + _section("Authorised workers",
+                   "<ul>" + "".join(f"<li>{_esc(w)}</li>" for w in (doc.get("authorised_workers") or [])) + "</ul>")
+        + _section("Emergency procedures", f"<p>{_esc(doc.get('emergency_procedures',''))}</p>")
+        + _section("Authorisation", _kv([
+            ("Authorised by", doc.get("authorised_by")),
+            ("Signature/ID", doc.get("authorised_by_signature")),
+            ("Authorised at", doc.get("authorised_at")),
+            ("Permit rescinded", doc.get("rescinded_at")),
+        ]))
+    )
+    return _render_common(doc, "Excavation Permit",
+                          "Ground disturbance control (WHS Reg 304)",
+                          body, "Excavation Permit")
+
+
+# ========== Lift Plan ==========
+def render_lift_plan(doc: dict) -> str:
+    body = (
+        _section("Lift details", _kv([
+            ("Site", doc.get("site")),
+            ("Lift date", doc.get("lift_date")),
+            ("Load description", doc.get("load_description")),
+            ("Load weight (kg)", doc.get("load_weight_kg")),
+            ("Working radius (m)", doc.get("working_radius")),
+            ("Lift height (m)", doc.get("lift_height")),
+        ]))
+        + _section("Crane & rigging", _kv([
+            ("Crane type", doc.get("crane_type")),
+            ("Crane capacity (kg)", doc.get("crane_capacity_kg")),
+            ("Capacity utilised (%)", doc.get("capacity_utilised")),
+            ("Rigging configuration", doc.get("rigging_config")),
+            ("Dogger name", doc.get("dogger_name")),
+            ("Rigger name", doc.get("rigger_name")),
+            ("Crane operator", doc.get("crane_operator")),
+        ]))
+        + _section("Lift sequence", f"<p>{_esc(doc.get('lift_sequence',''))}</p>")
+        + _section("Hazards",
+                   "<ul>" + "".join(f"<li>{_esc(h)}</li>" for h in (doc.get("hazards") or [])) + "</ul>")
+        + _section("Controls",
+                   "<ul>" + "".join(f"<li>{_esc(c)}</li>" for c in (doc.get("controls") or [])) + "</ul>")
+        + _section("Exclusion zone", f"<p>{_esc(doc.get('exclusion_zone',''))}</p>")
+        + _section("Authorisation", _kv([
+            ("Prepared by", doc.get("prepared_by")),
+            ("Approved by", doc.get("approved_by")),
+            ("Approved at", doc.get("approved_at")),
+        ]))
+    )
+    return _render_common(doc, "Lift Plan",
+                          "Crane / lifting operations — AS 2550",
+                          body, "Lift Plan")
+
+
+# ========== Fall Protection Plan ==========
+def render_fall_protection(doc: dict) -> str:
+    checks = doc.get("pre_start_check") or []
+    li = "".join(
+        f'<div class="ck"><span class="mono">{"☒" if c.get("done") else "☐"}</span> {_esc(c.get("item",""))}</div>'
+        for c in checks)
+    body = (
+        _section("Work details", _kv([
+            ("Site", doc.get("site")),
+            ("Work area", doc.get("work_area")),
+            ("Height (metres)", doc.get("height_metres")),
+            ("Work date", doc.get("work_date")),
+        ]))
+        + _section("Nature of work", f"<p>{_esc(doc.get('work_description',''))}</p>")
+        + _section("Edge protection",
+                   "<ul>" + "".join(f"<li>{_esc(e)}</li>" for e in (doc.get("edge_protection") or [])) + "</ul>")
+        + _section("Fall arrest systems",
+                   "<ul>" + "".join(f"<li>{_esc(f)}</li>" for f in (doc.get("fall_arrest_systems") or [])) + "</ul>")
+        + _section("Anchor points", f"<p>{_esc(doc.get('anchor_points',''))}</p>")
+        + _section("Rescue plan", f"<p>{_esc(doc.get('rescue_plan',''))}</p>")
+        + _section("Authorised workers",
+                   "<ul>" + "".join(f"<li>{_esc(w)}</li>" for w in (doc.get("authorised_workers") or [])) + "</ul>")
+        + _section("Pre-start check", f"<div>{li or '—'}</div>")
+        + _section("Sign-off", _kv([
+            ("Prepared by", doc.get("prepared_by")),
+            ("Approved by", doc.get("approved_by")),
+            ("Approved at", doc.get("approved_at")),
+        ]))
+    )
+    return _render_common(doc, "Fall Protection Plan",
+                          "Working at heights (WHS Reg 78)",
+                          body, "Fall Protection Plan")
+
+
+
+
 # ---------- Register doc types ----------
 # Each: {id, category, label, blurb, fields[], ai_prompt (or None), pdf, counter_prefix}
 
@@ -569,6 +870,219 @@ register_doc_type({
                   "discussion: short paragraph}"),
     "pdf": render_toolbox_record,
 })
+
+register_doc_type({
+    "id": "whs_mgmt_plan", "category": "safety",
+    "label": "WHS Management Plan",
+    "blurb": "Principal Contractor WHS plan (WHS Reg 309 — required for construction projects > A$250k)",
+    "counter_prefix": "WMP",
+    "fields": [
+        _f("project_name", "Project name", required=True),
+        _f("principal_contractor", "Principal contractor"),
+        _f("site_address", "Site address"),
+        _f("site_state", "Site state", "state"),
+        _f("project_value", "Project value (A$)"),
+        _f("project_duration", "Project duration"),
+        _f("prepared_by", "Prepared by"),
+        _f("review_date", "Review date", "date"),
+        _f("scope_of_work", "Scope of work", "textarea"),
+        _f("key_personnel", "Key personnel (name/role/phone)", "contacts"),
+        _f("responsibilities", "WHS responsibilities (role/responsibility)", "responsibilities"),
+        _f("risk_management_approach", "Risk management approach", "textarea"),
+        _f("consultation_arrangements", "Consultation arrangements", "textarea"),
+        _f("training_requirements", "Training requirements", "chips"),
+        _f("monitoring_review", "Monitoring & review", "textarea"),
+    ],
+    "ai_prompt": ("Given a project name + trade, return JSON: {scope_of_work, "
+                  "risk_management_approach, consultation_arrangements, "
+                  "training_requirements:[str], monitoring_review}"),
+    "pdf": render_whs_mgmt_plan,
+})
+
+register_doc_type({
+    "id": "asbestos_register", "category": "safety",
+    "label": "Asbestos Register",
+    "blurb": "ACM register — mandatory for pre-2004 workplaces (WHS Reg 425)",
+    "counter_prefix": "ASB",
+    "fields": [
+        _f("site_name", "Site name", required=True),
+        _f("site_address", "Site address"),
+        _f("prepared_by", "Prepared by"),
+        _f("assessor_name", "Competent assessor name"),
+        _f("inspection_date", "Inspection date", "date"),
+        _f("next_review", "Next review date", "date"),
+        _f("items", "ACM items (location/material/friable/condition/risk/control/accessible)",
+           "asbestos_items"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_asbestos_register,
+})
+
+register_doc_type({
+    "id": "ccew", "category": "trade",
+    "label": "Certificate of Compliance — Electrical Work (CCEW)",
+    "blurb": "NSW electrical certificate (AS/NZS 3000)",
+    "counter_prefix": "CCEW",
+    "fields": [
+        _f("licensee_name", "Licensee name", required=True),
+        _f("licence_no", "Licence number"),
+        _f("contractor_name", "Contractor / company"),
+        _f("customer_name", "Customer"),
+        _f("site_address", "Site address"),
+        _f("work_type", "Work type"),
+        _f("installation_type", "Installation type"),
+        _f("work_date", "Work date", "date"),
+        _f("scope", "Scope of work", "textarea"),
+        _f("tested_items", "Tested items", "chips"),
+        _f("test_results", "Test results (test/result)", "test_results"),
+        _f("compliance_statement", "Compliance statement", "textarea"),
+        _f("signed_by", "Signed by"),
+        _f("signature", "Signature / ID"),
+        _f("signed_at", "Signed at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_ccew,
+})
+
+register_doc_type({
+    "id": "plumbing_coc", "category": "trade",
+    "label": "Plumbing NOW / Certificate of Compliance",
+    "blurb": "Notice of Work & Certificate of Compliance (AS/NZS 3500)",
+    "counter_prefix": "PLB",
+    "fields": [
+        _f("licensee_name", "Licensee name", required=True),
+        _f("licence_no", "Licence number"),
+        _f("company_name", "Company"),
+        _f("job_site", "Job site"),
+        _f("job_type", "Job type (sanitary/water/drain/gas)"),
+        _f("authority", "Council / authority"),
+        _f("inspection_required", "Inspection required (Y/N)"),
+        _f("work_date", "Work date", "date"),
+        _f("now_reference", "NOW reference"),
+        _f("scope", "Scope of work", "textarea"),
+        _f("work_items", "Work items (item/standard/result)", "plumbing_items"),
+        _f("compliance_statement", "Compliance statement", "textarea"),
+        _f("signed_by", "Signed by"),
+        _f("signature", "Signature / ID"),
+        _f("signed_at", "Signed at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_plumbing_coc,
+})
+
+register_doc_type({
+    "id": "hot_work_permit", "category": "safety",
+    "label": "Hot Work Permit",
+    "blurb": "Welding / cutting / grinding — fire risk control",
+    "counter_prefix": "HWP",
+    "fields": [
+        _f("location", "Location", required=True),
+        _f("work_description", "Nature of work", "textarea"),
+        _f("start_datetime", "Start date/time", "datetime"),
+        _f("duration", "Duration"),
+        _f("authorised_workers", "Authorised workers", "chips"),
+        _f("fire_watch_person", "Fire watch person"),
+        _f("extinguisher_on_site", "Extinguisher on site"),
+        _f("post_work_watch_mins", "Post-work watch (mins)", "number"),
+        _f("precautions", "Pre-start precautions (item/done)", "checklist"),
+        _f("atmosphere_tested", "Atmosphere tested (Y/N)"),
+        _f("atmosphere_tested_by", "Tested by"),
+        _f("atmosphere_tested_at", "Test time", "datetime"),
+        _f("emergency_procedures", "Emergency procedures", "textarea"),
+        _f("authorised_by", "Authorised by"),
+        _f("authorised_by_signature", "Auth signature / ID"),
+        _f("authorised_at", "Authorised at", "datetime"),
+        _f("rescinded_at", "Rescinded at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_hot_work_permit,
+})
+
+register_doc_type({
+    "id": "excavation_permit", "category": "safety",
+    "label": "Excavation Permit",
+    "blurb": "Ground disturbance control (WHS Reg 304)",
+    "counter_prefix": "EXP",
+    "fields": [
+        _f("location", "Location", required=True),
+        _f("work_description", "Nature of work", "textarea"),
+        _f("depth_metres", "Depth (metres)", "number"),
+        _f("start_datetime", "Start date/time", "datetime"),
+        _f("duration", "Duration"),
+        _f("services_checked", "Services check — DBYD (item/done)", "checklist"),
+        _f("barricades", "Barricades & signage", "chips"),
+        _f("spoil_location", "Spoil location", "textarea"),
+        _f("plant_equipment", "Plant & equipment", "chips"),
+        _f("authorised_workers", "Authorised workers", "chips"),
+        _f("emergency_procedures", "Emergency procedures", "textarea"),
+        _f("authorised_by", "Authorised by"),
+        _f("authorised_by_signature", "Auth signature / ID"),
+        _f("authorised_at", "Authorised at", "datetime"),
+        _f("rescinded_at", "Rescinded at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_excavation_permit,
+})
+
+register_doc_type({
+    "id": "lift_plan", "category": "plant",
+    "label": "Lift Plan",
+    "blurb": "Crane / lifting operations — AS 2550",
+    "counter_prefix": "LIFT",
+    "fields": [
+        _f("site", "Site", required=True),
+        _f("lift_date", "Lift date", "date"),
+        _f("load_description", "Load description"),
+        _f("load_weight_kg", "Load weight (kg)", "number"),
+        _f("working_radius", "Working radius (m)"),
+        _f("lift_height", "Lift height (m)"),
+        _f("crane_type", "Crane type"),
+        _f("crane_capacity_kg", "Crane capacity (kg)", "number"),
+        _f("capacity_utilised", "Capacity utilised (%)"),
+        _f("rigging_config", "Rigging configuration"),
+        _f("dogger_name", "Dogger name"),
+        _f("rigger_name", "Rigger name"),
+        _f("crane_operator", "Crane operator"),
+        _f("lift_sequence", "Lift sequence", "textarea"),
+        _f("hazards", "Hazards", "chips"),
+        _f("controls", "Controls", "chips"),
+        _f("exclusion_zone", "Exclusion zone", "textarea"),
+        _f("prepared_by", "Prepared by"),
+        _f("approved_by", "Approved by"),
+        _f("approved_at", "Approved at", "datetime"),
+    ],
+    "ai_prompt": ("Given a load description + crane type, return JSON: "
+                  "{hazards:[str], controls:[str], lift_sequence, exclusion_zone}"),
+    "pdf": render_lift_plan,
+})
+
+register_doc_type({
+    "id": "fall_protection", "category": "safety",
+    "label": "Fall Protection Plan",
+    "blurb": "Working at heights (WHS Reg 78)",
+    "counter_prefix": "FPP",
+    "fields": [
+        _f("site", "Site", required=True),
+        _f("work_area", "Work area"),
+        _f("height_metres", "Height (metres)", "number"),
+        _f("work_date", "Work date", "date"),
+        _f("work_description", "Nature of work", "textarea"),
+        _f("edge_protection", "Edge protection", "chips"),
+        _f("fall_arrest_systems", "Fall arrest systems", "chips"),
+        _f("anchor_points", "Anchor points", "textarea"),
+        _f("rescue_plan", "Rescue plan", "textarea"),
+        _f("authorised_workers", "Authorised workers", "chips"),
+        _f("pre_start_check", "Pre-start check (item/done)", "checklist"),
+        _f("prepared_by", "Prepared by"),
+        _f("approved_by", "Approved by"),
+        _f("approved_at", "Approved at", "datetime"),
+    ],
+    "ai_prompt": ("Given a work area + height, return JSON: {edge_protection:[str], "
+                  "fall_arrest_systems:[str], anchor_points, rescue_plan}"),
+    "pdf": render_fall_protection,
+})
+
+
 
 
 async def _call_claude(system: str, user_prompt: str, fallback: Any,

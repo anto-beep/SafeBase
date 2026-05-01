@@ -1,0 +1,36 @@
+{
+  "summary": "Iter22 — SafeTradie Phase 3 Document Library (8 NEW doc types) validated end-to-end. Backend pytest 34/34 PASS in /app/backend/tests/test_iter22_doc_library_phase3.py (~10.7s): GET /api/docs/types now returns exactly 16 types (8 Phase-2 + 8 Phase-3) across 6 categories; new field type widgets confirmed in registry (responsibilities on whs_mgmt_plan, asbestos_items on asbestos_register, test_results on ccew, plumbing_items on plumbing_coc); for ALL 8 new types — POST /api/docs/{type} returns doc_id+reference with correct counter_prefix (WMP/ASB/CCEW/PLB/HWP/EXP/LIFT/FPP), GET /api/docs?doc_type=X filters correctly with no _id, GET /api/docs/{id} returns doc, GET /api/docs/{id}/pdf returns application/pdf with %PDF magic and >5000 bytes (actual sizes 17-22KB); PATCH on lift_plan persists load_weight_kg=2750 and hazards[] with verification via re-GET; soft-delete (archived) -> hard-delete (404) works on hot_work_permit; auth enforced 401/403; unknown doc_type 404; Phase-2 regression: jsa + emergency_plan create+PDF still work. Frontend verified live on owner@safetradie.demo against REACT_APP_BACKEND_URL: /dashboard/document-library hub renders ALL 16 cat-type cards across all 6 categories (cat-type-{whs_mgmt_plan, asbestos_register, ccew, plumbing_coc, hot_work_permit, excavation_permit, lift_plan, fall_protection} all visible). Click cat-type-whs_mgmt_plan -> /dashboard/document-library/whs_mgmt_plan -> doc-list-page renders. New -> doc-form with field-responsibilities (new table widget) present. lift_plan E2E: filled field-site + field-load_description, doc-save fired, success toast 'Saved — LIFT-2026-0003' appeared, doc-pdf triggered an actual PDF download (19206 bytes). Spot-checked all 4 NEW table widgets render: asbestos_register/field-items, ccew/field-test_results, plumbing_coc/field-work_items. SWMS Library regression at /dashboard/swms loads with existing SWMS-2026-0001 row and zero .error elements. Phase 3 is good to ship.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/dashboard/document-library/lift_plan/new (Approved at, etc.)", "issues": ["Date/datetime fields STILL use native browser <input type='date'/'datetime-local'> (visible mm/dd/yyyy --:-- -- placeholder in screenshot). Same call-out from iter20 + iter21 — recommend shadcn Calendar + Popover for visual consistency."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter22_doc_library_phase3.py",
+    "/app/test_reports/pytest/iter22_doc_library_phase3.xml"
+  ],
+  "action_items": [
+    "(Pre-existing) iter21 test file /app/backend/tests/test_iter21_doc_library.py has one assertion (test_docs_types_returns_8_types_and_categories) that hardcodes len(types)==8 — now fails because Phase 3 added 8 more types (16 total). Update that one assertion to == 16 OR drop it (the new iter22 test already covers it). All other 42 assertions in iter21 still PASS — functional behaviour unchanged.",
+    "(Nice-to-have) Replace native date/datetime-local inputs in DocumentForm FieldRenderer with shadcn Calendar (carryover from iter20/iter21).",
+    "(Optional, carryover) Wrap WeasyPrint write_pdf in asyncio.wait_for(timeout=30) inside docs_module.get_pdf for robustness on large registers.",
+    "(Optional) Add a /api/docs/stats aggregation endpoint so DocumentLibraryHub doesn't need to fetch every doc to compute per-category counts (carryover from iter21)."
+  ],
+  "critical_code_review_comments": [
+    "docs_module.py is now 1249 lines (was 735 in Phase 2). Strongly recommend splitting: docs_pdf.py (16 render_* functions + _common css), docs_registry.py (16 register_doc_type calls), keeping docs_module.py for routes + CRUD. File size guideline (>700 lines) is exceeded.",
+    "Phase 3 added 4 new field type widgets (responsibilities, asbestos_items, test_results, plumbing_items) but they share the same shape as existing 'attendees'/'checklist'/'contacts'. Consider a single generic 'table' field type with a columns:[{key,label,type}] schema, eliminating duplication in both backend (renderer if/elif chain) and frontend FieldRenderer. Future-proofs Phase 4+.",
+    "create_doc and update_doc still accept arbitrary dict body without per-type Pydantic validation — risk of typo'd field keys silently persisting (e.g., 'lod_weight_kg' on lift_plan would write a junk field). Suggest building Pydantic models from each spec['fields'] at registration time.",
+    "PATCH /docs/{doc_id} still does NOT bump version (carryover from iter21 — review_request did not flag this for Phase 3 but compliance audit requirements typically need version bumps).",
+    "Asbestos Register has 7-column items table (location/material/friable/condition/risk/control/accessible) but min payload only requires site_name — there is no validation that ACM register items contain at least 1 row before allowing save/PDF. Same for plumbing_coc work_items, ccew test_results. Empty tables produce a valid PDF with empty rows — likely acceptable for draft state but worth a soft-warning on transitioning to in_use/issued."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter22_doc_library_phase3.py"],
+  "success_rate": {"backend": "100% (34/34 Phase 3) + 42/43 Phase 2 regression (1 outdated count assertion)", "frontend": "100% (12/12 steps incl. new-table-widget render checks + lift_plan create+PDF download)"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Per run creates: 1 doc per Phase 3 type (8 docs), 1 extra HWP for delete-flow test, 1 extra JSA + 1 EP for Phase-2 regression, 1 LIFT doc from frontend run (LIFT-2026-0003). Backend tests cleanup via DELETE x2 in fixture teardown; frontend artifacts left in db.compliance_docs flagged with 'TEST_FE' prefix.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run regression: `export $(grep -v ^# /app/frontend/.env | xargs) && pytest /app/backend/tests/test_iter22_doc_library_phase3.py -v` (~11s). All 34 pass. The iter21 test_docs_types_returns_8_types_and_categories assertion is stale (asserts 8 types when 16 now exist). Backend URL: REACT_APP_BACKEND_URL in /app/frontend/.env. Login: owner@safetradie.demo / Demo@1234. data-testids verified live for Phase 3: cat-type-{whs_mgmt_plan,asbestos_register,ccew,plumbing_coc,hot_work_permit,excavation_permit,lift_plan,fall_protection}, doc-form, doc-save, doc-pdf, doc-list-page, doc-list-new, field-{site,load_description,items,test_results,work_items,responsibilities,...}. Counter prefixes verified: WMP/ASB/CCEW/PLB/HWP/EXP/LIFT/FPP. Cleanup: db.compliance_docs (filter doc_type+TEST_-prefix), db.docs_counters.",
+  "rca_of_the_issue": "N/A — Phase 3 schema-registry extension works end-to-end per spec. No new routes were needed; the 8 new doc types reuse the generic /api/docs/* CRUD as designed. Only pre-existing Phase 2 test has one stale count assertion (8 -> 16) which needs trivial update."
+}

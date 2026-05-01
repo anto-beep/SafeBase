@@ -205,6 +205,22 @@ function FieldRenderer({ field, value, onChange }) {
     return <TableField field={field} value={value} onChange={onChange}
                        cols={[{k:"name",l:"Attendee name"}]} />;
   }
+  if (t === "responsibilities") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"role",l:"Role"},{k:"responsibility",l:"Responsibility"}]} />;
+  }
+  if (t === "asbestos_items") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"location",l:"Location"},{k:"material",l:"Material"},{k:"friable",l:"Friable (Y/N)"},{k:"condition",l:"Condition"},{k:"risk",l:"Risk"},{k:"control",l:"Control"},{k:"accessible",l:"Accessible"}]} />;
+  }
+  if (t === "test_results") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"test",l:"Test"},{k:"result",l:"Result"}]} />;
+  }
+  if (t === "plumbing_items") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"item",l:"Item"},{k:"standard",l:"Standard"},{k:"result",l:"Result"}]} />;
+  }
   if (t === "atmosphere") {
     return <AtmosphereField field={field} value={value} onChange={onChange} />;
   }
