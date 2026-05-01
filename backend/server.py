@@ -2285,6 +2285,41 @@ register_academy_routes(
 )
 
 
+# ----------- INDUSTRY-SPECIFIC MODULES (Iter 35) -----------
+# Each of these is hard-blocked to a single industry via require_feature().
+from routes.hospitality import register_hospitality_routes  # noqa: E402
+register_hospitality_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    require_feature=require_feature, account_id_for_fn=account_id_for,
+    stamp_account_fn=stamp_account, visibility_filter_fn=visibility_filter,
+    log_audit_fn=log_audit, logger=logger,
+)
+
+from routes.transport import register_transport_routes  # noqa: E402
+register_transport_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    require_feature=require_feature, account_id_for_fn=account_id_for,
+    stamp_account_fn=stamp_account, visibility_filter_fn=visibility_filter,
+    log_audit_fn=log_audit, logger=logger,
+)
+
+from routes.healthcare import register_healthcare_routes  # noqa: E402
+register_healthcare_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    require_feature=require_feature, account_id_for_fn=account_id_for,
+    stamp_account_fn=stamp_account, visibility_filter_fn=visibility_filter,
+    log_audit_fn=log_audit, logger=logger,
+)
+
+from routes.retail import register_retail_routes  # noqa: E402
+register_retail_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    require_feature=require_feature, account_id_for_fn=account_id_for,
+    stamp_account_fn=stamp_account, visibility_filter_fn=visibility_filter,
+    log_audit_fn=log_audit, logger=logger,
+)
+
+
 @api_router.get("/incident-workflow/meta/regulators")
 async def list_regulators():
     """State regulator phone numbers used by the Triage 'Call Now' button."""
