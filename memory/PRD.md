@@ -204,6 +204,33 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - **Trades dashboard preserved unchanged**.
 - **Industry-aware sidebar** — `DashboardLayout.jsx` reads `user.industry` and applies `NAV_LABELS_BY_INDUSTRY` (SWMS Library → Food Safety / Fleet & CoR / Care Quality / Inductions; Workers → Team Members / Drivers & Operators / Staff & Clinicians) + `APPS_NAV_BY_INDUSTRY` aliases (TradeInduct → VenueInduct/FleetInduct/ClinicInduct/StoreInduct) + `industryAccent` 4px left-border on active items.
 
+### Iteration 37 — Complete Pricing Update + Frontend Overhaul (Feb 2026)
+- **Master pricing refresh across all 5 industries** (`/app/frontend/src/data/pricing.config.js` + `/app/backend/routes/billing.py` now has 40 Stripe tier slugs):
+  - **Trades**: Solo Tradie A$399/mo (A$3,990/yr), Small Team A$799, Growing Business A$1,299, Enterprise A$2,199.
+  - **Retail** (now independent, 8 new slugs): Single Store A$549 → A$5,490/yr, Small Chain A$1,099 → A$10,990, Multi-Store A$1,699 → A$16,990, Enterprise A$2,799 → A$27,990.
+  - **Hospitality**: Single Venue A$799 → A$7,990, Small Group A$1,499 → A$14,990, Multi-Venue A$2,299 → A$22,990, Enterprise A$3,799 → A$37,990.
+  - **Transport**: Owner-Operator A$999 → A$9,990, Small Fleet A$1,799 → A$17,990, Growing Fleet A$2,799 → A$27,990, Enterprise A$4,499 → A$44,990.
+  - **Healthcare**: Solo A$1,499 → A$14,990, Small A$2,799 → A$27,990, Multi-Site A$4,499 → A$44,990, Enterprise **A$13,999/mo → A$139,990/yr**.
+- **Annual is default everywhere**. Every price card renders primary annual + secondary monthly + "Equivalent to A$X.XX/month when billed annually" + "Save A$X + GST annually" chip. All prices show `+ GST` suffix.
+- **Frontend overhaul — multi-industry framing**:
+  - Homepage: new hero "Every Industry. Every Obligation. One Platform.", 5-card industry pricing strip using `INDUSTRY_ENTRY_PRICES`, 3 non-trades testimonials (Hospitality / Healthcare / Transport), industry-neutral pain cards.
+  - Pricing page: default cycle = annual, Healthcare Enterprise A$139,990 + user-limit chips, 30-day money-back guarantee banner.
+  - About: rewritten founding story (994,178 businesses, five industries), HardHat→Cube icon.
+  - Login: "Your Industry. Your Compliance." copy, 5-industry text list, HardHat→Cube.
+  - Register: "Start Your Free 14-Day Trial" headline, Cube brand icon.
+  - Enterprise: dual-tier headline (Trades A$2,199/mo + Healthcare A$13,999/mo), ROI card uses A$2,199 baseline, features reference SafeInduct/SafeCheck.
+  - Ecosystem: products renamed SafeInduct (A$199/mo) / SafeCheck (A$249/mo) / Academy (A$349/mo up to 10), data flow diagram updated.
+  - Partners: revenue calc rewritten (10×A$1,499 clients → A$2,248.50/mo commission; Healthcare Enterprise → A$2,099.85/mo per client callout).
+  - Franchises: per-location tiers A$169 / A$149 / A$119, network setup from A$20,000.
+  - BillingPanel: `TIER_LABEL` expanded to all 20 tiers, `priceMap` complete for all 20 incl. Healthcare Enterprise A$139,990/yr.
+  - Dashboard + Settings: upsell copy updated to new prices.
+  - SafeInduct, SafeCheck, Academy product pages: headlines/prices/copy updated to multi-industry framing.
+  - Landing.jsx + Blog.jsx + TradecheckMarketplace.jsx: tradie language removed.
+  - Footer tagline: "SafeBase. WHS and Compliance Management for Every Australian Industry. AI-Powered. Australian-Built. Australian-Hosted."
+- **Backend test fixture updated** (`test_iter12_enterprise.py`) to reflect new expected prices.
+- **Testing agent verdict**: 13/13 backend pytest + full frontend verification PASS (`/app/test_reports/iteration_37.json`). `retest_needed: False`. All 40 tier prices verified correct; Stripe checkout succeeds for new slugs including `retail_enterprise_annual`.
+- **Trades functionality unchanged** — all 20 trades slugs preserved (sole_trader_*, small_business_*, growing_business_*, enterprise_*). Full regression intact.
+
 ### Iteration 36 — Cross-Industry Compliance Inbox + Integration Webhooks + Content Expansion (Feb 2026)
 - **Cross-industry Compliance Inbox** (`/app/backend/routes/compliance_inbox.py`): aggregates 10 item sources from every industry into a single prioritised list — SIRS (P1 24h / P2 30d), NDIS reportable (24h / 5d), AHPRA expiring/expired, NHVR Notifiable Occurrences (24h regulatory), fatigue breaches (7d), lone-worker overdue (auto-escalate threshold), temperature breaches (24h), HACCP CCP breaches (7d), FSS + Liquor cert expiring (30d), long-open incidents (>7d). Severity classified as `critical` (overdue/≤4h regulatory), `high` (≤24h), `medium` (≤30d), `info`.
   - `GET /api/compliance-inbox?severity=&industry=&limit=` — full list with counts_by_severity
