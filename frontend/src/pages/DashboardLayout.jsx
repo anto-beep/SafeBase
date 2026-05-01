@@ -9,6 +9,7 @@ import OnboardingWizard from "@/pages/OnboardingWizard";
 const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
   { to: "/dashboard/swms", label: "SWMS Library", icon: FileText },
+  { to: "/dashboard/document-library", label: "Document Library", icon: FileText },
   { to: "/dashboard/documents", label: "Documents", icon: FileText },
   { to: "/dashboard/incidents", label: "Incidents", icon: Warning },
   { to: "/dashboard/workers", label: "Workers", icon: Users },

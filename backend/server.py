@@ -2787,6 +2787,7 @@ from risk_module import register_library_routes  # noqa: E402
 from incident_workflow import register_incident_workflow  # noqa: E402
 from competency_module import register_competency_routes  # noqa: E402
 from swms_module import register_swms_routes  # noqa: E402
+from docs_module import register_docs_routes  # noqa: E402
 
 _risk_router, _register_risk_ai, _HRCW_CATEGORIES = register_library_routes(db, get_current_user)
 _register_risk_ai(LlmChat, UserMessage, EMERGENT_LLM_KEY)
@@ -2801,6 +2802,9 @@ api_router.include_router(_comp_router)
 
 _swms_router = register_swms_routes(db, get_current_user, LlmChat, UserMessage, EMERGENT_LLM_KEY)
 api_router.include_router(_swms_router)
+
+_docs_router = register_docs_routes(db, get_current_user, LlmChat, UserMessage, EMERGENT_LLM_KEY)
+api_router.include_router(_docs_router)
 
 
 @api_router.get("/incident-workflow/meta/regulators")

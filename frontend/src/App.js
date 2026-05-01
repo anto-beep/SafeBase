@@ -58,6 +58,9 @@ import CompetencyMatrix from "@/pages/CompetencyMatrix";
 import SwmsLibraryPage from "@/pages/swms/SwmsLibraryPage";
 import SwmsGenerator from "@/pages/swms/SwmsGenerator";
 import SwmsSignPublic from "@/pages/swms/SwmsSignPublic";
+import DocumentLibraryHub from "@/pages/docs/DocumentLibraryHub";
+import DocumentListPage from "@/pages/docs/DocumentListPage";
+import DocumentForm from "@/pages/docs/DocumentForm";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -162,6 +165,10 @@ function AppRouter() {
         <Route path="swms" element={<SwmsLibraryPage />} />
         <Route path="swms/new" element={<SwmsGenerator />} />
         <Route path="swms/:swms_id" element={<SwmsGenerator />} />
+        <Route path="document-library" element={<DocumentLibraryHub />} />
+        <Route path="document-library/:doc_type" element={<DocumentListPage />} />
+        <Route path="document-library/:doc_type/new" element={<DocumentForm />} />
+        <Route path="document-library/doc/:doc_id" element={<DocumentForm />} />
         <Route path="webhooks" element={<Webhooks />} />
         <Route path="automations" element={<Automations />} />
       </Route>
