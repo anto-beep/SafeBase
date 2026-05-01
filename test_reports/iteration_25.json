@@ -1,0 +1,46 @@
+{
+  "summary": "iter25 SafeBase rebrand + multi-industry build — all frontend acceptance criteria PASS. Tested homepage, marketing nav (Industries dropdown), /industries overview, all 5 /industries/<slug> pages, hero/final CTAs, dashboard regression after rebrand. Backend not retested (per main agent instructions); auth login spot-checked and works.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results_detail": {
+    "homepage": {
+      "brand_wordmark": "SAFEBASE (no SAFETRADIE found in body)",
+      "industry_tabs": "5/5 visible (trades, hospitality, transport, healthcare, retail)",
+      "tab_click_updates_preview": "verified — clicking hospitality tab shows 'WHS and Food Safety Compliance...' headline; clicking healthcare updates preview to Healthcare badge",
+      "industry_cards": "5/5 visible, trades card href=/industries/trades (correct)",
+      "cta_buttons": "home-cta-primary -> /register, home-final-cta -> /register"
+    },
+    "marketing_nav": {
+      "industries_dropdown": "nav-industries trigger present + opens with All industries (overview) + 5 industry items (nav-industries-{slug}) all visible",
+      "no_safetradie_in_nav_or_footer": "confirmed clean"
+    },
+    "industries_overview": "5 overview-card-{slug} render correctly",
+    "industries_trades": "industry-hero/fear/features/types/docs/association/pricing/testimonials/final-cta all present. Counts: 6 features, 10 type tiles, 4 docs groups, 3 pricing tiers, 3 testimonials, 5 assoc-logos. Hero has 'Trades and Construction' badge + 'Australia\\'s WHS Platform Built For Trades. Finally.' headline.",
+    "industries_hospitality": "industry-obligations-col-0 (WHS Compliance) + col-1 (Food Safety Compliance) render. Body contains 'Temperature' + 'HACCP'. industry-association count = 0 (correctly absent).",
+    "industries_transport": "7 chain-{i} nodes rendered (Consignor through Consignee). Body contains 'Fatigue' + 'CoR Management Plan'. industry-franchise count = 0 (correct).",
+    "industries_healthcare": "industry-framework-col-0/1/2 all render. Body contains 'Aged Care Act 2024'.",
+    "industries_retail": "industry-franchise + franchise-cta render. Body contains 'Running a Retail Franchise Network' + 'Quick Induct' + 'Lone Worker'.",
+    "register_routing": "All 5 industry pages: hero-cta-primary -> /register, final-cta -> /register",
+    "dashboard_regression": "Login owner@safetradie.demo/Demo@1234 -> /dashboard works. Sidebar wordmark = SAFEBASE. SAFETRADIE wordmark NOT present anywhere on dashboard. Risk Register + Risk Reviews still in sidebar. /dashboard/document-library loads with 4 doc-type categories visible."
+  },
+  "console_observations": "401 errors on /api/auth/me are expected on marketing/public pages when not authenticated — not an issue.",
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "industries.config.js is 460+ lines but is data-only (single source of truth as designed) — acceptable.",
+    "HomeMultiIndustry.jsx renders well; tab + preview interaction is performant via local state.",
+    "Marketing Layout still imports HardHat icon for the brand mark — this is fine but slightly trade-coded for a multi-industry brand. Consider a more neutral mark in a future polish iter (non-blocking).",
+    "All required data-testid attributes are present and consistent with the spec (home-industry-tab-{slug}, overview-card-{slug}, industry-* sections, chain-{i}, assoc-logo-{i}, framework-col-{i}, obligations-col-{i}, etc.)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (skipped per instructions)", "frontend": "100%"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (works, internal user record name unchanged as documented)",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter25 frontend rebrand + multi-industry pages all verified working end-to-end. Backend was not changed in iter25 — last full backend verification was iter21-24. The /api/auth/me 401 errors in console on marketing pages are expected pre-login behaviour. The internal user records, env vars, and DB names still use 'safetradie' literally — only user-facing strings were rebranded to SafeBase, by design."
+}

@@ -55,7 +55,7 @@ export default function Register() {
         <div className="w-full max-w-2xl mx-auto">
           <Link to="/" className="flex items-center gap-2 mb-10" data-testid="brand-back">
             <div className="w-8 h-8 bg-ink flex items-center justify-center"><HardHat weight="fill" className="text-warning" size={20} /></div>
-            <span className="font-display font-black">SAFETRADIE</span>
+            <span className="font-display font-black">SAFEBASE</span>
           </Link>
           <div className="label-eyebrow mb-3">/ Create account</div>
           <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-2">Start free.<br />14-day trial.</h2>

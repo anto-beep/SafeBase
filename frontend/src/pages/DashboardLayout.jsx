@@ -101,7 +101,7 @@ export default function DashboardLayout() {
       <aside className="fixed left-0 top-0 bottom-0 w-64 bg-ink text-white hidden lg:flex flex-col" data-testid="dashboard-sidebar">
         <Link to="/dashboard" className="h-16 flex items-center gap-2 px-6 border-b border-white/10">
           <div className="w-8 h-8 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={20} /></div>
-          <span className="font-display font-black">SAFETRADIE</span>
+          <span className="font-display font-black">SAFEBASE</span>
         </Link>
         <nav className="flex-1 p-3 space-y-1">
           {NAV.map((item) => {
@@ -198,7 +198,7 @@ export default function DashboardLayout() {
 
       {/* Mobile top bar */}
       <header className="lg:hidden bg-ink text-white sticky top-0 z-30 h-14 flex items-center justify-between px-4">
-        <Link to="/dashboard" className="flex items-center gap-2"><div className="w-7 h-7 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={16} /></div><span className="font-display font-black text-sm">SAFETRADIE</span></Link>
+        <Link to="/dashboard" className="flex items-center gap-2"><div className="w-7 h-7 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={16} /></div><span className="font-display font-black text-sm">SAFEBASE</span></Link>
         <div className="flex items-center gap-2">
           <Link to="/dashboard/notifications" className="relative p-2" data-testid="mobile-bell">
             <Bell weight="duotone" />

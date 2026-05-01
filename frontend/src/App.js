@@ -2,7 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import "@/App.css";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
-import Landing from "@/pages/Landing";
+import Landing from "@/pages/HomeMultiIndustry";
+import IndustriesOverview from "@/pages/industries/IndustriesOverview";
+import IndustryTrades from "@/pages/industries/IndustryTrades";
+import IndustryHospitality from "@/pages/industries/IndustryHospitality";
+import IndustryTransport from "@/pages/industries/IndustryTransport";
+import IndustryHealthcare from "@/pages/industries/IndustryHealthcare";
+import IndustryRetail from "@/pages/industries/IndustryRetail";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import AuthCallback from "@/pages/AuthCallback";
@@ -91,6 +97,12 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/industries" element={<IndustriesOverview />} />
+      <Route path="/industries/trades" element={<IndustryTrades />} />
+      <Route path="/industries/hospitality" element={<IndustryHospitality />} />
+      <Route path="/industries/transport" element={<IndustryTransport />} />
+      <Route path="/industries/healthcare" element={<IndustryHealthcare />} />
+      <Route path="/industries/retail" element={<IndustryRetail />} />
       <Route path="/ecosystem" element={<Ecosystem />} />
       <Route path="/services/swms" element={<ServiceSwms />} />
       <Route path="/services/incidents" element={<ServiceIncidents />} />

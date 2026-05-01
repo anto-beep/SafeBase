@@ -1,6 +1,6 @@
 {
-  "short_name": "SafeTradie",
-  "name": "SafeTradie — WHS for Australian tradies",
+  "short_name": "SafeBase",
+  "name": "SafeBase — WHS compliance for every Australian business",
   "description": "AI-powered WHS compliance platform built for Australian trade businesses",
   "start_url": "/worker",
   "scope": "/",
