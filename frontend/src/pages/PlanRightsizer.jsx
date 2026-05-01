@@ -91,6 +91,13 @@ export default function PlanRightsizer() {
   const tierIdx = useMemo(() => industry ? recommendTier(industry, team, locations) : null, [industry, team, locations]);
 
   const onStart = () => {
+    // Persist answers so if the user clicks "Start Free Trial" the Register
+    // page can pre-fill (see Register.jsx localStorage hydration).
+    try {
+      localStorage.setItem("safebase_rightsizer", JSON.stringify({
+        industry, team, locations, savedAt: Date.now(),
+      }));
+    } catch (e) { /* ignore quota */ }
     setShowResult(true);
   };
 

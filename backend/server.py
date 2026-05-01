@@ -2370,6 +2370,14 @@ async def submit_demo_request(body: dict):
     return {"ok": True, "request_id": doc["request_id"]}
 
 
+# ----------- ITER39 AUX: right-sizer / demo-requests admin / regulatory digest -----------
+from routes.iter39_aux import register_iter39_routes  # noqa: E402
+register_iter39_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, logger=logger,
+)
+
+
 
 @api_router.get("/incident-workflow/meta/regulators")
 async def list_regulators():

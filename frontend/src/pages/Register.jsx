@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,41 @@ export default function Register() {
   const [step, setStep] = useState(1);  // 1=industry, 2=role, 3=details
   const [industry, setIndustry] = useState(null);
   const [role, setRole] = useState(null); // {id, label, variant, permission_role}
+  const [searchParams] = useSearchParams();
+  const [rightsizerHint, setRightsizerHint] = useState(null);
+
+  // Hydrate from query params (?industry=healthcare&tier=2&team=15&locations=3)
+  // or from localStorage saved by the Plan Right-sizer wizard.
+  useEffect(() => {
+    const qpIndustry = searchParams.get("industry");
+    const qpTier = searchParams.get("tier");
+    const qpTeam = searchParams.get("team");
+    const qpLoc = searchParams.get("locations");
+    if (qpIndustry && ["trades", "hospitality", "transport", "healthcare", "retail"].includes(qpIndustry)) {
+      setIndustry(qpIndustry);
+      setStep(2); // Skip industry-pick step
+      setRightsizerHint({
+        industry: qpIndustry,
+        tier: qpTier,
+        team: qpTeam,
+        locations: qpLoc,
+        source: "query",
+      });
+      return;
+    }
+    // Fallback: localStorage set by Plan Right-sizer wizard
+    try {
+      const raw = localStorage.getItem("safebase_rightsizer");
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved && saved.industry && Date.now() - (saved.savedAt || 0) < 7 * 24 * 3600 * 1000) {
+          setIndustry(saved.industry);
+          setStep(2);
+          setRightsizerHint({ ...saved, source: "localstorage" });
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }, [searchParams]);
   const [form, setForm] = useState({
     name: "", email: "", password: "", company_name: "",
     agree: false, marketing: true,
@@ -88,6 +124,17 @@ export default function Register() {
         role_variant: role.variant,
       });
       toast.success(`Welcome aboard. Setting up your ${industry} workspace.`);
+      // Convert Plan Right-sizer answers into a one-time dashboard hint the
+      // Dashboard.jsx reads on first login.
+      if (rightsizerHint) {
+        try {
+          localStorage.setItem("safebase_onboarding_hint", JSON.stringify({
+            ...rightsizerHint,
+            consumed: false,
+            createdAt: Date.now(),
+          }));
+        } catch (e) { /* ignore */ }
+      }
       navigate("/dashboard");
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Registration failed");
@@ -168,6 +215,12 @@ export default function Register() {
           <p className="text-white/70 mt-4 max-w-2xl text-base md:text-lg">
             Your role determines your dashboard view and what you see first when you log in.
           </p>
+          {rightsizerHint && (
+            <div className="mt-6 max-w-2xl border-l-4 border-warning bg-warning/10 px-4 py-3 text-sm" data-testid="signup-rightsizer-hint">
+              <div className="font-bold text-warning">We've pre-selected {tile?.name} for you.</div>
+              <div className="text-white/70 mt-1">Based on your Plan Right-sizer answers{rightsizerHint.team ? ` (${rightsizerHint.team} users` : ""}{rightsizerHint.locations ? `, ${rightsizerHint.locations} locations)` : rightsizerHint.team ? ")" : ""}. You can change industry from the back button above.</div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-8">
             {roles.map((r) => {
