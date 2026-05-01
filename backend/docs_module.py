@@ -695,6 +695,515 @@ def render_fall_protection(doc: dict) -> str:
                           body, "Fall Protection Plan")
 
 
+# ---------- Phase 3 — remaining 15 specialty doc renderers ----------
+
+def _ul(items: list) -> str:
+    return "<ul>" + "".join(f"<li>{_esc(i)}</li>" for i in (items or [])) + "</ul>"
+
+
+def _check_list(items: list) -> str:
+    return "<div>" + "".join(
+        f'<div class="ck"><span class="mono">{"☒" if c.get("done") else "☐"}</span> {_esc(c.get("item",""))}</div>'
+        for c in (items or [])) + "</div>"
+
+
+def _table_rows(items: list, cols: list[str]) -> str:
+    return "".join(
+        "<tr>" + "".join(f"<td>{_esc(it.get(c,''))}</td>" for c in cols) + "</tr>"
+        for it in (items or []))
+
+
+def _table_head(cols: list[tuple]) -> str:
+    return "<thead><tr>" + "".join(f"<th>{_esc(l)}</th>" for _k, l in cols) + "</tr></thead>"
+
+
+def _tbl(items: list, cols: list[tuple]) -> str:
+    keys = [k for k, _l in cols]
+    rows = _table_rows(items, keys) or f"<tr><td colspan={len(cols)}>—</td></tr>"
+    return f"<table>{_table_head(cols)}<tbody>{rows}</tbody></table>"
+
+
+# ========== Gas Compliance Certificate ==========
+def render_gas_compliance(doc: dict) -> str:
+    body = (
+        _section("Licensee details", _kv([
+            ("Licensee name", doc.get("licensee_name")),
+            ("Licence number", doc.get("licence_no")),
+            ("Company", doc.get("company_name")),
+        ]))
+        + _section("Installation details", _kv([
+            ("Customer", doc.get("customer_name")),
+            ("Site address", doc.get("site_address")),
+            ("Gas type", doc.get("gas_type")),
+            ("Appliance type", doc.get("appliance_type")),
+            ("Appliance model / serial", doc.get("appliance_model")),
+            ("Work date", doc.get("work_date")),
+        ]))
+        + _section("Scope of work", f"<p>{_esc(doc.get('scope',''))}</p>")
+        + _section("Tests performed",
+                   _tbl(doc.get("tests") or [], [("test", "Test"), ("result", "Result")]))
+        + _section("Compliance statement",
+                   f"<p>{_esc(doc.get('compliance_statement','') or 'I certify this gas installation complies with AS/NZS 5601 and applicable state gas regulations.')}</p>")
+        + _section("Sign-off", _kv([
+            ("Signed by", doc.get("signed_by")),
+            ("Signature/ID", doc.get("signature")),
+            ("Signed at", doc.get("signed_at")),
+        ]))
+    )
+    return _render_common(doc, "Gas Compliance Certificate",
+                          "AS/NZS 5601 — State gas regulations", body, "Gas Compliance")
+
+
+# ========== Pressure Test Record ==========
+def render_pressure_test(doc: dict) -> str:
+    body = (
+        _section("Project details", _kv([
+            ("Project / site", doc.get("project")),
+            ("Client", doc.get("client")),
+            ("System tested", doc.get("system_tested")),
+            ("Test standard", doc.get("test_standard")),
+            ("Pipe material / size", doc.get("pipe_material")),
+            ("Test date", doc.get("test_date")),
+        ]))
+        + _section("Test parameters", _kv([
+            ("Test medium (air/water/gas)", doc.get("test_medium")),
+            ("Test pressure (kPa)", doc.get("test_pressure_kpa")),
+            ("Hold duration (mins)", doc.get("hold_mins")),
+            ("Start pressure (kPa)", doc.get("start_pressure")),
+            ("End pressure (kPa)", doc.get("end_pressure")),
+            ("Ambient temp (°C)", doc.get("ambient_temp")),
+            ("Result", doc.get("result")),
+        ]))
+        + _section("Observations", f"<p>{_esc(doc.get('observations',''))}</p>")
+        + _section("Sign-off", _kv([
+            ("Tested by", doc.get("tested_by")),
+            ("Licence / accreditation", doc.get("tester_licence")),
+            ("Signature", doc.get("signature")),
+            ("Signed at", doc.get("signed_at")),
+        ]))
+    )
+    return _render_common(doc, "Pressure Test Record",
+                          "AS/NZS 3500 · AS 4041 · AS/NZS 2885", body, "Pressure Test")
+
+
+# ========== Backflow Test Report ==========
+def render_backflow_test(doc: dict) -> str:
+    body = (
+        _section("Site details", _kv([
+            ("Site / customer", doc.get("site")),
+            ("Site address", doc.get("site_address")),
+            ("Hazard rating", doc.get("hazard_rating")),
+            ("Device type", doc.get("device_type")),
+            ("Device make / model", doc.get("device_model")),
+            ("Device serial", doc.get("device_serial")),
+            ("Install location", doc.get("install_location")),
+            ("Test date", doc.get("test_date")),
+        ]))
+        + _section("Test results",
+                   _tbl(doc.get("tests") or [],
+                        [("test", "Test"), ("required", "Required"),
+                         ("actual", "Actual"), ("result", "Pass/Fail")]))
+        + _section("Overall result", _kv([
+            ("Test kit make / model", doc.get("kit_model")),
+            ("Test kit calibration date", doc.get("kit_calibration")),
+            ("Next test due", doc.get("next_test_due")),
+            ("Overall result", doc.get("overall_result")),
+        ]))
+        + _section("Tester sign-off", _kv([
+            ("Tester name", doc.get("tester_name")),
+            ("Licence number", doc.get("tester_licence")),
+            ("Signature", doc.get("signature")),
+            ("Signed at", doc.get("signed_at")),
+        ]))
+    )
+    return _render_common(doc, "Backflow Prevention Device Test Report",
+                          "AS/NZS 2845.3 · Annual device testing", body, "Backflow Test")
+
+
+# ========== Traffic Management Plan (TMP) ==========
+def render_tmp(doc: dict) -> str:
+    body = (
+        _section("Project details", _kv([
+            ("Project", doc.get("project_name")),
+            ("Site address", doc.get("site_address")),
+            ("Controlling authority / council", doc.get("authority")),
+            ("Road classification", doc.get("road_class")),
+            ("Speed zone (km/h)", doc.get("speed_zone")),
+            ("Work hours", doc.get("work_hours")),
+            ("Start date", doc.get("start_date")),
+            ("End date", doc.get("end_date")),
+        ]))
+        + _section("Scope of work", f"<p>{_esc(doc.get('scope',''))}</p>")
+        + _section("Traffic controls",
+                   _ul(doc.get("traffic_controls") or []))
+        + _section("Signage & devices",
+                   _tbl(doc.get("signage") or [],
+                        [("device", "Device / sign"), ("location", "Location"),
+                         ("qty", "Qty")]))
+        + _section("Pedestrian management",
+                   f"<p>{_esc(doc.get('pedestrian_management',''))}</p>")
+        + _section("Emergency access", f"<p>{_esc(doc.get('emergency_access',''))}</p>")
+        + _section("Sign-off", _kv([
+            ("TMP designer (RIIWHS302D / equivalent)", doc.get("designer_name")),
+            ("Ticket number", doc.get("designer_ticket")),
+            ("Approved by", doc.get("approved_by")),
+            ("Approved at", doc.get("approved_at")),
+        ]))
+    )
+    return _render_common(doc, "Traffic Management Plan",
+                          "AS 1742.3 · State TMP guidelines", body, "Traffic Mgmt Plan")
+
+
+# ========== Plant/Equipment Pre-Start ==========
+def render_plant_prestart(doc: dict) -> str:
+    body = (
+        _section("Plant details", _kv([
+            ("Plant / equipment", doc.get("plant_name")),
+            ("Serial / plant number", doc.get("plant_serial")),
+            ("Operator", doc.get("operator_name")),
+            ("Operator ticket / HR licence", doc.get("operator_licence")),
+            ("Hours / km start", doc.get("hours_start")),
+            ("Site", doc.get("site")),
+            ("Check date", doc.get("check_date")),
+        ]))
+        + _section("Pre-start checks", _check_list(doc.get("checks") or []))
+        + _section("Defects identified", _ul(doc.get("defects") or []))
+        + _section("Corrective action", f"<p>{_esc(doc.get('corrective_action',''))}</p>")
+        + _section("Fit for use?", _kv([
+            ("Operator declaration", doc.get("fit_declaration")),
+            ("Supervisor sign-off", doc.get("supervisor_signature")),
+            ("Signed at", doc.get("signed_at")),
+        ]))
+    )
+    return _render_common(doc, "Plant / Equipment Pre-Start Check",
+                          "WHS Reg 213 · Daily plant inspection", body, "Plant Pre-Start")
+
+
+# ========== Scaffold Handover Certificate ==========
+def render_scaffold_handover(doc: dict) -> str:
+    body = (
+        _section("Project details", _kv([
+            ("Project", doc.get("project")),
+            ("Site address", doc.get("site_address")),
+            ("Principal contractor", doc.get("principal_contractor")),
+            ("Scaffold type", doc.get("scaffold_type")),
+            ("Max SWL (kg/m²)", doc.get("max_swl")),
+            ("Load class", doc.get("load_class")),
+            ("Scaffold height (m)", doc.get("height")),
+        ]))
+        + _section("Erected by", _kv([
+            ("Scaffolder name", doc.get("scaffolder_name")),
+            ("Ticket class (basic/int/adv)", doc.get("scaffolder_ticket")),
+            ("Ticket number", doc.get("scaffolder_ticket_no")),
+            ("Company", doc.get("scaffold_company")),
+            ("Date erected", doc.get("erected_date")),
+        ]))
+        + _section("Inspection checklist", _check_list(doc.get("inspection_checks") or []))
+        + _section("Defects / restrictions", _ul(doc.get("restrictions") or []))
+        + _section("Handover", _kv([
+            ("Handed to (PC/Builder rep)", doc.get("handed_to")),
+            ("Signed (scaffolder)", doc.get("scaffolder_signature")),
+            ("Signed (recipient)", doc.get("recipient_signature")),
+            ("Next inspection due", doc.get("next_inspection")),
+        ]))
+    )
+    return _render_common(doc, "Scaffold Handover Certificate",
+                          "AS/NZS 4576 · AS/NZS 1576", body, "Scaffold Handover")
+
+
+# ========== Working at Heights Permit ==========
+def render_heights_permit(doc: dict) -> str:
+    body = (
+        _section("Permit details", _kv([
+            ("Location", doc.get("location")),
+            ("Nature of work", doc.get("work_description")),
+            ("Height above ground (m)", doc.get("height_metres")),
+            ("Start date/time", doc.get("start_datetime")),
+            ("Duration", doc.get("duration")),
+        ]))
+        + _section("Authorised workers", _ul(doc.get("authorised_workers") or []))
+        + _section("Access method", f"<p>{_esc(doc.get('access_method',''))}</p>")
+        + _section("Fall prevention (first) / arrest (second) controls",
+                   _ul(doc.get("controls") or []))
+        + _section("Rescue plan", f"<p>{_esc(doc.get('rescue_plan',''))}</p>")
+        + _section("Pre-start check", _check_list(doc.get("pre_start_check") or []))
+        + _section("Authorisation", _kv([
+            ("Authorised by", doc.get("authorised_by")),
+            ("Signature/ID", doc.get("authorised_by_signature")),
+            ("Authorised at", doc.get("authorised_at")),
+            ("Rescinded at", doc.get("rescinded_at")),
+        ]))
+    )
+    return _render_common(doc, "Working at Heights Permit",
+                          "WHS Reg 78 · Hierarchy of control", body, "Working at Heights Permit")
+
+
+# ========== Lock-Out / Tag-Out (LOTO) ==========
+def render_loto(doc: dict) -> str:
+    body = (
+        _section("Isolation details", _kv([
+            ("Plant / system", doc.get("system")),
+            ("Location", doc.get("location")),
+            ("Nature of work", doc.get("work_description")),
+            ("Energy sources (all types)", doc.get("energy_sources")),
+            ("Start date/time", doc.get("start_datetime")),
+        ]))
+        + _section("Isolation points",
+                   _tbl(doc.get("isolation_points") or [],
+                        [("point", "Point / ID"), ("type", "Energy type"),
+                         ("device", "Lock/tag ID"), ("verified_by", "Verified by")]))
+        + _section("Stored-energy dissipation",
+                   f"<p>{_esc(doc.get('stored_energy_steps',''))}</p>")
+        + _section("Zero-energy verification",
+                   f"<p>{_esc(doc.get('zero_energy_test',''))}</p>")
+        + _section("Authorised workers", _ul(doc.get("authorised_workers") or []))
+        + _section("Reinstatement", _kv([
+            ("All personnel clear (Y/N)", doc.get("personnel_clear")),
+            ("Locks/tags removed by", doc.get("removal_by")),
+            ("Reinstated at", doc.get("reinstated_at")),
+        ]))
+        + _section("Authorisation", _kv([
+            ("Authorised by", doc.get("authorised_by")),
+            ("Signature/ID", doc.get("authorised_by_signature")),
+            ("Authorised at", doc.get("authorised_at")),
+        ]))
+    )
+    return _render_common(doc, "Lock-Out / Tag-Out Permit",
+                          "AS/NZS 4024 · Isolation of hazardous energy",
+                          body, "Lock-Out Tag-Out")
+
+
+# ========== Manual Handling Risk Assessment ==========
+def render_manual_handling_ra(doc: dict) -> str:
+    body = (
+        _section("Task details", _kv([
+            ("Task", doc.get("task")),
+            ("Site", doc.get("site")),
+            ("Assessed by", doc.get("assessed_by")),
+            ("Assessment date", doc.get("assessment_date")),
+        ]))
+        + _section("Task description", f"<p>{_esc(doc.get('task_description',''))}</p>")
+        + _section("Risk factors (ManTRA / NIOSH)",
+                   _tbl(doc.get("factors") or [],
+                        [("factor", "Factor"), ("rating", "Rating (L/M/H)"),
+                         ("detail", "Detail")]))
+        + _section("Controls",
+                   _tbl(doc.get("controls") or [],
+                        [("hierarchy", "Hierarchy"), ("control", "Control"),
+                         ("responsible", "Responsible")]))
+        + _section("Residual risk", f"<p>{_esc(doc.get('residual_risk',''))}</p>")
+        + _section("Review", _kv([
+            ("Review date", doc.get("review_date")),
+            ("Approved by", doc.get("approved_by")),
+        ]))
+    )
+    return _render_common(doc, "Manual Handling Risk Assessment",
+                          "WHS Reg 60 · Hazardous manual tasks",
+                          body, "Manual Handling RA")
+
+
+# ========== Noise Assessment ==========
+def render_noise_assessment(doc: dict) -> str:
+    body = (
+        _section("Site details", _kv([
+            ("Site", doc.get("site")),
+            ("Assessor", doc.get("assessor_name")),
+            ("Sound level meter", doc.get("meter_model")),
+            ("Meter calibration date", doc.get("meter_calibration")),
+            ("Assessment date", doc.get("assessment_date")),
+        ]))
+        + _section("Noise sources / measurements",
+                   _tbl(doc.get("measurements") or [],
+                        [("source", "Source"), ("location", "Location"),
+                         ("dba", "LAeq dB(A)"), ("duration", "Duration"),
+                         ("exposure", "8-hr exposure")]))
+        + _section("Exceedances",
+                   f"<p>{_esc(doc.get('exceedances','') or 'Compare against 85 dB(A) LAeq,8h and 140 dB(C) peak exposure standards.')}</p>")
+        + _section("Controls",
+                   _ul(doc.get("controls") or []))
+        + _section("PPE / hearing protection", _ul(doc.get("ppe") or []))
+        + _section("Audiometric testing scheduled", _kv([
+            ("Workers to be tested (count)", doc.get("audio_count")),
+            ("Testing scheduled for", doc.get("audio_scheduled")),
+        ]))
+        + _section("Approval", _kv([
+            ("Approved by", doc.get("approved_by")),
+            ("Review date", doc.get("review_date")),
+        ]))
+    )
+    return _render_common(doc, "Noise Assessment",
+                          "WHS Reg 56-58 · AS/NZS 1269", body, "Noise Assessment")
+
+
+# ========== Silica / Dust Control Plan ==========
+def render_silica_plan(doc: dict) -> str:
+    body = (
+        _section("Project details", _kv([
+            ("Project / site", doc.get("project")),
+            ("Site address", doc.get("site_address")),
+            ("Trade", doc.get("trade")),
+            ("Prepared by", doc.get("prepared_by")),
+            ("Review date", doc.get("review_date")),
+        ]))
+        + _section("Silica-generating tasks",
+                   _tbl(doc.get("tasks") or [],
+                        [("task", "Task"), ("material", "Material"),
+                         ("duration", "Duration"),
+                         ("expected_exposure", "Est. exposure mg/m³")]))
+        + _section("Engineering controls (water suppression / LEV)",
+                   _ul(doc.get("engineering_controls") or []))
+        + _section("Administrative controls",
+                   _ul(doc.get("admin_controls") or []))
+        + _section("RPE required",
+                   _tbl(doc.get("rpe") or [],
+                        [("task", "Task"), ("rpe_type", "RPE type"),
+                         ("protection_factor", "APF")]))
+        + _section("Air monitoring", f"<p>{_esc(doc.get('air_monitoring',''))}</p>")
+        + _section("Health monitoring", f"<p>{_esc(doc.get('health_monitoring',''))}</p>")
+        + _section("Training requirements", _ul(doc.get("training") or []))
+    )
+    return _render_common(doc, "Silica / Dust Control Plan",
+                          "WHS Reg 49-50 · WES 0.05 mg/m³", body, "Silica Dust Control")
+
+
+# ========== Welding Procedure Specification (WPS) ==========
+def render_welding_procedure(doc: dict) -> str:
+    body = (
+        _section("Procedure details", _kv([
+            ("WPS number", doc.get("wps_number")),
+            ("Project", doc.get("project")),
+            ("Welding process", doc.get("welding_process")),
+            ("Parent material / grade", doc.get("parent_material")),
+            ("Joint type", doc.get("joint_type")),
+            ("Position", doc.get("position")),
+            ("Thickness range (mm)", doc.get("thickness_range")),
+        ]))
+        + _section("Consumables & parameters", _kv([
+            ("Filler metal / classification", doc.get("filler")),
+            ("Shielding gas / flux", doc.get("shielding")),
+            ("Current / polarity", doc.get("current")),
+            ("Voltage (V)", doc.get("voltage")),
+            ("Amperage (A)", doc.get("amperage")),
+            ("Travel speed (mm/min)", doc.get("travel_speed")),
+            ("Preheat (°C)", doc.get("preheat")),
+            ("Interpass max (°C)", doc.get("interpass")),
+            ("Post-weld heat treatment", doc.get("pwht")),
+        ]))
+        + _section("Special instructions", f"<p>{_esc(doc.get('special_instructions',''))}</p>")
+        + _section("NDT requirements", _ul(doc.get("ndt") or []))
+        + _section("Qualification", _kv([
+            ("Qualified welder name", doc.get("welder_name")),
+            ("Welder ticket / certificate", doc.get("welder_ticket")),
+            ("Qualified to standard", doc.get("standard")),
+            ("Qualified by", doc.get("qualified_by")),
+            ("Date", doc.get("qualified_date")),
+        ]))
+    )
+    return _render_common(doc, "Welding Procedure Specification",
+                          "AS/NZS 3834 · AS/NZS 1554", body, "Welding Procedure")
+
+
+# ========== Electrical Test & Tag Register ==========
+def render_test_tag_register(doc: dict) -> str:
+    body = (
+        _section("Register details", _kv([
+            ("Business", doc.get("company_name")),
+            ("Site / location", doc.get("site_location")),
+            ("Tester name", doc.get("tester_name")),
+            ("Tester competency (RII / electrician)", doc.get("tester_competency")),
+            ("Test kit / PAT model", doc.get("kit_model")),
+            ("Kit calibration date", doc.get("kit_calibration")),
+            ("Frequency (months)", doc.get("frequency_months")),
+            ("Next scheduled audit", doc.get("next_audit")),
+        ]))
+        + _section("Appliances tested",
+                   _tbl(doc.get("items") or [],
+                        [("asset_id", "Asset / tag ID"), ("description", "Description"),
+                         ("location", "Location"), ("class", "Class (I/II)"),
+                         ("test_date", "Test date"), ("result", "Result"),
+                         ("next_test", "Next test")]))
+        + _section("Note",
+                   "<p style='font-size:9pt;'>AS/NZS 3760:2022 — in-service safety inspection "
+                   "and testing of electrical equipment. Test frequency varies by environment "
+                   "(construction 3-mo; office 60-mo).</p>")
+    )
+    return _render_common(doc, "Electrical Test & Tag Register",
+                          "AS/NZS 3760", body, "Test & Tag Register")
+
+
+# ========== Fire Safety Plan ==========
+def render_fire_safety_plan(doc: dict) -> str:
+    body = (
+        _section("Site details", _kv([
+            ("Site", doc.get("site_name")),
+            ("Address", doc.get("site_address")),
+            ("Building class (BCA)", doc.get("building_class")),
+            ("Prepared by", doc.get("prepared_by")),
+            ("Review date", doc.get("review_date")),
+        ]))
+        + _section("Fire risks",
+                   _ul(doc.get("fire_risks") or []))
+        + _section("Fire prevention measures",
+                   _ul(doc.get("prevention_measures") or []))
+        + _section("Fire detection & alarm systems",
+                   _tbl(doc.get("detection_systems") or [],
+                        [("system", "System"), ("location", "Location"),
+                         ("last_service", "Last service"),
+                         ("next_service", "Next service")]))
+        + _section("Fire-fighting equipment",
+                   _tbl(doc.get("equipment") or [],
+                        [("equipment", "Equipment"), ("location", "Location"),
+                         ("qty", "Qty"), ("last_inspection", "Last inspection")]))
+        + _section("Evacuation procedure", f"<p>{_esc(doc.get('evacuation_procedure',''))}</p>")
+        + _section("Assembly points", _ul(doc.get("assembly_points") or []))
+        + _section("Fire warden(s)",
+                   _tbl(doc.get("wardens") or [],
+                        [("name", "Name"), ("role", "Role"), ("phone", "Phone")]))
+        + _section("Training", f"<p>{_esc(doc.get('training',''))}</p>")
+    )
+    return _render_common(doc, "Fire Safety Plan",
+                          "BCA / NCC · AS 3745", body, "Fire Safety Plan")
+
+
+# ========== Environmental Management Plan (EMP) ==========
+def render_emp(doc: dict) -> str:
+    body = (
+        _section("Project details", _kv([
+            ("Project", doc.get("project")),
+            ("Site address", doc.get("site_address")),
+            ("Site state", doc.get("site_state")),
+            ("Prepared by", doc.get("prepared_by")),
+            ("Review date", doc.get("review_date")),
+        ]))
+        + _section("Environmental aspects & impacts",
+                   _tbl(doc.get("aspects") or [],
+                        [("aspect", "Aspect"), ("impact", "Impact"),
+                         ("rating", "Rating"), ("control", "Control")]))
+        + _section("Sediment & erosion controls",
+                   _ul(doc.get("sediment_controls") or []))
+        + _section("Waste management",
+                   _tbl(doc.get("waste_streams") or [],
+                        [("stream", "Stream"), ("disposal", "Disposal method"),
+                         ("contractor", "Contractor")]))
+        + _section("Water & air quality", f"<p>{_esc(doc.get('water_air_quality',''))}</p>")
+        + _section("Noise & vibration management",
+                   f"<p>{_esc(doc.get('noise_vibration',''))}</p>")
+        + _section("Incident response", f"<p>{_esc(doc.get('incident_response',''))}</p>")
+        + _section("Compliance register",
+                   _tbl(doc.get("compliance_items") or [],
+                        [("requirement", "Requirement"), ("source", "Source"),
+                         ("responsible", "Responsible")]))
+        + _section("Approval", _kv([
+            ("Approved by", doc.get("approved_by")),
+            ("Approved at", doc.get("approved_at")),
+        ]))
+    )
+    return _render_common(doc, "Environmental Management Plan",
+                          "ISO 14001 · EPA state guidelines", body, "EMP")
+
+
+
+
 
 
 # ---------- Register doc types ----------
@@ -1081,6 +1590,401 @@ register_doc_type({
                   "fall_arrest_systems:[str], anchor_points, rescue_plan}"),
     "pdf": render_fall_protection,
 })
+
+register_doc_type({
+    "id": "gas_compliance", "category": "trade",
+    "label": "Gas Compliance Certificate",
+    "blurb": "AS/NZS 5601 — State gas regulations (gasfitting work)",
+    "counter_prefix": "GAS",
+    "fields": [
+        _f("licensee_name", "Licensee name", required=True),
+        _f("licence_no", "Licence number"),
+        _f("company_name", "Company"),
+        _f("customer_name", "Customer"),
+        _f("site_address", "Site address"),
+        _f("gas_type", "Gas type (NG/LPG)"),
+        _f("appliance_type", "Appliance type"),
+        _f("appliance_model", "Appliance model / serial"),
+        _f("work_date", "Work date", "date"),
+        _f("scope", "Scope of work", "textarea"),
+        _f("tests", "Tests performed (test/result)", "test_results"),
+        _f("compliance_statement", "Compliance statement", "textarea"),
+        _f("signed_by", "Signed by"),
+        _f("signature", "Signature / ID"),
+        _f("signed_at", "Signed at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_gas_compliance,
+})
+
+register_doc_type({
+    "id": "pressure_test", "category": "trade",
+    "label": "Pressure Test Record",
+    "blurb": "AS/NZS 3500 · AS 4041 — Pipe pressure testing",
+    "counter_prefix": "PT",
+    "fields": [
+        _f("project", "Project / site", required=True),
+        _f("client", "Client"),
+        _f("system_tested", "System tested"),
+        _f("test_standard", "Test standard"),
+        _f("pipe_material", "Pipe material / size"),
+        _f("test_date", "Test date", "date"),
+        _f("test_medium", "Test medium (air/water/gas)"),
+        _f("test_pressure_kpa", "Test pressure (kPa)", "number"),
+        _f("hold_mins", "Hold duration (mins)", "number"),
+        _f("start_pressure", "Start pressure (kPa)", "number"),
+        _f("end_pressure", "End pressure (kPa)", "number"),
+        _f("ambient_temp", "Ambient temp (°C)"),
+        _f("result", "Result (pass/fail)"),
+        _f("observations", "Observations", "textarea"),
+        _f("tested_by", "Tested by"),
+        _f("tester_licence", "Licence / accreditation"),
+        _f("signature", "Signature"),
+        _f("signed_at", "Signed at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_pressure_test,
+})
+
+register_doc_type({
+    "id": "backflow_test", "category": "trade",
+    "label": "Backflow Prevention Test Report",
+    "blurb": "AS/NZS 2845.3 — Annual device testing",
+    "counter_prefix": "BFT",
+    "fields": [
+        _f("site", "Site / customer", required=True),
+        _f("site_address", "Site address"),
+        _f("hazard_rating", "Hazard rating (low/med/high)"),
+        _f("device_type", "Device type"),
+        _f("device_model", "Device make / model"),
+        _f("device_serial", "Device serial"),
+        _f("install_location", "Install location"),
+        _f("test_date", "Test date", "date"),
+        _f("tests", "Test results (test/required/actual/result)", "backflow_tests"),
+        _f("kit_model", "Test kit make / model"),
+        _f("kit_calibration", "Kit calibration date", "date"),
+        _f("next_test_due", "Next test due", "date"),
+        _f("overall_result", "Overall result (pass/fail)"),
+        _f("tester_name", "Tester name"),
+        _f("tester_licence", "Licence number"),
+        _f("signature", "Signature"),
+        _f("signed_at", "Signed at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_backflow_test,
+})
+
+register_doc_type({
+    "id": "tmp", "category": "safety",
+    "label": "Traffic Management Plan (TMP)",
+    "blurb": "AS 1742.3 · State TMP guidelines",
+    "counter_prefix": "TMP",
+    "fields": [
+        _f("project_name", "Project", required=True),
+        _f("site_address", "Site address"),
+        _f("authority", "Controlling authority / council"),
+        _f("road_class", "Road classification"),
+        _f("speed_zone", "Speed zone (km/h)", "number"),
+        _f("work_hours", "Work hours"),
+        _f("start_date", "Start date", "date"),
+        _f("end_date", "End date", "date"),
+        _f("scope", "Scope of work", "textarea"),
+        _f("traffic_controls", "Traffic controls", "chips"),
+        _f("signage", "Signage & devices (device/location/qty)", "tmp_signage"),
+        _f("pedestrian_management", "Pedestrian management", "textarea"),
+        _f("emergency_access", "Emergency access", "textarea"),
+        _f("designer_name", "TMP designer name"),
+        _f("designer_ticket", "Designer ticket (RIIWHS302D)"),
+        _f("approved_by", "Approved by"),
+        _f("approved_at", "Approved at", "datetime"),
+    ],
+    "ai_prompt": ("Given a project + road class, return JSON: {traffic_controls:[str], "
+                  "pedestrian_management, emergency_access}"),
+    "pdf": render_tmp,
+})
+
+register_doc_type({
+    "id": "plant_prestart", "category": "plant",
+    "label": "Plant / Equipment Pre-Start Check",
+    "blurb": "WHS Reg 213 — Daily plant inspection",
+    "counter_prefix": "PPS",
+    "fields": [
+        _f("plant_name", "Plant / equipment", required=True),
+        _f("plant_serial", "Serial / plant number"),
+        _f("operator_name", "Operator"),
+        _f("operator_licence", "Operator ticket / HR licence"),
+        _f("hours_start", "Hours / km start"),
+        _f("site", "Site"),
+        _f("check_date", "Check date", "date"),
+        _f("checks", "Pre-start checks (item/done)", "checklist"),
+        _f("defects", "Defects identified", "chips"),
+        _f("corrective_action", "Corrective action", "textarea"),
+        _f("fit_declaration", "Operator declaration (fit/unfit)"),
+        _f("supervisor_signature", "Supervisor signature"),
+        _f("signed_at", "Signed at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_plant_prestart,
+})
+
+register_doc_type({
+    "id": "scaffold_handover", "category": "plant",
+    "label": "Scaffold Handover Certificate",
+    "blurb": "AS/NZS 4576 · AS/NZS 1576 — Scaffold inspection",
+    "counter_prefix": "SCF",
+    "fields": [
+        _f("project", "Project", required=True),
+        _f("site_address", "Site address"),
+        _f("principal_contractor", "Principal contractor"),
+        _f("scaffold_type", "Scaffold type"),
+        _f("max_swl", "Max SWL (kg/m²)", "number"),
+        _f("load_class", "Load class (light/medium/heavy)"),
+        _f("height", "Scaffold height (m)", "number"),
+        _f("scaffolder_name", "Scaffolder name"),
+        _f("scaffolder_ticket", "Ticket class (basic/int/adv)"),
+        _f("scaffolder_ticket_no", "Ticket number"),
+        _f("scaffold_company", "Scaffold company"),
+        _f("erected_date", "Date erected", "date"),
+        _f("inspection_checks", "Inspection checklist (item/done)", "checklist"),
+        _f("restrictions", "Defects / restrictions", "chips"),
+        _f("handed_to", "Handed to (PC/Builder rep)"),
+        _f("scaffolder_signature", "Signed (scaffolder)"),
+        _f("recipient_signature", "Signed (recipient)"),
+        _f("next_inspection", "Next inspection due", "date"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_scaffold_handover,
+})
+
+register_doc_type({
+    "id": "heights_permit", "category": "safety",
+    "label": "Working at Heights Permit",
+    "blurb": "WHS Reg 78 — Hierarchy of control for fall risks",
+    "counter_prefix": "WAH",
+    "fields": [
+        _f("location", "Location", required=True),
+        _f("work_description", "Nature of work", "textarea"),
+        _f("height_metres", "Height above ground (m)", "number"),
+        _f("start_datetime", "Start date/time", "datetime"),
+        _f("duration", "Duration"),
+        _f("authorised_workers", "Authorised workers", "chips"),
+        _f("access_method", "Access method", "textarea"),
+        _f("controls", "Fall prevention / arrest controls", "chips"),
+        _f("rescue_plan", "Rescue plan", "textarea"),
+        _f("pre_start_check", "Pre-start check (item/done)", "checklist"),
+        _f("authorised_by", "Authorised by"),
+        _f("authorised_by_signature", "Auth signature / ID"),
+        _f("authorised_at", "Authorised at", "datetime"),
+        _f("rescinded_at", "Rescinded at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_heights_permit,
+})
+
+register_doc_type({
+    "id": "loto", "category": "safety",
+    "label": "Lock-Out / Tag-Out Permit",
+    "blurb": "AS/NZS 4024 — Isolation of hazardous energy",
+    "counter_prefix": "LOTO",
+    "fields": [
+        _f("system", "Plant / system", required=True),
+        _f("location", "Location"),
+        _f("work_description", "Nature of work", "textarea"),
+        _f("energy_sources", "Energy sources (all types)"),
+        _f("start_datetime", "Start date/time", "datetime"),
+        _f("isolation_points", "Isolation points (point/type/device/verified_by)", "loto_points"),
+        _f("stored_energy_steps", "Stored-energy dissipation", "textarea"),
+        _f("zero_energy_test", "Zero-energy verification", "textarea"),
+        _f("authorised_workers", "Authorised workers", "chips"),
+        _f("personnel_clear", "All personnel clear (Y/N)"),
+        _f("removal_by", "Locks/tags removed by"),
+        _f("reinstated_at", "Reinstated at", "datetime"),
+        _f("authorised_by", "Authorised by"),
+        _f("authorised_by_signature", "Auth signature / ID"),
+        _f("authorised_at", "Authorised at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_loto,
+})
+
+register_doc_type({
+    "id": "manual_handling_ra", "category": "safety",
+    "label": "Manual Handling Risk Assessment",
+    "blurb": "WHS Reg 60 — Hazardous manual tasks",
+    "counter_prefix": "MHR",
+    "fields": [
+        _f("task", "Task", required=True),
+        _f("site", "Site"),
+        _f("assessed_by", "Assessed by"),
+        _f("assessment_date", "Assessment date", "date"),
+        _f("task_description", "Task description", "textarea"),
+        _f("factors", "Risk factors — ManTRA (factor/rating/detail)", "mh_factors"),
+        _f("controls", "Controls (hierarchy/control/responsible)", "mh_controls"),
+        _f("residual_risk", "Residual risk", "textarea"),
+        _f("review_date", "Review date", "date"),
+        _f("approved_by", "Approved by"),
+    ],
+    "ai_prompt": ("Given a task description, return JSON: {factors:[{factor,rating,detail}], "
+                  "controls:[{hierarchy,control,responsible}], residual_risk}"),
+    "pdf": render_manual_handling_ra,
+})
+
+register_doc_type({
+    "id": "noise_assessment", "category": "safety",
+    "label": "Noise Assessment",
+    "blurb": "WHS Reg 56-58 · AS/NZS 1269 (exposure standard 85 dB(A))",
+    "counter_prefix": "NOISE",
+    "fields": [
+        _f("site", "Site", required=True),
+        _f("assessor_name", "Assessor"),
+        _f("meter_model", "Sound level meter"),
+        _f("meter_calibration", "Meter calibration date", "date"),
+        _f("assessment_date", "Assessment date", "date"),
+        _f("measurements", "Measurements (source/location/dB(A)/duration/exposure)", "noise_measurements"),
+        _f("exceedances", "Exceedances", "textarea"),
+        _f("controls", "Controls", "chips"),
+        _f("ppe", "PPE / hearing protection", "chips"),
+        _f("audio_count", "Workers to be audiometry-tested", "number"),
+        _f("audio_scheduled", "Testing scheduled for", "date"),
+        _f("approved_by", "Approved by"),
+        _f("review_date", "Review date", "date"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_noise_assessment,
+})
+
+register_doc_type({
+    "id": "silica_plan", "category": "safety",
+    "label": "Silica / Dust Control Plan",
+    "blurb": "WHS Reg 49-50 — WES 0.05 mg/m³ silica dust",
+    "counter_prefix": "SIL",
+    "fields": [
+        _f("project", "Project / site", required=True),
+        _f("site_address", "Site address"),
+        _f("trade", "Trade"),
+        _f("prepared_by", "Prepared by"),
+        _f("review_date", "Review date", "date"),
+        _f("tasks", "Silica-generating tasks (task/material/duration/exposure)", "silica_tasks"),
+        _f("engineering_controls", "Engineering controls", "chips"),
+        _f("admin_controls", "Administrative controls", "chips"),
+        _f("rpe", "RPE required (task/rpe_type/APF)", "rpe_items"),
+        _f("air_monitoring", "Air monitoring", "textarea"),
+        _f("health_monitoring", "Health monitoring", "textarea"),
+        _f("training", "Training requirements", "chips"),
+    ],
+    "ai_prompt": ("Given a trade + tasks, return JSON: {engineering_controls:[str], "
+                  "admin_controls:[str], air_monitoring, health_monitoring, training:[str]}"),
+    "pdf": render_silica_plan,
+})
+
+register_doc_type({
+    "id": "welding_procedure", "category": "trade",
+    "label": "Welding Procedure Specification (WPS)",
+    "blurb": "AS/NZS 3834 · AS/NZS 1554",
+    "counter_prefix": "WPS",
+    "fields": [
+        _f("wps_number", "WPS number", required=True),
+        _f("project", "Project"),
+        _f("welding_process", "Welding process (MIG/TIG/MMAW/FCAW)"),
+        _f("parent_material", "Parent material / grade"),
+        _f("joint_type", "Joint type"),
+        _f("position", "Position (1F/2F/3G etc.)"),
+        _f("thickness_range", "Thickness range (mm)"),
+        _f("filler", "Filler metal / classification"),
+        _f("shielding", "Shielding gas / flux"),
+        _f("current", "Current / polarity"),
+        _f("voltage", "Voltage (V)"),
+        _f("amperage", "Amperage (A)"),
+        _f("travel_speed", "Travel speed (mm/min)"),
+        _f("preheat", "Preheat (°C)"),
+        _f("interpass", "Interpass max (°C)"),
+        _f("pwht", "Post-weld heat treatment"),
+        _f("special_instructions", "Special instructions", "textarea"),
+        _f("ndt", "NDT requirements", "chips"),
+        _f("welder_name", "Qualified welder name"),
+        _f("welder_ticket", "Welder ticket / certificate"),
+        _f("standard", "Qualified to standard"),
+        _f("qualified_by", "Qualified by"),
+        _f("qualified_date", "Date", "date"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_welding_procedure,
+})
+
+register_doc_type({
+    "id": "test_tag_register", "category": "trade",
+    "label": "Electrical Test & Tag Register",
+    "blurb": "AS/NZS 3760 — In-service safety testing",
+    "counter_prefix": "TT",
+    "fields": [
+        _f("company_name", "Business", required=True),
+        _f("site_location", "Site / location"),
+        _f("tester_name", "Tester name"),
+        _f("tester_competency", "Tester competency (RII / electrician)"),
+        _f("kit_model", "Test kit / PAT model"),
+        _f("kit_calibration", "Kit calibration date", "date"),
+        _f("frequency_months", "Frequency (months)", "number"),
+        _f("next_audit", "Next scheduled audit", "date"),
+        _f("items", "Appliances (asset_id/description/location/class/test_date/result/next_test)",
+           "test_tag_items"),
+    ],
+    "ai_prompt": None,
+    "pdf": render_test_tag_register,
+})
+
+register_doc_type({
+    "id": "fire_safety_plan", "category": "safety",
+    "label": "Fire Safety Plan",
+    "blurb": "BCA / NCC · AS 3745 — Emergency plans for facilities",
+    "counter_prefix": "FSP",
+    "fields": [
+        _f("site_name", "Site name", required=True),
+        _f("site_address", "Site address"),
+        _f("building_class", "Building class (BCA)"),
+        _f("prepared_by", "Prepared by"),
+        _f("review_date", "Review date", "date"),
+        _f("fire_risks", "Fire risks", "chips"),
+        _f("prevention_measures", "Fire prevention measures", "chips"),
+        _f("detection_systems", "Detection systems (system/location/last_service/next_service)",
+           "fire_detection"),
+        _f("equipment", "Fire-fighting equipment (equipment/location/qty/last_inspection)",
+           "fire_equipment"),
+        _f("evacuation_procedure", "Evacuation procedure", "textarea"),
+        _f("assembly_points", "Assembly points", "chips"),
+        _f("wardens", "Fire warden(s) (name/role/phone)", "contacts"),
+        _f("training", "Training", "textarea"),
+    ],
+    "ai_prompt": ("Given a site + building class, return JSON: {fire_risks:[str], "
+                  "prevention_measures:[str], evacuation_procedure, training}"),
+    "pdf": render_fire_safety_plan,
+})
+
+register_doc_type({
+    "id": "emp", "category": "safety",
+    "label": "Environmental Management Plan (EMP)",
+    "blurb": "ISO 14001 · EPA state guidelines",
+    "counter_prefix": "EMP",
+    "fields": [
+        _f("project", "Project", required=True),
+        _f("site_address", "Site address"),
+        _f("site_state", "Site state", "state"),
+        _f("prepared_by", "Prepared by"),
+        _f("review_date", "Review date", "date"),
+        _f("aspects", "Aspects & impacts (aspect/impact/rating/control)", "emp_aspects"),
+        _f("sediment_controls", "Sediment & erosion controls", "chips"),
+        _f("waste_streams", "Waste streams (stream/disposal/contractor)", "waste_streams"),
+        _f("water_air_quality", "Water & air quality", "textarea"),
+        _f("noise_vibration", "Noise & vibration management", "textarea"),
+        _f("incident_response", "Incident response", "textarea"),
+        _f("compliance_items", "Compliance register (requirement/source/responsible)", "emp_compliance"),
+        _f("approved_by", "Approved by"),
+        _f("approved_at", "Approved at", "datetime"),
+    ],
+    "ai_prompt": ("Given a project + state, return JSON: {aspects:[{aspect,impact,rating,control}], "
+                  "sediment_controls:[str], water_air_quality, noise_vibration, incident_response}"),
+    "pdf": render_emp,
+})
+
 
 
 

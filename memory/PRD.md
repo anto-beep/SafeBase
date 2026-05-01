@@ -146,6 +146,21 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - Owner seed backfilled with `company_name="SafeTradie Demo Co"`; generator prefill falls back to user's name when company is null.
 - Tested 19/19 backend + 8/8 iter19 regression + full Playwright wizard walkthrough — zero critical issues (iteration_20.json). One minor UX miss fixed post-test (company auto-fill).
 
+### Iteration 21 — Document Library Hub · Phase 2 (Feb 2026)
+- **Schema-registry pattern** via `/app/backend/docs_module.py` — each doc type registers `{id, category, label, fields[], ai_prompt, counter_prefix, pdf renderer}`. Generic `/api/docs/*` CRUD surface dispatches by `doc_type`. Adding new types = 1 renderer + 1 `register_doc_type()`.
+- **8 doc types shipped**: JSA · Risk Assessment · SSSP · Emergency Plan · Hazardous Chemicals Register · Site Induction Checklist · Confined Space Entry Permit · Toolbox Talk Record. Counter prefixes: JSA / RA / SSSP / EP / HCR / IND / CSP / TBT.
+- **WeasyPrint PDF** per type with consistent A4 header, legal notice, ref-id, and `%PDF-` output ≥5 KB. Soft-archive then hard-delete 2-step flow; 5-year retention stamp.
+- **Frontend**: `DocumentLibraryHub.jsx` (hub at `/dashboard/document-library`, 6 category tiles + 8 type cards), `DocumentListPage.jsx` (per-type list with search + PDF row action), `DocumentForm.jsx` (dynamic form from spec.fields — supports text, textarea, state, date, datetime, number, chips, jsa_steps, risk_items, checklist, chemicals, contacts, equipment, attendees, atmosphere, emergency_procs).
+- 100% backend (43/43 pytest) + 100% frontend (12/12 Playwright steps) — iteration_21.json.
+
+### Iteration 22 — Document Library Phase 3 (curated subset, 8 more types) (Feb 2026)
+- **+8 NEW doc types** via same registry — total library now **16 types across 6 categories**:
+  - Safety: **WHS Management Plan** (WMP — Reg 309), **Asbestos Register** (ASB — Reg 425), **Hot Work Permit** (HWP), **Excavation Permit** (EXP — Reg 304), **Fall Protection Plan** (FPP — Reg 78)
+  - Trade: **CCEW** NSW electrical certificate (CCEW — AS/NZS 3000), **Plumbing NOW/COC** (PLB — AS/NZS 3500)
+  - Plant: **Lift Plan** (LIFT — AS 2550)
+- Frontend `DocumentForm` gains 4 new table field widgets: `responsibilities` (role/responsibility), `asbestos_items` (7-col ACM register), `test_results` (test/result), `plumbing_items` (item/standard/result).
+- All 8 new PDFs render 17–22 KB with `%PDF-` magic and pass 34/34 new pytest cases; 43/43 Phase-2 regression remains green after count assertion update. Frontend 12/12 live-driven steps pass including `lift_plan` end-to-end create + PDF download — iteration_22.json.
+
 ---
 
 ## Backend endpoints (current summary)
@@ -165,9 +180,14 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 
 ## Backlog (Deferred)
 
+### P1 (next session — Document Library Phase 3 remainder)
+- **15 remaining specialty docs** (after iter22 curated 8): Gas Compliance Certificate, Pressure Test Record, Backflow Test, TMP (Traffic Mgmt Plan), Plant/Equipment Pre-Start, Scaffold Handover, Working at Heights Permit, Lock-Out/Tag-Out, Manual Handling RA, Noise Assessment, Silica/Dust Control Plan, Welding Procedure, Electrical Test & Tag Register, Fire Safety Plan, Environmental Management Plan.
+
 ### P1 (deferred — no user-facing value; high refactor risk)
-- Split `server.py` (~2150 lines) into /app/backend/routes/{auth,safety,reports,workflows,tradeinduct,tradecheck,academy,partner,worker,billing,webhooks}.py
-- Typed Pydantic models per module (replace `body: dict`)
+- Split `server.py` (~2600 lines) into /app/backend/routes/{auth,safety,reports,workflows,tradeinduct,tradecheck,academy,partner,worker,billing,webhooks}.py
+- `docs_module.py` now 1249 lines — split into `docs_pdf.py` (renderers) + `docs_registry.py` (register calls) + `docs_module.py` (routes only)
+- Replace 4 duplicate table field types in `DocumentForm.jsx` with a single generic `table` widget driven by `columns:[{key,label}]` schema
+- Typed Pydantic models per module (replace `body: dict`) — prevents silent typo'd field keys persisting
 
 ### P2 (out-of-scope for this env)
 - React Native / Capacitor wrapper — Emergent preview env can't build mobile binaries. The existing PWA at `/worker` is installable on iOS/Android and covers ~95% of native UX.

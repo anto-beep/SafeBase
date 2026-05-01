@@ -221,6 +221,62 @@ function FieldRenderer({ field, value, onChange }) {
     return <TableField field={field} value={value} onChange={onChange}
                        cols={[{k:"item",l:"Item"},{k:"standard",l:"Standard"},{k:"result",l:"Result"}]} />;
   }
+  if (t === "backflow_tests") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"test",l:"Test"},{k:"required",l:"Required"},{k:"actual",l:"Actual"},{k:"result",l:"Pass/Fail"}]} />;
+  }
+  if (t === "tmp_signage") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"device",l:"Device / sign"},{k:"location",l:"Location"},{k:"qty",l:"Qty"}]} />;
+  }
+  if (t === "loto_points") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"point",l:"Point / ID"},{k:"type",l:"Energy type"},{k:"device",l:"Lock/tag ID"},{k:"verified_by",l:"Verified by"}]} />;
+  }
+  if (t === "mh_factors") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"factor",l:"Factor"},{k:"rating",l:"Rating (L/M/H)"},{k:"detail",l:"Detail"}]} />;
+  }
+  if (t === "mh_controls") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"hierarchy",l:"Hierarchy"},{k:"control",l:"Control"},{k:"responsible",l:"Responsible"}]} />;
+  }
+  if (t === "noise_measurements") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"source",l:"Source"},{k:"location",l:"Location"},{k:"dba",l:"LAeq dB(A)"},{k:"duration",l:"Duration"},{k:"exposure",l:"8-hr exposure"}]} />;
+  }
+  if (t === "silica_tasks") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"task",l:"Task"},{k:"material",l:"Material"},{k:"duration",l:"Duration"},{k:"expected_exposure",l:"Est. exposure mg/m³"}]} />;
+  }
+  if (t === "rpe_items") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"task",l:"Task"},{k:"rpe_type",l:"RPE type"},{k:"protection_factor",l:"APF"}]} />;
+  }
+  if (t === "test_tag_items") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"asset_id",l:"Asset / tag ID"},{k:"description",l:"Description"},{k:"location",l:"Location"},{k:"class",l:"Class"},{k:"test_date",l:"Test date"},{k:"result",l:"Result"},{k:"next_test",l:"Next test"}]} />;
+  }
+  if (t === "fire_detection") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"system",l:"System"},{k:"location",l:"Location"},{k:"last_service",l:"Last service"},{k:"next_service",l:"Next service"}]} />;
+  }
+  if (t === "fire_equipment") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"equipment",l:"Equipment"},{k:"location",l:"Location"},{k:"qty",l:"Qty"},{k:"last_inspection",l:"Last inspection"}]} />;
+  }
+  if (t === "emp_aspects") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"aspect",l:"Aspect"},{k:"impact",l:"Impact"},{k:"rating",l:"Rating"},{k:"control",l:"Control"}]} />;
+  }
+  if (t === "waste_streams") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"stream",l:"Stream"},{k:"disposal",l:"Disposal"},{k:"contractor",l:"Contractor"}]} />;
+  }
+  if (t === "emp_compliance") {
+    return <TableField field={field} value={value} onChange={onChange}
+                       cols={[{k:"requirement",l:"Requirement"},{k:"source",l:"Source"},{k:"responsible",l:"Responsible"}]} />;
+  }
   if (t === "atmosphere") {
     return <AtmosphereField field={field} value={value} onChange={onChange} />;
   }

@@ -79,9 +79,9 @@ def test_docs_types_returns_8_types_and_categories(headers):
     assert r.status_code == 200
     body = r.json()
     assert "categories" in body and len(body["categories"]) == 6
-    assert "types" in body and len(body["types"]) == 8
+    assert "types" in body and len(body["types"]) >= 8
     type_ids = {t["id"] for t in body["types"]}
-    assert type_ids == set(DOC_TYPES)
+    assert set(DOC_TYPES).issubset(type_ids)
     assert "states" in body and len(body["states"]) == 8
     for t in body["types"]:
         assert "fields" in t and isinstance(t["fields"], list)
