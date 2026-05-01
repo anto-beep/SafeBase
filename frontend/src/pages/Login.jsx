@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { HardHat, GoogleLogo } from "@phosphor-icons/react";
+import { Cube, GoogleLogo } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -40,24 +40,26 @@ export default function Login() {
         <div className="absolute inset-0 grid-bg opacity-10" />
         <div className="relative z-10 p-12 flex flex-col justify-between text-white">
           <Link to="/" className="flex items-center gap-2" data-testid="brand-back">
-            <div className="w-8 h-8 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={20} /></div>
+            <div className="w-8 h-8 bg-warning flex items-center justify-center"><Cube weight="fill" className="text-ink" size={20} /></div>
             <span className="font-display font-black tracking-tight">SAFEBASE</span>
           </Link>
           <div>
             <div className="label-eyebrow text-warning mb-4">/ COMPLIANCE INFRASTRUCTURE</div>
-            <h1 className="font-display text-5xl font-black leading-[0.95] mb-4">Welcome back<br />to your safety<br /><span className="bg-warning text-ink px-2">command centre.</span></h1>
-            <p className="text-white/70 max-w-md mt-8">Every SWMS. Every licence. Every incident. One source of truth for your trade business.</p>
+            <h1 className="font-display text-5xl font-black leading-[0.95] mb-4">Welcome Back.<br /><span className="bg-warning text-ink px-2">Your Industry.</span><br />Your Compliance.</h1>
+            <p className="text-white/70 max-w-md mt-8">WHS compliance for every industry. From the kitchen to the clinic. From the depot to the store. AI-powered. Australian-built.</p>
+            <div className="text-xs font-mono text-white/50 mt-6 uppercase tracking-widest">Trades — Hospitality — Transport — Healthcare — Retail</div>
           </div>
-          <div className="font-mono text-xs text-white/40">v1.0 · ISO-aligned · AS/NZS 4801</div>
+          <div className="font-mono text-xs text-white/40">Australian data. AWS Sydney. Privacy Act compliant.</div>
         </div>
       </div>
       <div className="flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="lg:hidden mb-8">
-            <Link to="/" className="flex items-center gap-2"><div className="w-8 h-8 bg-ink flex items-center justify-center"><HardHat weight="fill" className="text-warning" size={20} /></div><span className="font-display font-black">SAFEBASE</span></Link>
+            <Link to="/" className="flex items-center gap-2"><div className="w-8 h-8 bg-ink flex items-center justify-center"><Cube weight="fill" className="text-warning" size={20} /></div><span className="font-display font-black">SAFEBASE</span></Link>
           </div>
           <div className="label-eyebrow mb-3">/ Sign in</div>
-          <h2 className="font-display text-4xl font-black tracking-tighter mb-8">Log in.</h2>
+          <h2 className="font-display text-4xl font-black tracking-tighter mb-2">Welcome Back.</h2>
+          <p className="text-sm text-muted-foreground mb-8">Log in to your SafeBase account.</p>
 
           <Button onClick={googleLogin} variant="outline" className="w-full btn-sharp h-12 border-ink mb-4" data-testid="google-login-btn">
             <GoogleLogo weight="bold" className="mr-2" /> Continue with Google
@@ -78,8 +80,9 @@ export default function Login() {
             </Button>
           </form>
           <div className="mt-6 text-sm">
-            No account? <Link to="/register" className="font-bold underline" data-testid="link-to-register">Create one</Link>
+            New to SafeBase? <Link to="/register" className="font-bold underline" data-testid="link-to-register">Start your free trial</Link>
           </div>
+          <div className="mt-6 text-xs font-mono text-muted-foreground">Australian data. AWS Sydney. Privacy Act compliant.</div>
         </div>
       </div>
     </div>

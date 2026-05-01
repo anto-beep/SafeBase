@@ -83,7 +83,7 @@ export default function Franchises() {
               </div>
             ))}
           </div>
-          <div className="mt-6 bg-warning border-2 border-ink p-4 text-center font-bold">Franchisor network dashboard included. Network setup from A$7,500 (master SWMS library + template config + onboarding support for first 10 franchisees).</div>
+          <div className="mt-6 bg-warning border-2 border-ink p-4 text-center font-bold">Franchisor network dashboard included. Network setup from A$20,000 + GST (master template library + configuration + onboarding support across every industry).</div>
         </div>
       </section>
 
@@ -91,13 +91,14 @@ export default function Franchises() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-5">
             <div className="label-eyebrow text-warning mb-3">/ ROI case</div>
-            <h2 className="font-display text-4xl font-black tracking-tighter">A$94k/year vs A$117k fine.</h2>
+            <h2 className="font-display text-4xl font-black tracking-tighter">A$16,900/mo vs one prosecution.</h2>
           </div>
           <div className="lg:col-span-7 space-y-2 font-mono text-sm">
-            <div className="flex justify-between border-b border-white/10 py-3"><span>Average WorkSafe prosecution</span><span className="text-destructive">A$116,979</span></div>
-            <div className="flex justify-between border-b border-white/10 py-3"><span>SafeBase 100-franchisee network (A$79 × 100)</span><span>A$7,900/mo</span></div>
-            <div className="flex justify-between border-b border-white/10 py-3"><span>Annual platform cost</span><span>A$94,800/yr</span></div>
-            <div className="flex justify-between py-3 text-warning font-bold"><span>Less than one prosecution. Makes that prosecution far less likely.</span><span></span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>SafeBase 100-location network (A$169 × 100)</span><span>A$16,900/mo + GST</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>Annual platform cost</span><span>A$202,800/yr + GST</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>50-199 locations</span><span>A$149/location + GST</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>200+ locations</span><span>A$119/location + GST</span></div>
+            <div className="flex justify-between py-3 text-warning font-bold"><span>One regulatory prosecution across your network costs more than a decade of SafeBase for every location you operate.</span><span></span></div>
           </div>
         </div>
       </section>

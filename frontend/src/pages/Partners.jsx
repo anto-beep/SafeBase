@@ -59,23 +59,24 @@ export default function Partners() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div>
             <div className="label-eyebrow mb-3">/ Who is it for</div>
-            <h2 className="font-display text-3xl font-black tracking-tighter">Independent WHS consultants ready to productise.</h2>
+            <h2 className="font-display text-3xl font-black tracking-tighter">Scale Your Compliance Practice with SafeBase.</h2>
             <ul className="mt-6 space-y-3 text-muted-foreground">
-              <li>· Solo WHS practitioners managing 10+ clients manually</li>
-              <li>· Boutique safety consultancies (2–5 staff) hitting capacity</li>
-              <li>· Insurance brokers wanting a compliance value-add</li>
-              <li>· Industry associations offering member benefits</li>
+              <li>· Multi-industry WHS consultants managing 10+ clients manually</li>
+              <li>· Boutique compliance consultancies (2–5 staff) hitting capacity</li>
+              <li>· Insurance brokers wanting a multi-industry compliance value-add</li>
+              <li>· Industry associations offering member benefits across hospitality, transport, healthcare, retail, trades</li>
             </ul>
           </div>
           <div className="bg-ink text-white p-8">
             <div className="label-eyebrow text-warning">/ A typical partner P&L</div>
             <div className="mt-6 space-y-2 font-mono text-sm">
-              <div className="flex justify-between border-b border-white/10 py-2"><span>20 clients × A$135/mo × 35%</span><span>+A$945</span></div>
-              <div className="flex justify-between border-b border-white/10 py-2"><span>Implementation fees (5/yr × A$800)</span><span>+A$333</span></div>
-              <div className="flex justify-between border-b border-white/10 py-2"><span>Audit prep services (8/yr × A$1,500)</span><span>+A$1,000</span></div>
-              <div className="flex justify-between border-b border-white/10 py-2"><span>Partner subscription</span><span className="text-destructive">−A$500</span></div>
-              <div className="flex justify-between py-2 text-warning font-bold"><span>Net monthly</span><span>A$1,778</span></div>
+              <div className="flex justify-between border-b border-white/10 py-2"><span>10 clients × A$1,499/mo × 15%</span><span>+A$2,248.50</span></div>
+              <div className="flex justify-between border-b border-white/10 py-2"><span>25 clients (mixed industries)</span><span>+A$5,621.25</span></div>
+              <div className="flex justify-between border-b border-white/10 py-2"><span>50 clients (franchise roll-out)</span><span>+A$12,742.50</span></div>
+              <div className="flex justify-between border-b border-white/10 py-2"><span>Partner subscription</span><span className="text-destructive">−A$1,999/mo + GST</span></div>
+              <div className="flex justify-between py-2 text-warning font-bold"><span>Single Healthcare Enterprise client</span><span>+A$2,099.85/mo</span></div>
             </div>
+            <p className="mt-4 text-xs text-white/60">A single Healthcare Enterprise client generates A$25,198.20 + GST in annual commission — one conversation with the right aged care organisation pays for your partner subscription more than 14 times over.</p>
           </div>
         </div>
       </section>

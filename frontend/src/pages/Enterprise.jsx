@@ -19,16 +19,16 @@ const PERSONAS = [
 ];
 
 const FEATURES = [
-  { title: "Up to 50 named users", sub: "Additional users A$19/mo + GST each. Enterprise+ quotes available beyond 75 users." },
-  { title: "All add-ons included", sub: "TradeInduct (A$129), TradeCheck (A$149), SafeBase Academy 30 workers (A$299) — A$6,924/year in savings." },
+  { title: "Up to 50 named users", sub: "Additional users quoted on request. Enterprise+ quotes available beyond 60 users." },
+  { title: "All add-ons included", sub: "SafeInduct (A$199/mo), SafeCheck (A$249/mo), SafeBase Academy 30 workers (A$599/mo) — A$12,564/year in included value." },
   { title: "Dedicated Account Manager", sub: "A named SafeBase specialist who knows your business, by phone and email." },
   { title: "Quarterly Business Reviews", sub: "60-minute structured reviews covering score, incidents, credential forecast, and legislation." },
   { title: "Priority phone support · 4h SLA", sub: "Business-hours phone with a 4-hour response SLA." },
-  { title: "Structured 4-session onboarding", sub: "Over your first 30 days: configuration, training, SWMS build, live sign-off." },
+  { title: "Structured 4-session onboarding", sub: "Over your first 30 days: configuration, training, document build, live sign-off." },
   { title: "Emergency incident support", sub: "Call your Account Manager during a notifiable incident for real-time guidance." },
-  { title: "Advanced AI predictive risk modelling", sub: "Flags risks before incidents occur, across every site." },
-  { title: "Cross-site incident pattern detection", sub: "Benchmark safety performance across locations." },
-  { title: "Custom compliance frameworks", sub: "Configure around principal-contractor, insurer or industry-body requirements." },
+  { title: "Advanced AI predictive risk modelling", sub: "Flags risks before incidents occur, across every location." },
+  { title: "Cross-location incident pattern detection", sub: "Benchmark safety performance across every site, venue, depot, clinic or store." },
+  { title: "Custom compliance frameworks", sub: "Configure around principal-contractor, insurer, regulator or industry-body requirements." },
   { title: "Custom report builder + scheduled delivery", sub: "Build any report from any data field; schedule weekly/monthly/quarterly delivery." },
   { title: "SSO · Full API · Webhooks", sub: "Google Workspace / Microsoft 365 SSO, sandbox API, webhook support." },
   { title: "Enhanced immutable audit logging", sub: "Every action by every user, logged immutably." },
@@ -41,11 +41,10 @@ export default function Enterprise() {
   const [loading, setLoading] = useState(false);
 
   // ROI calculator: users × hours saved per user per month × A$120 hourly rate.
-  // Defaults conservative: 25 users × 4 hrs/mo × A$120/hr = A$12,000/mo saved vs A$1,299/mo cost.
   const [roiUsers, setRoiUsers] = useState(25);
   const [roiHours, setRoiHours] = useState(4);
   const RATE = 120;
-  const ENT_MO = 1299;
+  const ENT_MO = 2199; // Trades Enterprise entry price; healthcare enterprise is A$13,999/mo
   const monthlySaved = roiUsers * roiHours * RATE;
   const netMonthly = monthlySaved - ENT_MO;
   const annualNet = netMonthly * 12;
@@ -79,16 +78,22 @@ export default function Enterprise() {
           <div className="flex items-center gap-2 label-eyebrow text-warning">
             <Crown weight="fill" />/ SafeBase Enterprise
           </div>
-          <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter mt-4">For businesses with 20 to 50 workers, multiple sites, and zero tolerance for compliance gaps.</h1>
-          <p className="text-white/70 mt-6 max-w-3xl text-lg">When your business reaches a certain size, WHS compliance stops being an admin task and starts being a board-level concern. One notifiable incident, one WorkSafe prosecution, one lapsed subcontractor insurance — the consequences are not just financial. They are reputational, operational, and personal.</p>
+          <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter mt-4">SafeBase Enterprise. For businesses of any industry with 20 to 60 workers and zero tolerance for compliance gaps.</h1>
+          <p className="text-white/70 mt-6 max-w-3xl text-lg">When your business reaches a certain size, compliance stops being an admin task and starts being a board-level concern. One notifiable incident. One regulator prosecution. One lapsed contractor insurance. One AHPRA investigation. The consequences are not just financial. They are reputational, operational, and personal.</p>
 
           <div className="mt-10 flex flex-wrap gap-6 items-center">
             <div className="border-l-2 border-warning pl-4">
-              <div className="label-eyebrow text-warning">Starting at</div>
-              <div className="font-display text-4xl font-black">A$1,299<span className="text-lg font-normal">/month + GST</span></div>
+              <div className="label-eyebrow text-warning">Trades Enterprise from</div>
+              <div className="font-display text-4xl font-black">A$2,199<span className="text-lg font-normal">/month + GST</span></div>
+              <div className="text-xs text-white/60 mt-1">A$21,990/year + GST</div>
             </div>
-            <div className="text-sm text-white/60">
-              Up to 50 users · All add-ons included · Dedicated Account Manager · 4-hour SLA
+            <div className="border-l-2 border-warning pl-4">
+              <div className="label-eyebrow text-warning">Healthcare Enterprise from</div>
+              <div className="font-display text-4xl font-black">A$13,999<span className="text-lg font-normal">/month + GST</span></div>
+              <div className="text-xs text-white/60 mt-1">A$139,990/year + GST · up to 60 users</div>
+            </div>
+            <div className="text-sm text-white/60 max-w-md">
+              All Enterprise plans include all add-ons, Dedicated Account Manager, 4-hour SLA and quarterly business reviews.
             </div>
           </div>
 
@@ -172,7 +177,7 @@ export default function Enterprise() {
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow mb-3">/ Instant ROI calculator</div>
           <h2 className="font-display text-4xl font-black tracking-tighter">What SafeBase Enterprise pays back, every month.</h2>
-          <p className="text-muted-foreground mt-3 max-w-2xl">Most teams save <strong>4–8 hours per user per month</strong> on SWMS, incident logging, licence chasing and reporting. Slide the numbers to match your business. Australian tradie billable rate: A${RATE}/hr (Fair Work average).</p>
+          <p className="text-muted-foreground mt-3 max-w-2xl">Most teams save <strong>4–8 hours per user per month</strong> on compliance documents, incident logging, credential tracking and reporting. Slide the numbers to match your business. Australian average billable rate: A${RATE}/hr (Fair Work).</p>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-10">
             {/* Inputs */}
@@ -229,7 +234,7 @@ export default function Enterprise() {
                 <div>
                   <div className="label-eyebrow text-warning">Value recovered</div>
                   <div className="font-display text-4xl font-black text-warning mt-1" data-testid="roi-saved-value">{fmtAud(monthlySaved)}</div>
-                  <div className="text-xs text-white/60 mt-1">at A${RATE}/hr tradie rate</div>
+                  <div className="text-xs text-white/60 mt-1">at A${RATE}/hr average billable rate</div>
                 </div>
               </div>
               <div className="border-t border-white/20 mt-6 pt-6">
@@ -242,7 +247,7 @@ export default function Enterprise() {
                   Book a demo with these numbers <ArrowRight className="ml-2" weight="bold" />
                 </Button>
               </a>
-              <p className="text-xs text-white/50 mt-3 max-w-md">Based on Australian tradie average hourly rate. Most customers report 4–8 hrs saved per user per month in the first 90 days. Excludes the value of fines avoided (up to A$3.9m category-1).</p>
+              <p className="text-xs text-white/50 mt-3 max-w-md">Based on Australian average billable rate. Most customers report 4–8 hrs saved per user per month in the first 90 days. Excludes the value of fines avoided (up to A$3.9m category-1).</p>
             </div>
           </div>
         </div>
@@ -255,13 +260,13 @@ export default function Enterprise() {
           <h2 className="font-display text-4xl font-black tracking-tighter">The cost of Enterprise. The cost of not.</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
             <div className="border-2 border-[#1B3A5C] bg-[#1B3A5C] text-white p-6" data-testid="roi-enterprise">
-              <div className="label-eyebrow text-warning">SafeBase Enterprise</div>
-              <div className="font-display text-3xl font-black mt-2">A$1,299<span className="text-sm font-normal">/mo + GST</span></div>
-              <div className="text-sm text-white/70 mt-1">A$12,990/yr + GST (annual)</div>
+              <div className="label-eyebrow text-warning">Trades Enterprise</div>
+              <div className="font-display text-3xl font-black mt-2">A$2,199<span className="text-sm font-normal">/mo + GST</span></div>
+              <div className="text-sm text-white/70 mt-1">A$21,990/yr + GST (annual)</div>
               <ul className="mt-4 space-y-1 text-sm">
                 <li>Up to 50 users</li>
                 <li>Unlimited sites</li>
-                <li>All add-ons (A$577/mo value)</li>
+                <li>All add-ons included (A$797/mo value)</li>
                 <li>Dedicated Account Manager</li>
                 <li>Quarterly reviews</li>
                 <li>4-hour support SLA</li>

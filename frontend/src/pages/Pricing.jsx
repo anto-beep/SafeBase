@@ -16,7 +16,7 @@ export default function Pricing() {
   const initialIndustry = INDUSTRY_LIST.includes(searchParams.get("industry"))
     ? searchParams.get("industry") : "trades";
   const [industry, setIndustry] = useState(initialIndustry);
-  const [cycle, setCycle] = useState("monthly");
+  const [cycle, setCycle] = useState("annual"); // annual is the default per Iter37 spec
   const [loading, setLoading] = useState(null);
   const cfg = INDUSTRY_PRICING[industry];
 
@@ -35,9 +35,11 @@ export default function Pricing() {
   const tiers = useMemo(() => cfg.plan_names.map((name, idx) => ({
     name,
     price: cfg.prices[cycle][idx],
-    annual_equiv: cycle === "annual"
-      ? `Equivalent to A$${Math.round(parseFloat(cfg.prices.annual[idx].replace(/,/g, "")) / 12).toLocaleString()}/month + GST`
-      : null,
+    monthly_display: cfg.prices.monthly[idx],
+    annual_display: cfg.prices.annual[idx],
+    annual_equivalent_monthly: cfg.prices.annual_equivalent_monthly?.[idx],
+    annual_saving: cfg.prices.annual_saving?.[idx],
+    user_limit: cfg.user_limits?.[idx],
     slug: cfg.slugs[cycle][idx],
     features: cfg.features[idx + 1] || [],
     highlight: idx === 2,
@@ -95,20 +97,20 @@ export default function Pricing() {
       <section className="py-16 lg:py-24">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="label-eyebrow" style={{ color: cfg.accent }}>/ {cfg.label} pricing · ex GST</div>
+            <div className="label-eyebrow" style={{ color: cfg.accent }}>/ {cfg.label} pricing · all prices + GST</div>
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter mt-3" data-testid="pricing-headline">
-              Simple plans built for {cfg.label.toLowerCase()}.
+              Pricing Built for Your Industry.
             </h1>
-            <p className="text-lg text-muted-foreground mt-4 max-w-2xl mx-auto">
-              14-day free trial. No credit card required. Cancel anytime.
+            <p className="text-lg text-muted-foreground mt-4 max-w-3xl mx-auto">
+              Every industry has different compliance obligations. Our pricing reflects the depth of what each industry requires. 14-day free trial. No credit card required.
             </p>
 
-            {/* Cycle toggle */}
+            {/* Cycle toggle — annual is default */}
             <div className="inline-flex bg-muted border-2 border-ink mt-8" data-testid="pricing-cycle-toggle">
-              <button onClick={() => setCycle("monthly")} className={`px-6 py-3 font-display font-black tracking-tight transition-colors ${cycle === "monthly" ? "bg-ink text-white" : ""}`} data-testid="pricing-cycle-monthly">MONTHLY</button>
               <button onClick={() => setCycle("annual")} className={`px-6 py-3 font-display font-black tracking-tight transition-colors ${cycle === "annual" ? "bg-ink text-white" : ""}`} data-testid="pricing-cycle-annual">
-                ANNUAL <span className="text-xs opacity-80">(SAVE 17%)</span>
+                ANNUAL <span className="text-xs opacity-80">(RECOMMENDED)</span>
               </button>
+              <button onClick={() => setCycle("monthly")} className={`px-6 py-3 font-display font-black tracking-tight transition-colors ${cycle === "monthly" ? "bg-ink text-white" : ""}`} data-testid="pricing-cycle-monthly">MONTHLY</button>
             </div>
           </div>
 
@@ -127,12 +129,24 @@ export default function Pricing() {
                   </span>
                 )}
                 <div className="font-display font-black text-2xl tracking-tighter">{t.name}</div>
+                {t.user_limit && <div className="text-xs font-mono text-muted-foreground mt-1">{t.user_limit}</div>}
                 <div className="mt-3">
                   <span className="font-display font-black text-5xl tracking-tighter">A${t.price}</span>
                   <span className="text-sm text-muted-foreground"> /{cycle === "monthly" ? "mo" : "yr"} + GST</span>
                 </div>
-                {t.annual_equiv && (
-                  <div className="text-xs text-muted-foreground mt-1">{t.annual_equiv}</div>
+                {cycle === "annual" && t.annual_equivalent_monthly && (
+                  <>
+                    <div className="text-xs text-muted-foreground mt-1">A${t.monthly_display}/month + GST if billed monthly</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Equivalent to A${t.annual_equivalent_monthly}/month when billed annually</div>
+                    {t.annual_saving && (
+                      <div className="inline-block mt-2 text-[10px] font-bold px-2 py-1" style={{ background: cfg.accent, color: "#0A0A0A" }}>
+                        Save A${t.annual_saving} + GST annually
+                      </div>
+                    )}
+                  </>
+                )}
+                {cycle === "monthly" && t.annual_display && (
+                  <div className="text-xs text-muted-foreground mt-1">A${t.annual_display}/year + GST if billed annually</div>
                 )}
                 <ul className="mt-5 space-y-2 text-sm flex-1">
                   {t.features.map((f) => (
@@ -148,7 +162,7 @@ export default function Pricing() {
                   className="mt-6 btn-sharp h-12 bg-ink text-white hover:bg-authority"
                   data-testid={`pricing-cta-${t.name.replace(/\s+/g, "-").toLowerCase()}`}
                 >
-                  {loading === t.slug ? "Redirecting…" : "Start free trial"} <ArrowRight className="ml-2" />
+                  {loading === t.slug ? "Redirecting…" : "Start Free Trial"} <ArrowRight className="ml-2" />
                 </Button>
               </div>
             ))}
@@ -171,8 +185,8 @@ export default function Pricing() {
 
           {/* TRUST FOOTER */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-border pt-12">
-            <div className="flex items-start gap-3"><ShieldCheck size={28} weight="duotone" className="shrink-0" /><div><div className="font-display font-bold">14-day free trial</div><div className="text-sm text-muted-foreground">Full access. No credit card.</div></div></div>
-            <div className="flex items-start gap-3"><Star size={28} weight="duotone" className="shrink-0" /><div><div className="font-display font-bold">30-day money back</div><div className="text-sm text-muted-foreground">Refund after trial — no questions.</div></div></div>
+            <div className="flex items-start gap-3"><ShieldCheck size={28} weight="duotone" className="shrink-0" /><div><div className="font-display font-bold">14-day free trial</div><div className="text-sm text-muted-foreground">Full access. No credit card required.</div></div></div>
+            <div className="flex items-start gap-3"><Star size={28} weight="duotone" className="shrink-0" /><div><div className="font-display font-bold">30-day money-back guarantee</div><div className="text-sm text-muted-foreground">If SafeBase does not demonstrably reduce your compliance administration burden in the first month, we will refund you in full. No conditions. No questions.</div></div></div>
             <div className="flex items-start gap-3"><CheckCircle size={28} weight="duotone" className="shrink-0" /><div><div className="font-display font-bold">Cancel anytime</div><div className="text-sm text-muted-foreground">Self-serve. No phone calls.</div></div></div>
           </div>
 

@@ -19,9 +19,9 @@ const MODULES = [
 ];
 
 const TIERS = [
-  { users: "Up to 10 workers", price: "A$89/mo" },
-  { users: "11 – 30 workers", price: "A$149/mo" },
-  { users: "31 – 60 workers", price: "A$249/mo" },
+  { users: "Up to 10 workers", price: "A$349/mo + GST" },
+  { users: "11 – 30 workers", price: "A$599/mo + GST" },
+  { users: "31 – 60 workers", price: "A$799/mo + GST" },
 ];
 
 export default function Academy() {
@@ -33,10 +33,10 @@ export default function Academy() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7">
             <div className="label-eyebrow mb-3">/ SafeBase Academy</div>
-            <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">Turn your SWMS<br />into a training<br />module in <span className="bg-warning px-2">60 seconds.</span></h1>
-            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">AI-powered safety microlearning built for trade businesses. 5–10 minute modules. Phone-friendly. Completion tracked automatically in your compliance dashboard.</p>
+            <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">Industry-Specific Training<br />with Compliance<br /><span className="bg-warning px-2">Evidence.</span></h1>
+            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">Microlearning and full certification courses built specifically for each industry. Completion syncs to your compliance dashboard. Evidence ready for any regulator.</p>
             <div className="mt-8 flex gap-3">
-              <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="academy-cta">Start free trial <ArrowRight className="ml-2" /></Button></Link>
+              <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="academy-cta">Start Free Trial <ArrowRight className="ml-2" /></Button></Link>
             </div>
           </div>
           <div className="lg:col-span-5 bg-ink text-white p-8 relative border-2 border-ink">

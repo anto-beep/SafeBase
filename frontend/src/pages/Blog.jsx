@@ -22,7 +22,7 @@ export default function Blog() {
       <section className="bg-ink text-white py-20 px-6" data-testid="blog-hero">
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow text-warning">/ Blog & insights</div>
-          <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-3">WHS, written for Aussie tradies.</h1>
+          <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-3">WHS and compliance, written for Australian operators.</h1>
           <p className="text-white/70 max-w-2xl mt-4">Plain-English deep-dives on SWMS, incidents, fines, licences, mental health, and culture. Written by consultants who've worked on sites you've been on.</p>
         </div>
       </section>

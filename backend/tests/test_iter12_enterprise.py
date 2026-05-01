@@ -18,16 +18,16 @@ OWNER_EMAIL = "owner@safetradie.demo"
 OWNER_PASS = "Demo@1234"
 
 EXPECTED_MONTHLY = {
-    "sole_trader_monthly": 249.00,
-    "small_business_monthly": 499.00,
-    "growing_business_monthly": 799.00,
-    "enterprise_monthly": 1299.00,
+    "sole_trader_monthly": 399.00,
+    "small_business_monthly": 799.00,
+    "growing_business_monthly": 1299.00,
+    "enterprise_monthly": 2199.00,
 }
 EXPECTED_ANNUAL = {
-    "sole_trader_annual": 2490.00,
-    "small_business_annual": 4990.00,
-    "growing_business_annual": 7990.00,
-    "enterprise_annual": 12990.00,
+    "sole_trader_annual": 3990.00,
+    "small_business_annual": 7990.00,
+    "growing_business_annual": 12990.00,
+    "enterprise_annual": 21990.00,
 }
 
 

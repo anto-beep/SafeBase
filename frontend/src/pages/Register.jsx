@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  HardHat, ChefHat, Truck, HeartStraight, ShoppingBag,
+  HardHat, ChefHat, Truck, HeartStraight, ShoppingBag, Cube,
   ArrowRight, ArrowLeft, CheckCircle, GoogleLogo, Quotes,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -102,13 +102,13 @@ export default function Register() {
       <div className="min-h-screen bg-[#0A0A0A] text-white" data-testid="signup-step-industry">
         <div className="max-w-7xl mx-auto px-6 py-10 md:py-16">
           <Link to="/" className="inline-flex items-center gap-2 mb-12 hover:text-warning" data-testid="signup-brand-back">
-            <div className="w-8 h-8 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={20} /></div>
+            <div className="w-8 h-8 bg-warning flex items-center justify-center"><Cube weight="fill" className="text-ink" size={20} /></div>
             <span className="font-display font-black tracking-tight">SAFEBASE</span>
           </Link>
           <div className="label-eyebrow text-warning">/ Step 1 of 3 · Choose your industry</div>
-          <h1 className="font-display text-4xl md:text-6xl font-black tracking-tighter mt-3 max-w-3xl">What industry are you in?</h1>
+          <h1 className="font-display text-4xl md:text-6xl font-black tracking-tighter mt-3 max-w-3xl">Start Your Free 14-Day Trial</h1>
           <p className="text-white/70 mt-4 max-w-2xl text-base md:text-lg">
-            SafeBase configures itself completely for your industry — features, documents, terminology, and compliance requirements all adapt.
+            Select your industry. SafeBase configures itself completely — features, documents, terminology, and compliance requirements all adapt. No credit card required.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">

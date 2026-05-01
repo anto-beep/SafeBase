@@ -180,7 +180,7 @@ export default function Landing() {
       <section className="border-b border-border">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
           <div className="label-eyebrow mb-3">/ The crew speaks</div>
-          <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-12">Trusted by tradies<br />who'd rather be on the tools.</h2>
+          <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-12">Trusted by Australian businesses<br />across five industries.</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
             {TESTIMONIALS.map((t) => (
               <div key={t.name} className="bg-background p-8 flex flex-col">
@@ -206,10 +206,10 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-border border border-border">
             {[
-              { n: "Sole Trader", p: "249", u: "1 user", features: ["Unlimited SWMS", "Incident register", "10 worker profiles", "Licence tracking"] },
-              { n: "Small Business", p: "499", u: "up to 5 users", features: ["Everything in Sole Trader", "Contractor compliance", "AI pattern detection", "TradeInduct included"] },
-              { n: "Growing Business", p: "799", u: "up to 20 users", highlight: true, features: ["Everything in Small Business", "Multi-site", "TradeCheck included", "Academy included"] },
-              { n: "Enterprise", p: "1,299", u: "up to 50 users", accent: true, features: ["All add-ons included", "Dedicated Account Manager", "API · SSO · Webhooks", "Quarterly Business Reviews"] },
+              { n: "Solo Tradie", p: "399", u: "1 user", features: ["Unlimited SWMS", "Incident register", "10 worker profiles", "Licence tracking"] },
+              { n: "Small Team", p: "799", u: "up to 5 users", features: ["Everything in Solo Tradie", "Contractor compliance", "AI pattern detection", "SafeInduct included"] },
+              { n: "Growing Business", p: "1,299", u: "up to 20 users", highlight: true, features: ["Everything in Small Team", "Multi-site", "SafeCheck included", "SafeBase Academy included"] },
+              { n: "Enterprise", p: "2,199", u: "up to 50 users", accent: true, features: ["All add-ons included", "Dedicated Account Manager", "API · SSO · Webhooks", "Quarterly Business Reviews"] },
             ].map((t) => (
               <div
                 key={t.n}

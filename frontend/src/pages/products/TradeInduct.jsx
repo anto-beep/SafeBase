@@ -4,10 +4,10 @@ import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { ArrowRight, QrCode, CheckCircle, DeviceMobile, Users } from "@phosphor-icons/react";
 
 const STEPS = [
-  { n: "01", t: "Create a site", b: "Site name, address, project type. AI suggests site-specific hazards automatically." },
-  { n: "02", t: "AI generates the induction", b: "Emergency procedures, PPE, site rules, high-risk areas — in 30 seconds." },
-  { n: "03", t: "Print the QR code", b: "Stick it on your site sign. Subbies scan and get inducted on arrival." },
-  { n: "04", t: "Auto-register", b: "Every induction logs with timestamp, trade, credentials photo — permanent and audit-ready." },
+  { n: "01", t: "Create a location", b: "Site, venue, depot, clinic, or store. AI suggests location-specific hazards automatically." },
+  { n: "02", t: "AI generates the induction", b: "Emergency procedures, PPE, rules, high-risk areas — configured for your industry in 30 seconds." },
+  { n: "03", t: "Print the QR code", b: "Stick it at the entrance. Workers, contractors, and casuals scan and get inducted on arrival." },
+  { n: "04", t: "Auto-register", b: "Every induction logs with timestamp, role, credentials photo — permanent and audit-ready." },
 ];
 
 export default function TradeInduct() {
@@ -18,11 +18,12 @@ export default function TradeInduct() {
       <section className="border-b border-border">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7">
-            <div className="label-eyebrow mb-3">/ TradeInduct</div>
-            <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">Every subbie<br />inducted. Every<br />induction <span className="bg-warning px-2">recorded.</span></h1>
-            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">QR-code site inductions. Subbies scan on arrival, complete a 3-minute AI-generated induction, and are auto-added to the site register with credentials captured.</p>
+            <div className="label-eyebrow mb-3">/ SafeInduct</div>
+            <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">QR-Based Inductions<br />for Every<br /><span className="bg-warning px-2">Industry.</span></h1>
+            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">Construction workers on site. Casual staff in a venue. Contractor drivers at a depot. Agency nurses at a clinic. Every induction recorded, every industry served, one platform.</p>
+            <p className="mt-4 text-sm text-muted-foreground">A$199/month + GST standalone. Included from Tier 2 on every industry plan.</p>
             <div className="mt-8 flex gap-3">
-              <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="induct-cta">Try it free <ArrowRight className="ml-2" /></Button></Link>
+              <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="induct-cta">Start Free Trial <ArrowRight className="ml-2" /></Button></Link>
             </div>
           </div>
           <div className="lg:col-span-5 flex items-center justify-center p-8 bg-warning border-4 border-ink aspect-square relative">

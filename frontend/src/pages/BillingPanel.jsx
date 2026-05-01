@@ -5,10 +5,26 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Receipt, CreditCard } from "@phosphor-icons/react";
 
 const TIER_LABEL = {
-  sole_trader: "Sole Trader",
-  small_business: "Small Business",
+  sole_trader: "Solo Tradie",
+  small_business: "Small Team",
   growing_business: "Growing Business",
   enterprise: "Enterprise",
+  retail_single: "Single Store",
+  retail_small: "Small Chain",
+  retail_multi: "Multi-Store",
+  retail_enterprise: "Retail Enterprise",
+  hosp_single: "Single Venue",
+  hosp_small: "Small Group",
+  hosp_multi: "Multi-Venue",
+  hosp_enterprise: "Hospitality Enterprise",
+  trans_owner: "Owner-Operator",
+  trans_small: "Small Fleet",
+  trans_growing: "Growing Fleet",
+  trans_enterprise: "Transport Enterprise",
+  health_solo: "Solo Practice",
+  health_small: "Small Practice",
+  health_multi: "Multi-Site",
+  health_enterprise: "Healthcare Enterprise",
 };
 
 const STATUS_CLS = {
@@ -38,10 +54,28 @@ export default function BillingPanel() {
   const tierLabel = TIER_LABEL[sub?.tier] || "Free trial";
   const status = sub?.status || "trial";
   const cycle = sub?.cycle;
-  const priceMap = { sole_trader: cycle === "annual" ? "A$2,490/yr + GST" : "A$249/mo + GST",
-                     small_business: cycle === "annual" ? "A$4,990/yr + GST" : "A$499/mo + GST",
-                     growing_business: cycle === "annual" ? "A$7,990/yr + GST" : "A$799/mo + GST",
-                     enterprise: cycle === "annual" ? "A$12,990/yr + GST" : "A$1,299/mo + GST" };
+  const priceMap = {
+    sole_trader: cycle === "annual" ? "A$3,990/yr + GST" : "A$399/mo + GST",
+    small_business: cycle === "annual" ? "A$7,990/yr + GST" : "A$799/mo + GST",
+    growing_business: cycle === "annual" ? "A$12,990/yr + GST" : "A$1,299/mo + GST",
+    enterprise: cycle === "annual" ? "A$21,990/yr + GST" : "A$2,199/mo + GST",
+    retail_single: cycle === "annual" ? "A$5,490/yr + GST" : "A$549/mo + GST",
+    retail_small: cycle === "annual" ? "A$10,990/yr + GST" : "A$1,099/mo + GST",
+    retail_multi: cycle === "annual" ? "A$16,990/yr + GST" : "A$1,699/mo + GST",
+    retail_enterprise: cycle === "annual" ? "A$27,990/yr + GST" : "A$2,799/mo + GST",
+    hosp_single: cycle === "annual" ? "A$7,990/yr + GST" : "A$799/mo + GST",
+    hosp_small: cycle === "annual" ? "A$14,990/yr + GST" : "A$1,499/mo + GST",
+    hosp_multi: cycle === "annual" ? "A$22,990/yr + GST" : "A$2,299/mo + GST",
+    hosp_enterprise: cycle === "annual" ? "A$37,990/yr + GST" : "A$3,799/mo + GST",
+    trans_owner: cycle === "annual" ? "A$9,990/yr + GST" : "A$999/mo + GST",
+    trans_small: cycle === "annual" ? "A$17,990/yr + GST" : "A$1,799/mo + GST",
+    trans_growing: cycle === "annual" ? "A$27,990/yr + GST" : "A$2,799/mo + GST",
+    trans_enterprise: cycle === "annual" ? "A$44,990/yr + GST" : "A$4,499/mo + GST",
+    health_solo: cycle === "annual" ? "A$14,990/yr + GST" : "A$1,499/mo + GST",
+    health_small: cycle === "annual" ? "A$27,990/yr + GST" : "A$2,799/mo + GST",
+    health_multi: cycle === "annual" ? "A$44,990/yr + GST" : "A$4,499/mo + GST",
+    health_enterprise: cycle === "annual" ? "A$139,990/yr + GST" : "A$13,999/mo + GST",
+  };
   const price = hasSub ? priceMap[sub.tier] : "A$0";
 
   return (

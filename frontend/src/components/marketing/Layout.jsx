@@ -67,7 +67,7 @@ export function MarketingFooter() {
             <div className="w-8 h-8 bg-warning flex items-center justify-center"><Cube weight="fill" className="text-ink" size={18} /></div>
             <span className="font-display font-black text-lg">SAFEBASE</span>
           </div>
-          <p className="text-sm text-white/60 max-w-xs mb-4">Australia's WHS compliance platform for every industry. Powered by AI.</p>
+          <p className="text-sm text-white/60 max-w-xs mb-4">SafeBase. WHS and Compliance Management for Every Australian Industry. AI-Powered. Australian-Built. Australian-Hosted.</p>
           <div className="font-mono text-xs text-white/40">Australian owned · Australian hosted · Built for Australian WHS law</div>
         </div>
         <div>

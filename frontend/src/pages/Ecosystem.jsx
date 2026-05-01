@@ -4,38 +4,38 @@ import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { ArrowRight, FileText, HardHat, IdentificationBadge, Student, Buildings, UserCircleGear, Lightning, CheckCircle } from "@phosphor-icons/react";
 
 const PRODUCTS = [
-  { code: "01", icon: FileText, name: "SafeBase Core", tagline: "The foundation everything else is built on.", to: "/services/swms", price: "from A$249/month + GST",
-    what: "SWMS generation, incident management, licence tracking, compliance dashboard, audit preparation.",
-    who: "Any Australian trade business, 1–50 staff.",
-    ai: ["Voice-to-incident-report", "AI SWMS from job type & location", "Pattern detection", "Expiry alerts"] },
-  { code: "02", icon: HardHat, name: "TradeInduct", tagline: "Every subcontractor inducted. Every induction recorded. Zero paperwork.", to: "/products/tradeinduct", price: "A$59/mo · included in Small Business+",
-    what: "QR-code site inductions, contractor onboarding, AI-generated site-specific induction, attendance register.",
-    who: "Builders and contractors who engage subcontractors.",
-    ai: ["Subbies scan QR", "3-minute AI induction", "Auto-added to register with timestamp", "Credential photo capture"] },
-  { code: "03", icon: IdentificationBadge, name: "TradeCheck", tagline: "Your entire compliance record. One QR code. Works everywhere.", to: "/products/tradecheck", price: "A$59/mo · included in Growing Business+",
-    what: "Portable compliance credential for subcontractors — verified licences, insurance, white card in one QR code.",
-    who: "Subbies who want frictionless work; builders who need to verify subbies fast.",
-    ai: ["AI verifies insurance adequacy", "Authenticity check", "Expiry monitoring + alerts", "One-tap verification requests"] },
-  { code: "04", icon: Student, name: "SafeBase Academy", tagline: "Turn your SWMS into a training module in 60 seconds.", to: "/products/academy", price: "A$89/mo up to 10 workers · included in Growing Business+",
-    what: "Mobile-first safety microlearning — 5–10 minute modules, AI-adaptive questions, completion auto-logged.",
-    who: "Trade businesses needing auditable worker training records.",
-    ai: ["AI builds modules from your SWMS", "Adaptive questions vary each attempt", "Completion tracked to compliance score", "Multi-language translation"] },
-  { code: "05", icon: Buildings, name: "SafeBase for Franchises", tagline: "One safety standard. 200 franchisees. Zero excuses.", to: "/franchises", price: "from A$49/mo per franchisee · setup from A$7,500",
+  { code: "01", icon: FileText, name: "SafeBase Core", tagline: "The foundation everything else is built on.", to: "/services/swms", price: "from A$399/month + GST",
+    what: "Compliance documents, incident management, credential tracking, compliance dashboard, audit preparation — configured for your industry.",
+    who: "Any Australian business with WHS obligations. 1–50 staff.",
+    ai: ["Voice-to-incident-report", "AI document generation for every industry", "Pattern detection", "Expiry alerts"] },
+  { code: "02", icon: HardHat, name: "SafeInduct", tagline: "Every worker and contractor inducted. Every induction recorded. Zero paperwork.", to: "/products/tradeinduct", price: "A$199/month + GST · included from Tier 2",
+    what: "QR-based induction system for sites, venues, depots, clinics and stores. AI-generated location-specific inductions.",
+    who: "Any business that inducts workers, contractors, agency staff or casuals.",
+    ai: ["Workers scan QR", "3-minute AI induction", "Auto-added to register with timestamp", "Credential photo capture"] },
+  { code: "03", icon: IdentificationBadge, name: "SafeCheck", tagline: "Your entire compliance record. One QR code. Works across every industry.", to: "/products/tradecheck", price: "A$249/month + GST · included from Tier 3",
+    what: "Portable compliance credential — verified licences, AHPRA registrations, RSA certificates, insurances and heavy-vehicle endorsements in one QR code.",
+    who: "Contractors who want frictionless work; businesses that need to verify credentials fast.",
+    ai: ["AI verifies insurance adequacy", "Authenticity check", "Expiry monitoring and alerts", "One-tap verification requests"] },
+  { code: "04", icon: Student, name: "SafeBase Academy", tagline: "Industry-specific training with compliance evidence.", to: "/products/academy", price: "A$349/month up to 10 workers · included from Tier 3",
+    what: "Mobile-first microlearning and full certification courses built specifically for each industry. Completion syncs to your compliance dashboard.",
+    who: "Businesses needing auditable worker training records across any industry.",
+    ai: ["AI builds modules from your documents", "Adaptive questions vary each attempt", "Completion tracked to compliance score", "Multi-language translation"] },
+  { code: "05", icon: Buildings, name: "SafeBase for Franchises", tagline: "One compliance standard. Every location. Every industry.", to: "/franchises", price: "from A$119–A$169/mo per location · setup from A$20,000 + GST",
     what: "Network-level compliance dashboard for franchisors; pre-loaded templates for franchisees.",
-    who: "Trade franchise networks (Jim's Group, VIP, etc.).",
-    ai: ["Network compliance score", "Cross-franchisee pattern detection", "Master template version control", "Board-ready reporting"] },
-  { code: "06", icon: UserCircleGear, name: "WHS Consulting", tagline: "AI does the documents. Experts do the judgement.", to: "/consulting", price: "Setup from A$2,000 · Retainer from A$600/month",
-    what: "Human WHS expert support powered by SafeBase data — setup, retainer, investigation, audit prep.",
+    who: "Franchise networks across trades, hospitality, retail and healthcare.",
+    ai: ["Network compliance score", "Cross-location pattern detection", "Master template version control", "Board-ready reporting"] },
+  { code: "06", icon: UserCircleGear, name: "WHS Consulting", tagline: "AI does the documents. Experts do the judgement.", to: "/consulting", price: "Setup from A$2,500 · Retainer from A$1,800/month + GST",
+    what: "Human WHS expert support powered by SafeBase data — setup, retainer, investigation, regulator audit prep.",
     who: "Businesses that want human expertise alongside the software.",
     ai: ["Advisors work inside your data", "Faster, sharper advice", "Half the cost of traditional consultants", "Integrated report delivery"] },
 ];
 
 const DATA_FLOW = [
-  { step: "Subcontractor scans QR code", product: "TradeInduct" },
-  { step: "TradeCheck verifies their licence", product: "TradeCheck" },
+  { step: "Worker or contractor scans QR code", product: "SafeInduct" },
+  { step: "SafeCheck verifies their credentials", product: "SafeCheck" },
   { step: "Induction record saved", product: "SafeBase Core" },
-  { step: "SWMS for their trade pre-loaded", product: "SafeBase Core" },
-  { step: "Incident register activated for site", product: "SafeBase Core" },
+  { step: "Industry-specific documents pre-loaded", product: "SafeBase Core" },
+  { step: "Incident register activated for location", product: "SafeBase Core" },
   { step: "Compliance score updated", product: "Intelligence Layer" },
 ];
 
@@ -60,8 +60,8 @@ export default function Ecosystem() {
           <h2 className="font-display text-3xl lg:text-4xl font-black tracking-tighter mb-12">Every product feeds the core.</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             <div className="space-y-6">
-              <div className="bg-warning text-ink p-4 border-2 border-warning"><HardHat weight="fill" /><div className="font-display font-bold mt-2">TradeInduct</div><div className="text-xs">→ feeds induction records</div></div>
-              <div className="bg-warning text-ink p-4 border-2 border-warning"><IdentificationBadge weight="fill" /><div className="font-display font-bold mt-2">TradeCheck</div><div className="text-xs">→ feeds subbie compliance</div></div>
+              <div className="bg-warning text-ink p-4 border-2 border-warning"><HardHat weight="fill" /><div className="font-display font-bold mt-2">SafeInduct</div><div className="text-xs">→ feeds induction records</div></div>
+              <div className="bg-warning text-ink p-4 border-2 border-warning"><IdentificationBadge weight="fill" /><div className="font-display font-bold mt-2">SafeCheck</div><div className="text-xs">→ feeds contractor compliance</div></div>
               <div className="bg-warning text-ink p-4 border-2 border-warning"><Student weight="fill" /><div className="font-display font-bold mt-2">Academy</div><div className="text-xs">→ feeds training completion</div></div>
             </div>
             <div className="text-center">
@@ -137,7 +137,7 @@ export default function Ecosystem() {
       <section className="bg-warning border-b border-ink">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8"><h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">Start with Core. Add what you need.<br />The ecosystem grows with you.</h2></div>
-          <div className="lg:col-span-4 lg:text-right"><Link to="/register"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="eco-final-cta">Start from A$249/mo + GST <ArrowRight className="ml-2" /></Button></Link></div>
+          <div className="lg:col-span-4 lg:text-right"><Link to="/register"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="eco-final-cta">Start from A$399/mo + GST <ArrowRight className="ml-2" /></Button></Link></div>
         </div>
       </section>
 

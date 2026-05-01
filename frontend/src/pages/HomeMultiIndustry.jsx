@@ -14,39 +14,35 @@ import axios from "axios";
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const PAINS = [
-  { icon: FileText, title: "No documentation", body: "The obligation to manage and record risks applies whether you run a cafe, a truck, a clinic, or a construction site. The fine for getting it wrong applies too." },
-  { icon: IdentificationBadge, title: "Expired credentials", body: "An electrician with a lapsed licence. A nurse with an expired AHPRA registration. A driver with no current medical certificate. The liability is yours, not theirs." },
-  { icon: Warning, title: "No investigation", body: "When something goes wrong, the regulator asks: What did you do to prevent it? What did you do when it happened? What did you change? Can you prove it?" },
+  { icon: FileText, title: "No documentation", body: "Whether you run a kitchen, a depot, a clinic, a store, or a construction site — the obligation to identify and manage workplace risks is identical. So is the penalty for failing to document it." },
+  { icon: IdentificationBadge, title: "Expired credentials", body: "An RSA certificate. An AHPRA registration. A heavy vehicle licence. A food safety supervisor certificate. When a credential lapses and an incident follows, the liability is the employer's." },
+  { icon: Warning, title: "No investigation record", body: "Regulators ask three questions after every incident: what did you do to prevent it, what did you do when it occurred, and what changed afterwards. The burden of proof is yours." },
 ];
 
 const CORE = [
-  { icon: Microphone, title: "AI Incident Management", body: "Voice-to-incident in 90 seconds." },
-  { icon: ShieldCheck, title: "Risk Register (5×5 matrix)", body: "Every hazard. Every control. Every review." },
+  { icon: Microphone, title: "AI Incident Management", body: "Voice-to-incident in under two minutes. Every industry." },
+  { icon: ShieldCheck, title: "Risk Register", body: "Every hazard. Every control. Every review." },
   { icon: IdentificationBadge, title: "Worker Credential Tracking", body: "Every licence, certificate, and expiry alert." },
-  { icon: ChartLineUp, title: "Compliance Dashboard & Score", body: "One number that tells you where you stand." },
-  { icon: Clipboard, title: "Audit Preparation Pack", body: "Inspector-ready PDF in under 2 minutes." },
-  { icon: FileText, title: "AI Document Generation", body: "31+ compliance documents, generated for your industry." },
-  { icon: Handshake, title: "Contractor Management (SafeCheck)", body: "Verify every subbie before they reach site." },
-  { icon: Brain, title: "Psychosocial Safety Module", body: "The hazard category most platforms ignore." },
+  { icon: ChartLineUp, title: "Compliance Score and Dashboard", body: "One number that tells you where you stand." },
+  { icon: Clipboard, title: "Audit Preparation", body: "Inspector-ready pack generated in under two minutes." },
+  { icon: FileText, title: "AI Document Generation", body: "35+ industry-specific compliance documents." },
+  { icon: Handshake, title: "Contractor Management", body: "Verify every contractor credential before they arrive." },
+  { icon: Brain, title: "Psychosocial Safety", body: "The hazard category most platforms ignore." },
 ];
 
 const STEPS = [
-  { n: "01", t: "Select your industry", b: "SafeBase configures everything for you — content libraries, documents, hazard categories, credential types." },
-  { n: "02", t: "Add your team and sites", b: "Workers, credentials, sites, and equipment set up in 10 minutes." },
-  { n: "03", t: "Compliance runs in the background", b: "Alerts before expiries. Incidents captured by voice. Audit packs generated in minutes." },
+  { n: "01", t: "Select your industry", b: "SafeBase loads your industry's compliance framework — documents, credentials, hazard libraries, and regulatory references all adapt automatically." },
+  { n: "02", t: "Add your team and locations", b: "Workers, credentials, sites, venues, depots, or clinics configured in under ten minutes." },
+  { n: "03", t: "Compliance operates continuously", b: "Credential expiry alerts. Voice-reported incidents. AI-generated documents. Audit packs ready in under two minutes. Always." },
 ];
 
-const TIERS = [
-  { name: "Sole Trader", price: "A$249/month + GST" },
-  { name: "Small Business", price: "A$499/month + GST" },
-  { name: "Growing Business", price: "A$799/month + GST" },
-  { name: "Enterprise", price: "A$1,299/month + GST" },
-];
+// Entry-price cards — pulled from the central pricing config.
+import { INDUSTRY_ENTRY_PRICES } from "@/data/pricing.config";
 
 const HOMEPAGE_TESTIMONIALS = [
-  { quote: "Before SafeBase I was spending 45 minutes writing a SWMS for every job. Now it takes 60 seconds and I know it's compliant.", who: "Electrician, Melbourne, VIC", industry: "Trades" },
-  { quote: "Temperature logs that actually get done. Council inspector said it was the most organised cafe she'd visited.", who: "Cafe owner, Brisbane, QLD", industry: "Hospitality" },
-  { quote: "Every AHPRA registration tracked. Every expiry alerted. The peace of mind alone is worth the subscription.", who: "Practice manager, allied health, Sydney, NSW", industry: "Healthcare" },
+  { quote: "Managing food safety, RSA tracking, and WHS across three separate systems was unsustainable. SafeBase replaced all of them. Council inspections no longer require a week of preparation.", who: "Venue Owner, Multi-Site Group, Sydney, NSW", industry: "Hospitality" },
+  { quote: "Two registered clinicians had lapsed AHPRA registrations before SafeBase. We had no mechanism tracking it. That risk no longer exists.", who: "Practice Manager, Allied Health, Melbourne, VIC", industry: "Healthcare and Aged Care" },
+  { quote: "Our CoR compliance documentation was inadequate. SafeBase produced an audit-ready evidence pack in under two minutes that satisfied the NHVR officer.", who: "Operations Manager, Interstate Freight, Brisbane, QLD", industry: "Transport and Logistics" },
 ];
 
 export default function Landing() {
@@ -77,12 +73,11 @@ export default function Landing() {
         <section className="bg-gradient-to-br from-[#0A1F44] to-[#0E2C5C] text-white py-24 lg:py-28">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95] max-w-5xl">
-              <span className="block">WHS Compliance for Every</span>
-              <span className="block">Australian Business.</span>
-              <span className="block text-warning">Powered by AI.</span>
+              <span className="block">Every Industry. Every Obligation.</span>
+              <span className="block text-warning">One Platform.</span>
             </h1>
             <p className="text-lg lg:text-xl text-white/80 mt-8 max-w-3xl leading-relaxed">
-              One platform for trades, hospitality, transport, healthcare, and retail. Every obligation documented, tracked, and audit-ready. From A$249/month + GST.
+              SafeBase is Australia's AI-powered WHS and compliance platform for hospitality, transport, healthcare, retail and trades. Every industry has its own dashboard, its own documents, and its own compliance ecosystem — configured from day one for how your business actually works.
             </p>
 
             {/* Industry tabs */}
@@ -157,8 +152,8 @@ export default function Landing() {
             <div className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm font-mono">
               <div>994,178 employing businesses in Australia</div>
               <div>Every one has WHS obligations</div>
-              <div>Average WHS fine: A$116,979</div>
-              <div>51% of prosecutions target small business</div>
+              <div>Average fine: A$116,979</div>
+              <div>One platform. Five industries.</div>
             </div>
           </div>
         </section>
@@ -166,7 +161,7 @@ export default function Landing() {
         {/* Fear */}
         <section className="py-24 bg-background">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">The WHS Act Applies to Every Business. Every Industry.</h2>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">The WHS Act Applies to Every Business. Every Industry. Every Day.</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
               {PAINS.map((p, i) => (
                 <div key={i} className="border-l-4 border-red-600 bg-red-50/40 dark:bg-red-950/20 p-6" data-testid={`home-fear-${i}`}>
@@ -182,7 +177,7 @@ export default function Landing() {
         {/* Industries grid */}
         <section id="industries" className="py-24 bg-muted/40">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">Built for Your Industry. Not Adapted For It.</h2>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">Built for Your Industry. Not Adapted for It.</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
               {INDUSTRY_LIST.map((i) => (
                 <Link
@@ -214,7 +209,7 @@ export default function Landing() {
         <section className="py-24 bg-background">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">
             <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">Every Industry. One Compliance Engine.</h2>
-            <p className="text-lg text-muted-foreground mt-6 max-w-3xl">These features come with every SafeBase plan, regardless of industry.</p>
+            <p className="text-lg text-muted-foreground mt-6 max-w-3xl">These capabilities are included with every SafeBase plan, regardless of industry.</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
               {CORE.map((c, i) => (
                 <div key={i} className="border border-border p-5" data-testid={`home-core-${i}`}>
@@ -233,7 +228,7 @@ export default function Landing() {
         {/* How it works */}
         <section className="py-24 bg-ink text-white">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">How It Works</h2>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">Configured for Your Industry in Minutes.</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
               {STEPS.map((s, i) => (
                 <div key={i} className="border border-white/20 p-7" data-testid={`home-step-${i}`}>
@@ -246,19 +241,21 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Pricing preview */}
+        {/* Pricing preview — five industry entry prices */}
         <section className="py-24 bg-muted/40">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Pricing</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-12">
-              {TIERS.map((t, i) => (
-                <div key={i} className="bg-background border border-border p-7" data-testid={`home-tier-${i}`}>
-                  <div className="label-eyebrow">{t.name}</div>
-                  <div className="font-display text-2xl font-black tracking-tight mt-3">{t.price}</div>
-                </div>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">Priced for Your Industry. Justified by the Risk.</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-12">
+              {INDUSTRY_ENTRY_PRICES.map((t) => (
+                <Link to={`/industries/${t.slug}`} key={t.slug} className="bg-background border border-border p-6 hover:border-ink transition-colors" data-testid={`home-tier-${t.slug}`}>
+                  <div className="label-eyebrow">{t.label}</div>
+                  <div className="font-display text-2xl font-black tracking-tight mt-3">From A${t.annual}/year + GST</div>
+                  <div className="text-xs font-mono text-muted-foreground mt-1">or A${t.monthly}/month + GST</div>
+                  <div className="text-xs text-muted-foreground mt-4 leading-relaxed">{t.note}</div>
+                </Link>
               ))}
             </div>
-            <p className="text-sm text-muted-foreground mt-6">All industries. All plans. 14-day free trial. No credit card.</p>
+            <p className="text-sm text-muted-foreground mt-6">All plans include a 14-day free trial. No credit card required. All prices + GST.</p>
           </div>
         </section>
 
@@ -282,13 +279,13 @@ export default function Landing() {
         <section className="py-24 bg-gradient-to-br from-[#0A1F44] to-[#0E2C5C] text-white">
           <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center">
             <h2 className="font-display text-4xl lg:text-6xl font-black tracking-tighter">Your Industry. Your Compliance. Your Platform.</h2>
-            <p className="text-lg text-white/80 mt-6 leading-relaxed">Start your free trial today. Select your industry and SafeBase configures itself for you.</p>
+            <p className="text-lg text-white/80 mt-6 leading-relaxed">Start your free trial today. Select your industry on signup and SafeBase configures everything in under ten minutes.</p>
             <Link to="/register">
               <Button size="lg" className="btn-sharp bg-warning text-ink hover:opacity-90 uppercase tracking-widest font-bold mt-8 h-14 px-8 text-base" data-testid="home-final-cta">
                 Start Free Trial <ArrowRight className="ml-2" />
               </Button>
             </Link>
-            <p className="text-xs font-mono text-white/60 mt-6 uppercase tracking-widest">No credit card · 14-day trial · Australian data · Cancel anytime</p>
+            <p className="text-xs font-mono text-white/60 mt-6 uppercase tracking-widest">14-day free trial · No credit card required · Australian data hosting · Cancel anytime</p>
           </div>
         </section>
       </main>
