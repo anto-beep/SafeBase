@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HardHat, ArrowRight, CaretDown } from "@phosphor-icons/react";
+import { Cube, ArrowRight, CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { INDUSTRY_LIST } from "@/data/industries.config";
@@ -9,7 +9,7 @@ export function MarketingNav() {
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2" data-testid="brand-link">
-          <div className="w-8 h-8 bg-ink flex items-center justify-center"><HardHat weight="fill" className="text-warning" size={20} /></div>
+          <div className="w-8 h-8 bg-ink flex items-center justify-center"><Cube weight="fill" className="text-warning" size={18} /></div>
           <span className="font-display font-black text-lg tracking-tight">SAFEBASE</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 label-eyebrow">
@@ -76,7 +76,7 @@ export function MarketingFooter() {
       <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 grid grid-cols-2 md:grid-cols-6 gap-8">
         <div className="col-span-2">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={20} /></div>
+            <div className="w-8 h-8 bg-warning flex items-center justify-center"><Cube weight="fill" className="text-ink" size={18} /></div>
             <span className="font-display font-black text-lg">SAFEBASE</span>
           </div>
           <p className="text-sm text-white/60 max-w-xs mb-4">Australia's WHS compliance platform for every industry. Powered by AI.</p>

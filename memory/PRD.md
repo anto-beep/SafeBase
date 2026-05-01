@@ -1,7 +1,9 @@
-# SafeTradie — PRD
+# SafeBase — PRD (formerly SafeTradie · rebranded iter25)
 
 ## Original problem
-WHS compliance SaaS for Australian trade businesses. Core (SWMS, Incidents, People/Licences, Intelligence) + ecosystem (TradeInduct, TradeCheck, Academy, Consulting). Pricing A$150/250/400/mo.
+WHS compliance SaaS — originally for Australian trade businesses (SafeTradie), now positioned as a **multi-industry** platform (SafeBase) covering Trades & Construction, Hospitality, Transport & Logistics, Healthcare & Aged Care, and Retail.
+
+Core (SWMS, Incidents, People/Licences, Intelligence) + ecosystem (TradeInduct, TradeCheck, Academy, Consulting). Pricing A$249 / 499 / 799 / 1,299 per month + GST.
 
 ## Users
 Business owner (primary) · Safety manager · Supervisor · Worker · WHS consultant · Franchisor
@@ -169,6 +171,17 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - 15 more table-field widgets in `DocumentForm.jsx` (backflow_tests, tmp_signage, loto_points, mh_factors/controls, noise_measurements, silica_tasks, rpe_items, test_tag_items, fire_detection, fire_equipment, emp_aspects, waste_streams, emp_compliance).
 - **135/135 backend pytest PASS** across iter21+22+23; **100% critical frontend flows** (31-card hub render + welding_procedure end-to-end + spot-check of 5 new widgets) — iteration_23.json.
 - Minor UX fix: DocumentForm now replaces `/new` URL with `/{doc_id}` after first save so refresh/back retains state.
+
+### Iteration 25 — SafeBase Rebrand + Multi-Industry Marketing Pages (Feb 2026)
+- **Rebrand: SafeTradie → SafeBase** across user-facing strings only — wordmarks (marketing nav, dashboard sidebar, login/register), HTML title, meta description, og:title, manifest, footer copyright. Internal identifiers (env vars, DB names, demo email `owner@safetradie.demo`, MongoDB collection names) preserved to avoid breaking auth/data.
+- **Multi-industry config** (`/app/frontend/src/data/industries.config.js`) — single source of truth for 5 industries (trades, hospitality, transport, healthcare, retail) with badge, icon, gradient colors, hero copy, fear cards, 6 feature blocks, type grid, conditional sections (obligations / chain / framework / association / franchise), docs, pricing, testimonials, final CTA.
+- **Shared `IndustryPage` template** (`/app/frontend/src/components/industry/IndustryPage.jsx`) renders all sections from config — adding a new industry = 1 config entry + 1 thin route wrapper, zero new section code.
+- **Five industry pages** at `/industries/{trades,hospitality,transport,healthcare,retail}` — verbatim copy from spec, industry-specific gradients (navy / orange→navy / teal→navy / blue→navy / purple→navy), badge colors, accent CTAs.
+- **Industries overview hub** at `/industries` — 5 stacked cards (industry-coloured gradient + problem statement + 3 features + key regs + CTA) plus "Don't see your industry?" section.
+- **Homepage rebuilt** at `/` (`HomeMultiIndustry.jsx` replacing `Landing.jsx`) — 5-tab industry switcher with live-updating preview, 5 industry cards, 8 core platform features, 3-step "How it works", 4-tier pricing preview, 3 industry-spread testimonials, multi-industry final CTA.
+- **Marketing nav restructured** to spec: Home | Industries ▼ (overview + 5 children) | Features ▼ | Pricing | Resources ▼ | Contact (mailto) | Log in | Start Free Trial. Brand mark switched from HardHat (trade-coded) to neutral Cube icon.
+- **Frontend test pass: 100%** (iteration_25.json) — all 7 pages, nav dropdowns, conditional sections (transport CoR chain, retail franchise callout, healthcare 3-col framework, hospitality 2-col obligations, trades association block) verified. Dashboard regression confirmed: existing functionality (Document Library 31 types, Risk Register/Reviews, Incidents, Workers, etc.) unchanged.
+- **Backend completely untouched** in iter25 — no API changes, no DB migrations, no auth changes. All existing trade users remain functionally identical post-rebrand.
 
 ### Iteration 24 — P1 Refactor Batch & Polish (Feb 2026)
 - **`docs_module.py` split**: 2203 → 236 lines (routes + CRUD only). Renderers moved to `docs_pdf.py` (31 functions + CSS helpers); registry + field specs moved to `docs_registry.py` (31 `register_doc_type()` calls + `DOC_TYPES` + `CATEGORIES`).
