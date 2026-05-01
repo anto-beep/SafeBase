@@ -22,6 +22,10 @@ export const INDUSTRIES = {
     nav: "Trades",
     icon: "HardHat",
     color: INDUSTRY_BADGE_COLORS.trades,
+    signal: {
+      pulse: "1,247 trade businesses onboarded this quarter",
+      featured: "Featured this month: Sydney builder passes WorkSafe audit in 92 seconds — no binders, no scramble",
+    },
     hero: {
       headline: ["Australia's WHS Platform", "Built For Trades. Finally."],
       subheadline:
@@ -119,6 +123,10 @@ export const INDUSTRIES = {
     nav: "Hospitality",
     icon: "ChefHat",
     color: INDUSTRY_BADGE_COLORS.hospitality,
+    signal: {
+      pulse: "247 venues joined this week — 43 cafes, 61 restaurants, 29 bars, 114 others",
+      featured: "Featured this month: Brisbane cafe group cuts council inspection prep from 6 hours to 4 minutes",
+    },
     hero: {
       headline: ["WHS and Food Safety Compliance", "for Hospitality. Done."],
       subheadline:
@@ -202,6 +210,10 @@ export const INDUSTRIES = {
     nav: "Transport",
     icon: "Truck",
     color: INDUSTRY_BADGE_COLORS.transport,
+    signal: {
+      pulse: "83 operators onboarded this month · 3 multi-chain freight groups this week",
+      featured: "Featured this month: Regional freight operator generates full CoR Management Plan in 14 minutes",
+    },
     hero: {
       headline: ["WHS and Chain of Responsibility", "Compliance for Transport. All In One."],
       subheadline:
@@ -292,6 +304,10 @@ export const INDUSTRIES = {
     nav: "Healthcare",
     icon: "HeartStraight",
     color: INDUSTRY_BADGE_COLORS.healthcare,
+    signal: {
+      pulse: "196 practices + aged care providers joined this month — ahead of Aged Care Act 2024 go-live",
+      featured: "Featured this month: Allied health group tracks 47 AHPRA registrations across 4 clinics — zero lapses",
+    },
     hero: {
       headline: ["WHS and Care Quality Compliance", "for Healthcare. Simplified."],
       subheadline:
@@ -377,6 +393,10 @@ export const INDUSTRIES = {
     nav: "Retail",
     icon: "ShoppingBag",
     color: INDUSTRY_BADGE_COLORS.retail,
+    signal: {
+      pulse: "312 retailers + 4 franchise networks onboarded this week",
+      featured: "Featured this month: 112-location franchise group inducts 840 seasonal casuals in 48 hours via QR",
+    },
     hero: {
       headline: ["WHS Compliance for Retail.", "Simple Enough For Every Shift."],
       subheadline:

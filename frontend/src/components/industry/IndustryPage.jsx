@@ -47,6 +47,16 @@ function Hero({ industry }) {
           {industry.hero.headline.map((l, i) => (<span key={i} className="block">{l}</span>))}
         </h1>
         <p className="text-lg lg:text-xl text-white/80 mt-8 max-w-2xl leading-relaxed">{industry.hero.subheadline}</p>
+
+        {industry.signal && (
+          <div className="mt-10 inline-flex flex-wrap items-center gap-3 border border-white/15 bg-white/5 px-4 py-3 backdrop-blur-sm" data-testid="industry-hero-signal">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest bg-white/10 border border-white/20 text-white/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live
+            </span>
+            <span className={`text-sm font-mono ${c.accentText}`} data-testid="industry-hero-pulse">{industry.signal.pulse}</span>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-3 mt-10">
           <Link to="/register">
             <Button size="lg" className={`btn-sharp ${c.accent} text-ink hover:opacity-90 uppercase tracking-widest font-bold h-12 px-6`} data-testid="hero-cta-primary">

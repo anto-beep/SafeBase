@@ -85,12 +85,33 @@ export default function Landing() {
 
             {/* Live preview block reflecting selected industry */}
             <div className={`mt-8 bg-gradient-to-br ${ind.color.from} ${ind.color.to} border border-white/10 p-8 max-w-4xl`} data-testid="home-industry-preview">
-              <div className={`label-eyebrow ${ind.color.accentText} mb-3`}>{ind.badge}</div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`label-eyebrow ${ind.color.accentText}`}>{ind.badge}</span>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest bg-white/10 border border-white/20 text-white/80" data-testid="home-industry-live-badge">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live
+                </span>
+              </div>
               <div className="font-display text-2xl lg:text-3xl font-black tracking-tight">
                 {ind.hero.headline.join(" ")}
               </div>
               <p className="text-white/80 mt-4 text-sm leading-relaxed">{ind.hero.subheadline}</p>
-              <Link to={`/industries/${ind.slug}`} className="inline-flex items-center mt-4">
+
+              {ind.signal && (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/30 border border-white/15 p-4" data-testid="home-industry-signal">
+                  <div data-testid={`home-industry-pulse-${ind.slug}`}>
+                    <div className={`label-eyebrow ${ind.color.accentText} text-[10px] flex items-center gap-1.5`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Network pulse
+                    </div>
+                    <div className="text-sm font-mono text-white mt-1.5 leading-snug">{ind.signal.pulse}</div>
+                  </div>
+                  <div data-testid={`home-industry-featured-${ind.slug}`}>
+                    <div className={`label-eyebrow ${ind.color.accentText} text-[10px]`}>Spotlight</div>
+                    <div className="text-sm text-white/90 mt-1.5 leading-snug">{ind.signal.featured}</div>
+                  </div>
+                </div>
+              )}
+
+              <Link to={`/industries/${ind.slug}`} className="inline-flex items-center mt-5">
                 <Button className={`btn-sharp ${ind.color.accent} text-ink uppercase tracking-widest font-bold`} data-testid={`home-see-${ind.slug}`}>
                   See {ind.nav} features <ArrowRight className="ml-2" />
                 </Button>
