@@ -11,7 +11,7 @@ const VALUES = [
 ];
 
 const TIMELINE = [
-  { y: "2024", t: "Founding", b: "SafeTradie launched after a roofing prosecution in NSW exposed how badly small builders are served by enterprise WHS tools." },
+  { y: "2024", t: "Founding", b: "SafeBase launched after a roofing prosecution in NSW exposed how badly small builders are served by enterprise WHS tools." },
   { y: "2025", t: "AI Documentation", b: "Claude Sonnet 4.5 integration ships. Median SWMS time drops from 3 hours to 60 seconds." },
   { y: "2026", t: "Partner Network", b: "First 20 WHS consultants onboarded. Multi-client console launches." },
   { y: "2027", t: "Franchise Edition", b: "First national franchise network rolls out across 200+ sites." },
@@ -27,7 +27,7 @@ export default function About() {
           <div className="lg:col-span-7">
             <div className="label-eyebrow mb-3">/ About</div>
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">We build<br />compliance<br /><span className="bg-warning px-2">for tradies.</span></h1>
-            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">SafeTradie is a Sydney-based compliance infrastructure company building the operating system for Australian trade businesses. Documents, incidents, licences and intelligence — one platform.</p>
+            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">SafeBase is a Sydney-based compliance infrastructure company building the operating system for Australian trade businesses. Documents, incidents, licences and intelligence — one platform.</p>
           </div>
           <div className="lg:col-span-5 self-end">
             <img src="https://images.unsplash.com/photo-1659353590864-c3314d25a261?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHw0fHxjb25zdHJ1Y3Rpb24lMjB3b3JrZXIlMjB0YWJsZXR8ZW58MHx8fHwxNzc3NDczMzA1fDA&ixlib=rb-4.1.0&q=85" alt="Worker on site" className="w-full aspect-square object-cover border-4 border-ink" />
@@ -70,7 +70,7 @@ export default function About() {
       <section className="bg-warning border-b border-ink">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8"><h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">Want to build with us?</h2></div>
-          <div className="lg:col-span-4 lg:text-right"><a href="mailto:hello@safetradie.com.au"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="about-final-cta">Get in touch <ArrowRight className="ml-2" /></Button></a></div>
+          <div className="lg:col-span-4 lg:text-right"><a href="mailto:hello@safebase.com.au"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="about-final-cta">Get in touch <ArrowRight className="ml-2" /></Button></a></div>
         </div>
       </section>
 

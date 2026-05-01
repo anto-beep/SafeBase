@@ -71,7 +71,7 @@ export default function MobileWorker() {
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={18} /></div>
             <div>
-              <div className="label-eyebrow text-warning">/ My SafeTradie</div>
+              <div className="label-eyebrow text-warning">/ My SafeBase</div>
               <div className="font-display font-black text-sm">{data.name}</div>
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function MobileWorker() {
       <main className="px-4 py-6 space-y-8 pb-32 max-w-md mx-auto">
         {installPrompt && (
           <button onClick={installApp} data-testid="pwa-install-btn" className="w-full bg-warning text-ink py-3 border-2 border-warning text-sm font-bold flex items-center justify-center gap-2">
-            📱 Install SafeTradie to your home screen
+            📱 Install SafeBase to your home screen
           </button>
         )}
 

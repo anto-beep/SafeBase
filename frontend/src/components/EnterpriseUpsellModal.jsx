@@ -19,7 +19,7 @@ const COPY = {
   api: {
     title: "API access is an Enterprise feature",
     headline: "Build your own integrations.",
-    body: "REST API, webhooks and custom data pipelines are bundled with Enterprise — A$1,299/mo + GST. Connect SafeTradie to your ERP, HRIS or BI stack.",
+    body: "REST API, webhooks and custom data pipelines are bundled with Enterprise — A$1,299/mo + GST. Connect SafeBase to your ERP, HRIS or BI stack.",
     perks: [
       "Full REST API + outbound webhooks",
       "Rate-limit increases on request",

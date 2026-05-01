@@ -15,7 +15,7 @@ export default function Franchises() {
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">One safety standard.<br />Every franchisee.<br /><span className="bg-warning text-ink px-2">Zero excuses.</span></h1>
             <p className="mt-8 text-lg text-white/70 max-w-2xl">Give your network the WHS compliance system your brand demands — without making franchisees figure it out themselves.</p>
             <div className="mt-8 flex gap-3">
-              <a href="mailto:franchises@safetradie.com.au"><Button className="btn-sharp h-12 bg-warning text-ink hover:bg-white" data-testid="franchise-cta">Book a network demo <ArrowRight className="ml-2" /></Button></a>
+              <a href="mailto:franchises@safebase.com.au"><Button className="btn-sharp h-12 bg-warning text-ink hover:bg-white" data-testid="franchise-cta">Book a network demo <ArrowRight className="ml-2" /></Button></a>
             </div>
           </div>
         </div>
@@ -38,7 +38,7 @@ export default function Franchises() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
             {[
               { n: "01", t: "You set the standard", b: "Upload your master SWMS library, safety policies, training requirements — once." },
-              { n: "02", t: "Franchisees get SafeTradie", b: "Pre-configured to your brand standards. They just add workers and sites." },
+              { n: "02", t: "Franchisees get SafeBase", b: "Pre-configured to your brand standards. They just add workers and sites." },
               { n: "03", t: "You see everything", b: "Compliance scores, incident rates, credentials, training — real-time across the network." },
             ].map((s) => (
               <div key={s.n} className="bg-background p-6">
@@ -95,7 +95,7 @@ export default function Franchises() {
           </div>
           <div className="lg:col-span-7 space-y-2 font-mono text-sm">
             <div className="flex justify-between border-b border-white/10 py-3"><span>Average WorkSafe prosecution</span><span className="text-destructive">A$116,979</span></div>
-            <div className="flex justify-between border-b border-white/10 py-3"><span>SafeTradie 100-franchisee network (A$79 × 100)</span><span>A$7,900/mo</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>SafeBase 100-franchisee network (A$79 × 100)</span><span>A$7,900/mo</span></div>
             <div className="flex justify-between border-b border-white/10 py-3"><span>Annual platform cost</span><span>A$94,800/yr</span></div>
             <div className="flex justify-between py-3 text-warning font-bold"><span>Less than one prosecution. Makes that prosecution far less likely.</span><span></span></div>
           </div>
@@ -105,7 +105,7 @@ export default function Franchises() {
       <section className="bg-warning border-b border-ink">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8"><h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">Ready to protect your brand?</h2></div>
-          <div className="lg:col-span-4 lg:text-right"><a href="mailto:franchises@safetradie.com.au"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="franchise-final-cta">Book a network demo <ArrowRight className="ml-2" /></Button></a></div>
+          <div className="lg:col-span-4 lg:text-right"><a href="mailto:franchises@safebase.com.au"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="franchise-final-cta">Book a network demo <ArrowRight className="ml-2" /></Button></a></div>
         </div>
       </section>
 

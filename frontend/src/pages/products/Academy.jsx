@@ -32,7 +32,7 @@ export default function Academy() {
       <section className="border-b border-border">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7">
-            <div className="label-eyebrow mb-3">/ SafeTradie Academy</div>
+            <div className="label-eyebrow mb-3">/ SafeBase Academy</div>
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">Turn your SWMS<br />into a training<br />module in <span className="bg-warning px-2">60 seconds.</span></h1>
             <p className="mt-8 text-lg text-muted-foreground max-w-2xl">AI-powered safety microlearning built for trade businesses. 5–10 minute modules. Phone-friendly. Completion tracked automatically in your compliance dashboard.</p>
             <div className="mt-8 flex gap-3">

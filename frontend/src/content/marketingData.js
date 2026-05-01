@@ -82,7 +82,7 @@ export const INTEGRATIONS = [
 ];
 
 export const COMPETITORS = [
-  { name: "SafeTradie", tagline: "AI-powered, built for Aussie trades", price: "A$150–400/mo", rating: 4.9,
+  { name: "SafeBase", tagline: "AI-powered, built for Aussie trades", price: "A$150–400/mo", rating: 4.9,
     features: { swms_ai: true, incident_register: true, licence_tracking: true, toolbox_talks: true, risk_register: true, plant_register: true, substances: true, inspections: true, academy: true, worker_pwa: true, partner_portal: true, tradecheck: true, ai_insights: true, australian_legislation: true, price_per_user: 30 } },
   { name: "HammerTech", tagline: "Enterprise-first tier-1 builder tool", price: "from A$15k/yr", rating: 4.2,
     features: { swms_ai: false, incident_register: true, licence_tracking: true, toolbox_talks: true, risk_register: true, plant_register: true, substances: true, inspections: true, academy: false, worker_pwa: true, partner_portal: false, tradecheck: false, ai_insights: false, australian_legislation: true, price_per_user: 400 } },

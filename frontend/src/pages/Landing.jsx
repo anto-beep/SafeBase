@@ -9,12 +9,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 
 const ECOSYSTEM = [
-  { icon: FileText, title: "SafeTradie Core", body: "WHS & Incident Management — SWMS, licences, compliance dashboard.", to: "/services/swms" },
+  { icon: FileText, title: "SafeBase Core", body: "WHS & Incident Management — SWMS, licences, compliance dashboard.", to: "/services/swms" },
   { icon: HardHat, title: "TradeInduct", body: "QR site inductions. Subbies scan, complete, done in 3 minutes.", to: "/products/tradeinduct" },
   { icon: IdentificationBadge, title: "TradeCheck", body: "Portable contractor credentials. One QR = full compliance record.", to: "/products/tradecheck" },
-  { icon: Student, title: "SafeTradie Academy", body: "AI safety microlearning. Turn your SWMS into training in 60s.", to: "/products/academy" },
-  { icon: Buildings, title: "SafeTradie for Franchises", body: "Network compliance dashboard + franchisee instances.", to: "/franchises" },
-  { icon: UserCircleGear, title: "WHS Consulting", body: "Human experts working directly inside your SafeTradie data.", to: "/consulting" },
+  { icon: Student, title: "SafeBase Academy", body: "AI safety microlearning. Turn your SWMS into training in 60s.", to: "/products/academy" },
+  { icon: Buildings, title: "SafeBase for Franchises", body: "Network compliance dashboard + franchisee instances.", to: "/franchises" },
+  { icon: UserCircleGear, title: "WHS Consulting", body: "Human experts working directly inside your SafeBase data.", to: "/consulting" },
 ];
 
 const PAINS = [
@@ -31,7 +31,7 @@ const STEPS = [
 
 const TESTIMONIALS = [
   { name: "Dave M.", role: "Electrical contractor, NSW", quote: "My SWMS used to take 3 hours. Now it's 90 seconds. WorkSafe came last month — we passed first time." },
-  { name: "Priya S.", role: "Plumbing director, VIC", quote: "Licences expire silently. SafeTradie's the first tool that ever caught a lapsed white card before it cost us a job." },
+  { name: "Priya S.", role: "Plumbing director, VIC", quote: "Licences expire silently. SafeBase's the first tool that ever caught a lapsed white card before it cost us a job." },
   { name: "Tom B.", role: "Builder, QLD", quote: "Incident logging from the ute, photos and all. Insurer dropped premiums on renewal. Pays for itself." },
 ];
 
@@ -42,7 +42,7 @@ const FAQ = [
   { q: "Is my data stored in Australia?", a: "Yes — hosted in AWS Sydney region." },
   { q: "Does it cover every state?", a: "Built for every Australian WHS jurisdiction, including Victoria's OHS Act 2004." },
   { q: "Do workers need their own login?", a: "Workers use the mobile app for incidents and inductions. Only admins consume user seats." },
-  { q: "What if I need help beyond the software?", a: "Our WHS Consulting services pair qualified human advisors with your SafeTradie data — from A$600/month." },
+  { q: "What if I need help beyond the software?", a: "Our WHS Consulting services pair qualified human advisors with your SafeBase data — from A$600/month." },
 ];
 
 export default function Landing() {
@@ -66,7 +66,7 @@ export default function Landing() {
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link to="/register"><Button size="lg" className="btn-sharp bg-ink text-white hover:bg-authority h-14 px-8 text-base" data-testid="hero-start-trial-btn">Start free trial <ArrowRight className="ml-2" /></Button></Link>
-              <a href="mailto:hello@safetradie.com.au?subject=Book a demo"><Button size="lg" variant="outline" className="btn-sharp h-14 px-8 text-base border-ink" data-testid="hero-demo-btn">Book a demo</Button></a>
+              <a href="mailto:hello@safebase.com.au?subject=Book a demo"><Button size="lg" variant="outline" className="btn-sharp h-14 px-8 text-base border-ink" data-testid="hero-demo-btn">Book a demo</Button></a>
             </div>
             <div className="mt-10 flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
               <div className="flex items-center gap-2"><CheckCircle weight="fill" className="text-ink" /> 14-day free trial</div>
@@ -81,7 +81,7 @@ export default function Landing() {
               <div className="absolute bottom-6 left-6 right-6 text-white">
                 <div className="label-eyebrow text-warning">LIVE COMPLIANCE</div>
                 <div className="font-display font-black text-3xl mt-1">94%</div>
-                <div className="text-sm opacity-80">Average score across SafeTradie sites</div>
+                <div className="text-sm opacity-80">Average score across SafeBase sites</div>
               </div>
             </div>
             <div className="absolute -bottom-6 -left-6 bg-warning border-2 border-ink p-4 hidden lg:block">
@@ -132,7 +132,7 @@ export default function Landing() {
               <div className="label-eyebrow mb-3">/ The ecosystem</div>
               <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Six connected products.<br />One compliance ecosystem.</h2>
             </div>
-            <p className="lg:col-span-6 text-lg text-muted-foreground self-end">SafeTradie isn't just software — it's the infrastructure layer that connects your entire compliance operation. Every product feeds the next.</p>
+            <p className="lg:col-span-6 text-lg text-muted-foreground self-end">SafeBase isn't just software — it's the infrastructure layer that connects your entire compliance operation. Every product feeds the next.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border">
             {ECOSYSTEM.map((e) => (

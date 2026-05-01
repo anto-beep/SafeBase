@@ -551,7 +551,7 @@ export default function ReviewForm() {
       {/* 2 */}
       <section id="rsec2" className="bg-background border border-border p-6 space-y-3">
         <h2 className="font-display text-2xl font-black">2. Evidence gathering</h2>
-        <p className="text-sm text-muted-foreground">Consider all linked SafeTradie records before you assess.</p>
+        <p className="text-sm text-muted-foreground">Consider all linked SafeBase records before you assess.</p>
         <Button onClick={runEvidence} disabled={aiBusy || !form.risk_id} variant="outline" className="btn-sharp border-ink" data-testid="ai-evidence-btn"><Sparkle className="mr-2" weight="fill" />{aiBusy ? "Thinking…" : "AI evidence summary"}</Button>
         {aiEvidence && (
           <div className="bg-ink text-white p-4 text-sm">

@@ -7,7 +7,7 @@ const ARTICLES = [
   { tag: "GUIDE", title: "What WorkSafe actually wants in your SWMS", body: "A line-by-line breakdown of the 8 elements WHS Reg 299 requires, with examples from passed audits.", read: "8 min" },
   { tag: "EXPLAINER", title: "PCBU vs employer — why the language matters", body: "Why the WHS Act renamed the duty-holder, and how it changes liability for sole traders, partnerships and corporates.", read: "5 min" },
   { tag: "TEMPLATE", title: "Free toolbox talk: working at heights", body: "Print-ready 5-minute toolbox talk covering edge protection, harness inspection and rescue planning.", read: "Download" },
-  { tag: "CASE STUDY", title: "How a 12-person roofing crew passed audit first time", body: "What they did differently — and which 3 SafeTradie features they leaned on most.", read: "6 min" },
+  { tag: "CASE STUDY", title: "How a 12-person roofing crew passed audit first time", body: "What they did differently — and which 3 SafeBase features they leaned on most.", read: "6 min" },
   { tag: "REGULATORY", title: "Psychosocial hazards: the new compliance frontier", body: "Code of Practice on psychosocial hazards is now in force across most states. Here's the practical implication for trade SMEs.", read: "9 min" },
   { tag: "GUIDE", title: "Notifiable incidents: the 24-hour clock", body: "What counts as notifiable, who you call, and what to write down before you do.", read: "7 min" },
 ];

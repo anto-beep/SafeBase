@@ -20,9 +20,9 @@ export default function Partners() {
           <div className="lg:col-span-7">
             <div className="label-eyebrow mb-3">/ Partner Network</div>
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">A platform<br />for <span className="bg-warning px-2">WHS consultants.</span></h1>
-            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">Independent WHS consultants — get a co-branded SafeTradie instance, a multi-client console, AI tools that 10× your output, and a recurring software-revenue stream on top of your billable hours.</p>
+            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">Independent WHS consultants — get a co-branded SafeBase instance, a multi-client console, AI tools that 10× your output, and a recurring software-revenue stream on top of your billable hours.</p>
             <div className="mt-8 flex gap-3">
-              <a href="mailto:partners@safetradie.com.au"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="partners-cta">Apply to partner <ArrowRight className="ml-2" /></Button></a>
+              <a href="mailto:partners@safebase.com.au"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="partners-cta">Apply to partner <ArrowRight className="ml-2" /></Button></a>
             </div>
           </div>
           <div className="lg:col-span-5">
@@ -83,7 +83,7 @@ export default function Partners() {
       <section className="bg-warning border-b border-ink">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8"><h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">Ready to multiply your impact?</h2></div>
-          <div className="lg:col-span-4 lg:text-right"><a href="mailto:partners@safetradie.com.au"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="partners-final-cta">Apply now <ArrowRight className="ml-2" /></Button></a></div>
+          <div className="lg:col-span-4 lg:text-right"><a href="mailto:partners@safebase.com.au"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="partners-final-cta">Apply now <ArrowRight className="ml-2" /></Button></a></div>
         </div>
       </section>
 

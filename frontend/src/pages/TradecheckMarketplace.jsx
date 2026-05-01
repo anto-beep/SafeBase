@@ -44,7 +44,7 @@ export default function TradecheckMarketplace() {
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow text-warning">/ TradeCheck Marketplace</div>
           <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-3">Verified tradies. No chasing certificates.</h1>
-          <p className="text-white/70 max-w-2xl mt-4">Every business here has had their ABN, licences, insurance and safety history independently verified by SafeTradie. Hire with confidence.</p>
+          <p className="text-white/70 max-w-2xl mt-4">Every business here has had their ABN, licences, insurance and safety history independently verified by SafeBase. Hire with confidence.</p>
         </div>
       </section>
 
@@ -85,7 +85,7 @@ export default function TradecheckMarketplace() {
             <div className="border-2 border-dashed border-border p-16 text-center">
               <ShieldCheck size={48} weight="duotone" className="mx-auto opacity-40" />
               <div className="font-display text-xl font-bold mt-4">No verified listings yet</div>
-              <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">Be the first. SafeTradie customers who complete verification get premium placement for free during our launch.</p>
+              <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">Be the first. SafeBase customers who complete verification get premium placement for free during our launch.</p>
               <Link to="/dashboard/tradecheck"><Button className="btn-sharp mt-6 bg-ink text-white" data-testid="tradecheck-cta-list">List my business</Button></Link>
             </div>
           ) : (

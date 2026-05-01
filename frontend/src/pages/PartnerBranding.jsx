@@ -117,7 +117,7 @@ function DashboardPreview({ branding, view }) {
           <a className="inline-block mt-4 px-4 py-2 text-white text-sm font-bold" style={{ background: primary }}>Review credential →</a>
         </div>
         <div className="border-t border-border pt-4 text-xs text-muted-foreground whitespace-pre-line">
-          {branding.email_signature || `${name} · Managed on SafeTradie`}
+          {branding.email_signature || `${name} · Managed on SafeBase`}
         </div>
       </div>
     );
@@ -164,7 +164,7 @@ function DashboardPreview({ branding, view }) {
       </div>
       {branding.show_powered_by && (
         <div className="border-t border-border px-4 py-2 text-[10px] text-muted-foreground text-center">
-          Powered by SafeTradie
+          Powered by SafeBase
         </div>
       )}
     </div>
@@ -264,7 +264,7 @@ export default function PartnerBranding() {
                   className="mt-2 h-11 rounded-none border-ink"
                   data-testid="field-partner-name"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Displayed to your clients instead of "SafeTradie".</p>
+                <p className="text-xs text-muted-foreground mt-1">Displayed to your clients instead of "SafeBase".</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <UploadTile
@@ -350,7 +350,7 @@ export default function PartnerBranding() {
               </div>
               <div className="bg-muted border border-border p-4 text-xs font-mono">
                 Add a CNAME record in your DNS settings pointing this subdomain to:<br />
-                <strong className="text-sm">partners.safetradie.com.au</strong><br />
+                <strong className="text-sm">partners.safebase.com.au</strong><br />
                 SSL certificate will be provisioned automatically within 24 hours of DNS resolving.
               </div>
               <div className="flex items-center gap-3">
@@ -419,11 +419,11 @@ export default function PartnerBranding() {
                     data-testid="field-support-phone"
                   />
                 </div>
-                <p className="md:col-span-3 text-xs text-muted-foreground">Clients see these details instead of SafeTradie support.</p>
+                <p className="md:col-span-3 text-xs text-muted-foreground">Clients see these details instead of SafeBase support.</p>
               </div>
               <div className="border-t border-border pt-4 flex items-center justify-between gap-4">
                 <div>
-                  <div className="font-bold">"Powered by SafeTradie" footer</div>
+                  <div className="font-bold">"Powered by SafeBase" footer</div>
                   <div className="text-xs text-muted-foreground">Hiding this is available on Level 2+ partnerships.</div>
                 </div>
                 <Switch
@@ -452,7 +452,7 @@ export default function PartnerBranding() {
                   rows={3}
                   value={b.email_signature || ""}
                   onChange={(e) => patch("email_signature", e.target.value)}
-                  placeholder={`${b.partner_name || "[Partner Name]"} | ${b.support_contact_phone || "[Phone]"} | [Website]\nManaged on SafeTradie`}
+                  placeholder={`${b.partner_name || "[Partner Name]"} | ${b.support_contact_phone || "[Phone]"} | [Website]\nManaged on SafeBase`}
                   className="mt-2 rounded-none border-ink"
                   data-testid="field-email-signature"
                 />
@@ -507,7 +507,7 @@ export default function PartnerBranding() {
           </div>
           <DashboardPreview branding={b} view={previewView} />
           {b.show_powered_by === false && level2 && (
-            <div className="flex items-center gap-2 text-xs text-emerald-700"><CheckCircle weight="fill" /> "Powered by SafeTradie" footer hidden (Level 2+).</div>
+            <div className="flex items-center gap-2 text-xs text-emerald-700"><CheckCircle weight="fill" /> "Powered by SafeBase" footer hidden (Level 2+).</div>
           )}
         </div>
       </div>

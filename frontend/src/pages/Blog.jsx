@@ -74,7 +74,7 @@ export default function Blog() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="label-eyebrow text-warning">/ Free trial</div>
           <h2 className="font-display text-4xl font-black tracking-tighter mt-2">Get the tools behind the advice.</h2>
-          <p className="text-white/70 mt-4">SafeTradie ships AI SWMS, incident register, licence tracking and 20+ other modules covering everything these articles talk about.</p>
+          <p className="text-white/70 mt-4">SafeBase ships AI SWMS, incident register, licence tracking and 20+ other modules covering everything these articles talk about.</p>
           <Link to="/register"><Button className="btn-sharp mt-6 bg-warning text-ink hover:bg-warning/90">Start 14-day free trial <ArrowRight className="ml-1" /></Button></Link>
         </div>
       </section>

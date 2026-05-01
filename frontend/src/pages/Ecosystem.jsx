@@ -4,7 +4,7 @@ import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { ArrowRight, FileText, HardHat, IdentificationBadge, Student, Buildings, UserCircleGear, Lightning, CheckCircle } from "@phosphor-icons/react";
 
 const PRODUCTS = [
-  { code: "01", icon: FileText, name: "SafeTradie Core", tagline: "The foundation everything else is built on.", to: "/services/swms", price: "from A$249/month + GST",
+  { code: "01", icon: FileText, name: "SafeBase Core", tagline: "The foundation everything else is built on.", to: "/services/swms", price: "from A$249/month + GST",
     what: "SWMS generation, incident management, licence tracking, compliance dashboard, audit preparation.",
     who: "Any Australian trade business, 1–50 staff.",
     ai: ["Voice-to-incident-report", "AI SWMS from job type & location", "Pattern detection", "Expiry alerts"] },
@@ -16,16 +16,16 @@ const PRODUCTS = [
     what: "Portable compliance credential for subcontractors — verified licences, insurance, white card in one QR code.",
     who: "Subbies who want frictionless work; builders who need to verify subbies fast.",
     ai: ["AI verifies insurance adequacy", "Authenticity check", "Expiry monitoring + alerts", "One-tap verification requests"] },
-  { code: "04", icon: Student, name: "SafeTradie Academy", tagline: "Turn your SWMS into a training module in 60 seconds.", to: "/products/academy", price: "A$89/mo up to 10 workers · included in Growing Business+",
+  { code: "04", icon: Student, name: "SafeBase Academy", tagline: "Turn your SWMS into a training module in 60 seconds.", to: "/products/academy", price: "A$89/mo up to 10 workers · included in Growing Business+",
     what: "Mobile-first safety microlearning — 5–10 minute modules, AI-adaptive questions, completion auto-logged.",
     who: "Trade businesses needing auditable worker training records.",
     ai: ["AI builds modules from your SWMS", "Adaptive questions vary each attempt", "Completion tracked to compliance score", "Multi-language translation"] },
-  { code: "05", icon: Buildings, name: "SafeTradie for Franchises", tagline: "One safety standard. 200 franchisees. Zero excuses.", to: "/franchises", price: "from A$49/mo per franchisee · setup from A$7,500",
+  { code: "05", icon: Buildings, name: "SafeBase for Franchises", tagline: "One safety standard. 200 franchisees. Zero excuses.", to: "/franchises", price: "from A$49/mo per franchisee · setup from A$7,500",
     what: "Network-level compliance dashboard for franchisors; pre-loaded templates for franchisees.",
     who: "Trade franchise networks (Jim's Group, VIP, etc.).",
     ai: ["Network compliance score", "Cross-franchisee pattern detection", "Master template version control", "Board-ready reporting"] },
   { code: "06", icon: UserCircleGear, name: "WHS Consulting", tagline: "AI does the documents. Experts do the judgement.", to: "/consulting", price: "Setup from A$2,000 · Retainer from A$600/month",
-    what: "Human WHS expert support powered by SafeTradie data — setup, retainer, investigation, audit prep.",
+    what: "Human WHS expert support powered by SafeBase data — setup, retainer, investigation, audit prep.",
     who: "Businesses that want human expertise alongside the software.",
     ai: ["Advisors work inside your data", "Faster, sharper advice", "Half the cost of traditional consultants", "Integrated report delivery"] },
 ];
@@ -33,9 +33,9 @@ const PRODUCTS = [
 const DATA_FLOW = [
   { step: "Subcontractor scans QR code", product: "TradeInduct" },
   { step: "TradeCheck verifies their licence", product: "TradeCheck" },
-  { step: "Induction record saved", product: "SafeTradie Core" },
-  { step: "SWMS for their trade pre-loaded", product: "SafeTradie Core" },
-  { step: "Incident register activated for site", product: "SafeTradie Core" },
+  { step: "Induction record saved", product: "SafeBase Core" },
+  { step: "SWMS for their trade pre-loaded", product: "SafeBase Core" },
+  { step: "Incident register activated for site", product: "SafeBase Core" },
   { step: "Compliance score updated", product: "Intelligence Layer" },
 ];
 
@@ -48,7 +48,7 @@ export default function Ecosystem() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-24">
           <div className="label-eyebrow mb-3">/ How it works</div>
           <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">Not six products.<br /><span className="bg-warning px-2">One ecosystem.</span></h1>
-          <p className="mt-8 text-lg text-muted-foreground max-w-3xl">Most trade businesses manage safety in fragments — a folder for SWMS, a spreadsheet for licences, a text message for incidents. SafeTradie connects every part of your compliance operation into one intelligent system. Every product feeds data to the next. Every worker interaction improves the AI. Every completed job makes your audit trail stronger.</p>
+          <p className="mt-8 text-lg text-muted-foreground max-w-3xl">Most trade businesses manage safety in fragments — a folder for SWMS, a spreadsheet for licences, a text message for incidents. SafeBase connects every part of your compliance operation into one intelligent system. Every product feeds data to the next. Every worker interaction improves the AI. Every completed job makes your audit trail stronger.</p>
         </div>
       </section>
 
@@ -67,7 +67,7 @@ export default function Ecosystem() {
             <div className="text-center">
               <div className="inline-block bg-white text-ink border-4 border-warning p-8">
                 <FileText size={48} weight="fill" className="mx-auto" />
-                <div className="font-display font-black text-2xl mt-3">SafeTradie Core</div>
+                <div className="font-display font-black text-2xl mt-3">SafeBase Core</div>
                 <div className="text-xs mt-1">Compliance Engine</div>
               </div>
               <div className="mt-4 label-eyebrow text-warning">↑ ↓ data flow ↑ ↓</div>

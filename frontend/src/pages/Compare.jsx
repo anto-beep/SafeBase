@@ -27,7 +27,7 @@ export default function Compare() {
       <section className="bg-ink text-white py-20 px-6" data-testid="compare-hero">
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow text-warning">/ Competitor comparison</div>
-          <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-3">SafeTradie vs the rest.</h1>
+          <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-3">SafeBase vs the rest.</h1>
           <p className="text-white/70 max-w-2xl mt-4">Honest, side-by-side comparison against the 4 platforms Aussie tradies most often consider. Data verified as of February 2026 from public pricing.</p>
         </div>
       </section>
@@ -81,8 +81,8 @@ export default function Compare() {
 
           <div className="mt-8 border border-border p-6 bg-background">
             <div className="label-eyebrow text-muted-foreground">/ Why the difference?</div>
-            <h3 className="font-display text-2xl font-black tracking-tighter mt-2">SafeTradie is the only platform purpose-built for Australian tradies — not re-skinned enterprise EHS.</h3>
-            <p className="text-muted-foreground mt-3">Enterprise platforms (HammerTech, Donesafe) charge A$15-20k/yr minimum and assume you have a safety manager. Single-purpose tools (HazardCo) miss plant and substances. SafeTradie is the only platform that ships AI SWMS, worker mobile app, consultant portal AND a marketplace — from A$249/mo + GST, with a dedicated Enterprise tier at A$1,299/mo + GST for 50-user operations.</p>
+            <h3 className="font-display text-2xl font-black tracking-tighter mt-2">SafeBase is the only platform purpose-built for Australian tradies — not re-skinned enterprise EHS.</h3>
+            <p className="text-muted-foreground mt-3">Enterprise platforms (HammerTech, Donesafe) charge A$15-20k/yr minimum and assume you have a safety manager. Single-purpose tools (HazardCo) miss plant and substances. SafeBase is the only platform that ships AI SWMS, worker mobile app, consultant portal AND a marketplace — from A$249/mo + GST, with a dedicated Enterprise tier at A$1,299/mo + GST for 50-user operations.</p>
           </div>
 
           <div className="mt-8 text-center">

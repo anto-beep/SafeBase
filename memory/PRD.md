@@ -174,14 +174,30 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 
 ### Iteration 25 — SafeBase Rebrand + Multi-Industry Marketing Pages (Feb 2026)
 - **Rebrand: SafeTradie → SafeBase** across user-facing strings only — wordmarks (marketing nav, dashboard sidebar, login/register), HTML title, meta description, og:title, manifest, footer copyright. Internal identifiers (env vars, DB names, demo email `owner@safetradie.demo`, MongoDB collection names) preserved to avoid breaking auth/data.
-- **Multi-industry config** (`/app/frontend/src/data/industries.config.js`) — single source of truth for 5 industries (trades, hospitality, transport, healthcare, retail) with badge, icon, gradient colors, hero copy, fear cards, 6 feature blocks, type grid, conditional sections (obligations / chain / framework / association / franchise), docs, pricing, testimonials, final CTA.
-- **Shared `IndustryPage` template** (`/app/frontend/src/components/industry/IndustryPage.jsx`) renders all sections from config — adding a new industry = 1 config entry + 1 thin route wrapper, zero new section code.
-- **Five industry pages** at `/industries/{trades,hospitality,transport,healthcare,retail}` — verbatim copy from spec, industry-specific gradients (navy / orange→navy / teal→navy / blue→navy / purple→navy), badge colors, accent CTAs.
-- **Industries overview hub** at `/industries` — 5 stacked cards (industry-coloured gradient + problem statement + 3 features + key regs + CTA) plus "Don't see your industry?" section.
-- **Homepage rebuilt** at `/` (`HomeMultiIndustry.jsx` replacing `Landing.jsx`) — 5-tab industry switcher with live-updating preview, 5 industry cards, 8 core platform features, 3-step "How it works", 4-tier pricing preview, 3 industry-spread testimonials, multi-industry final CTA.
-- **Marketing nav restructured** to spec: Home | Industries ▼ (overview + 5 children) | Features ▼ | Pricing | Resources ▼ | Contact (mailto) | Log in | Start Free Trial. Brand mark switched from HardHat (trade-coded) to neutral Cube icon.
-- **Frontend test pass: 100%** (iteration_25.json) — all 7 pages, nav dropdowns, conditional sections (transport CoR chain, retail franchise callout, healthcare 3-col framework, hospitality 2-col obligations, trades association block) verified. Dashboard regression confirmed: existing functionality (Document Library 31 types, Risk Register/Reviews, Incidents, Workers, etc.) unchanged.
-- **Backend completely untouched** in iter25 — no API changes, no DB migrations, no auth changes. All existing trade users remain functionally identical post-rebrand.
+- **Multi-industry config** (`/app/frontend/src/data/industries.config.js`) — single source of truth for 5 industries. Shared `IndustryPage` template renders all sections from config.
+- **Five industry pages + overview hub + homepage rebuilt** — all per spec, 5-tab homepage switcher, industry-coloured gradients.
+- **Marketing nav restructured**: Home | Industries ▼ | Features ▼ | Pricing | Resources ▼ | Contact | Log in | Start Free Trial.
+- **100% frontend tests** (iteration_25.json). Backend untouched.
+
+### Iteration 26 — Industry-specific live signal on homepage (Feb 2026)
+- Added `signal: {pulse, featured}` to each of the 5 industries in `industries.config.js` so the homepage preview block surfaces a per-industry momentum/social-proof row + spotlight.
+- Pulsing green `• LIVE` badge on each direct industry page hero.
+
+### Iteration 27 — 5 P1 items + live-signal backend + full rebrand polish (Feb 2026)
+- **`by_status` breakdown** on `/api/docs/stats` (draft / in_use / issued / archived counts).
+- **Industry field on user model** — captured at `/register`, persisted to `users.industry`, surfaced in `/auth/me` + `/auth/login` responses. New `PATCH /api/auth/me/industry` endpoint for in-app industry change.
+- **`/api/industries`** public endpoint — returns the 5 industry registry entries (no auth).
+- **`/api/public/industry-signal/{slug}`** live endpoint — aggregates real `users.industry` counts over last 7/30 days + total. Returns live copy once `(week+month) ≥ 10`; falls back to hard-coded signal copy below that threshold. Frontend homepage now fetches this live on tab switch — numbers become real as soon as 10+ users per industry sign up.
+- **Industry signup picker** on `/register` — 5-option select as the FIRST field, clean explainer ("SafeBase tailors your library, documents, and compliance obligations to this choice"). Register page trust-panel rebranded from trades-only to cross-industry testimonials.
+- **Industry-gated doc types (12 new)** — registry entries carry an `industries: [slug, ...]` filter; `/api/docs/types` now filters by caller's industry:
+  - Hospitality (+3): **HACCP Plan** (HACCP · Std 3.2.1), **Temperature Monitoring Log** (TEMP · Std 3.2.2A), **Allergen Register** (ALG).
+  - Transport (+3): **CoR Management Plan** (COR · HVNL), **Driver Fitness for Duty Declaration** (FFD · per-trip), **Load Restraint Record** (LRR · LRG 3rd Ed).
+  - Healthcare (+3): **AHPRA Registration Register** (AHPRA), **Worker Screening Record** (WSR · Aged Care Act 2024 + NDIS), **Clinical / Adverse Event Report** (CE · ACSQHC SAC).
+  - Retail (+3): **Casual Quick Induct Record** (QI · WHS Reg 39), **Lone Worker Check-In Log** (LW · WHS Reg 48), **Customer Incident Report** (CI).
+  - Total library now **43 types** (31 universal + 12 industry-gated). Trades users see 31; hospitality/transport/healthcare/retail users see 34 each.
+- **`server.py` refactor — webhooks extracted** — 7 webhook-subscription routes moved to `/app/backend/routes/webhooks.py` via `register_webhooks_routes(api_router, db=, get_current_user=, webhook_events=, deliver_webhook=)` factory. `server.py` no longer houses the webhook-subscription CRUD; `_deliver_webhook` + `_fire_event` stay (called from many other domains).
+- **Full SafeTradie → SafeBase rebrand completed** — 36 additional frontend files cleaned up (Pricing, Academy, Ecosystem, Webhooks, Settings, OnboardingWizard, Compare, StateGuide, marketingData, blogPosts, SWMS pages, etc.) while preserving the test-credential email `owner@safetradie.demo` untouched. Backend service banner now returns `{"service":"SafeBase API"}`.
+- **100% backend tests (20/20 pytest iter27 + 58/58 iter23 regression) + 100% frontend on tested flows** — iteration_26.json.
 
 ### Iteration 24 — P1 Refactor Batch & Polish (Feb 2026)
 - **`docs_module.py` split**: 2203 → 236 lines (routes + CRUD only). Renderers moved to `docs_pdf.py` (31 functions + CSS helpers); registry + field specs moved to `docs_registry.py` (31 `register_doc_type()` calls + `DOC_TYPES` + `CATEGORIES`).

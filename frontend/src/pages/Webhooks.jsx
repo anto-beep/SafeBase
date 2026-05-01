@@ -57,7 +57,7 @@ export default function Webhooks() {
         <div>
           <div className="label-eyebrow">/ Outbound webhooks</div>
           <h1 className="font-display text-4xl font-black tracking-tighter mt-1">Integrate anything.</h1>
-          <p className="text-muted-foreground mt-2 max-w-xl">Subscribe a URL to SafeTradie events and we'll POST JSON when they fire — connect to Zapier, Make, n8n or your own API. {events.length} events available.</p>
+          <p className="text-muted-foreground mt-2 max-w-xl">Subscribe a URL to SafeBase events and we'll POST JSON when they fire — connect to Zapier, Make, n8n or your own API. {events.length} events available.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -93,7 +93,7 @@ export default function Webhooks() {
         <div className="border-2 border-dashed border-border p-16 text-center">
           <Lightning size={48} weight="duotone" className="mx-auto opacity-40" />
           <div className="font-display text-xl font-bold mt-4">No subscriptions yet</div>
-          <div className="text-sm text-muted-foreground mt-1">Add a Zapier catch-hook URL to start receiving SafeTradie events.</div>
+          <div className="text-sm text-muted-foreground mt-1">Add a Zapier catch-hook URL to start receiving SafeBase events.</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

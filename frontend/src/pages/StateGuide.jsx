@@ -87,7 +87,7 @@ export default function StateGuide() {
       <section className="py-16 px-6 bg-ink text-white">
         <div className="max-w-3xl mx-auto text-center">
           <div className="label-eyebrow text-warning">/ Comply automatically</div>
-          <h2 className="font-display text-4xl font-black tracking-tighter mt-2">SafeTradie knows {guide.name} WHS law.</h2>
+          <h2 className="font-display text-4xl font-black tracking-tighter mt-2">SafeBase knows {guide.name} WHS law.</h2>
           <p className="text-white/70 mt-4">AI SWMS cites the right Act + standards. Incident register auto-flags when a report is notifiable. Licence tracking alerts you before expiry.</p>
           <Link to="/register"><Button className="btn-sharp mt-6 bg-warning text-ink hover:bg-warning/90">Start 14-day free trial <ArrowRight className="ml-1" /></Button></Link>
         </div>

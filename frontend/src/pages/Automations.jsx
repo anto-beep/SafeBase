@@ -172,7 +172,7 @@ export default function Automations() {
         <div>
           <div className="label-eyebrow">/ Automations</div>
           <h1 className="font-display text-4xl font-black tracking-tighter mt-1">Native integrations.<br />Zero middleman.</h1>
-          <p className="text-muted-foreground mt-2 max-w-xl">One-click recipes that connect SafeTradie to Slack, email, Google Sheets (via Zapier) and more. No subscription to Zapier needed for the common cases.</p>
+          <p className="text-muted-foreground mt-2 max-w-xl">One-click recipes that connect SafeBase to Slack, email, Google Sheets (via Zapier) and more. No subscription to Zapier needed for the common cases.</p>
         </div>
         <Button onClick={testAll} disabled={testingAll} className="btn-sharp h-12 bg-warning text-ink hover:bg-warning/90" data-testid="automation-test-all-btn">
           <TestTube className="mr-2" weight="duotone" />{testingAll ? "Testing…" : "Test all enabled"}

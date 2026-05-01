@@ -24,7 +24,7 @@ export default function ServicePeople() {
           <div className="lg:col-span-7">
             <div className="label-eyebrow mb-3">/ 03 People & Licences</div>
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">Every ticket.<br /><span className="bg-warning px-2">Every expiry.</span><br />Tracked.</h1>
-            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">A worker shows up to a job with an expired licence. WorkSafe finds out. Now it's your problem. SafeTradie's people register tracks every ticket, every cert, every induction — with alerts before they lapse.</p>
+            <p className="mt-8 text-lg text-muted-foreground max-w-2xl">A worker shows up to a job with an expired licence. WorkSafe finds out. Now it's your problem. SafeBase's people register tracks every ticket, every cert, every induction — with alerts before they lapse.</p>
             <div className="mt-8 flex gap-3">
               <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="people-cta">Start free trial <ArrowRight className="ml-2" /></Button></Link>
             </div>

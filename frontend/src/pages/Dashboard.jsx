@@ -229,7 +229,7 @@ export default function Dashboard() {
           <div>
             <div className="label-eyebrow">/ Apps &amp; Add-ons</div>
             <h2 className="font-display text-xl md:text-2xl font-black tracking-tighter mt-1">
-              Included with every SafeTradie plan
+              Included with every SafeBase plan
             </h2>
           </div>
           {onTrial && !trialExpired && (

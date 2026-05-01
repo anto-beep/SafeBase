@@ -100,7 +100,7 @@ export default function FineCalculator() {
 
         <div className="max-w-3xl mx-auto text-center mt-12 border-2 border-warning bg-warning/20 p-8">
           <div className="label-eyebrow">/ Avoid the fine</div>
-          <h2 className="font-display text-3xl font-black tracking-tighter mt-2">Every SafeTradie plan pays for itself versus a single category-1 fine of A$3.9m.</h2>
+          <h2 className="font-display text-3xl font-black tracking-tighter mt-2">Every SafeBase plan pays for itself versus a single category-1 fine of A$3.9m.</h2>
           <Link to="/register"><Button className="btn-sharp mt-6 bg-ink text-white hover:bg-authority" data-testid="fine-calc-cta">Start 14-day free trial <ArrowRight className="ml-1" /></Button></Link>
         </div>
 

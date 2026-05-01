@@ -34,7 +34,7 @@ export default function AuthCallback() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
         <div className="font-display text-2xl font-bold mb-2">Verifying credentials</div>
-        <div className="label-eyebrow">SafeTradie / OAuth handshake</div>
+        <div className="label-eyebrow">SafeBase / OAuth handshake</div>
       </div>
     </div>
   );

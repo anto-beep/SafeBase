@@ -37,7 +37,7 @@ export default function TemplatesLibrary() {
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow text-warning">/ Free templates</div>
           <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-3">Free WHS templates.<br />No signup. No email.</h1>
-          <p className="text-white/70 max-w-2xl mt-4">{TEMPLATES.length} field-tested Australian WHS templates — SWMS, toolbox talks, risk registers, inductions. Download, edit, use. When you're ready for automation, try SafeTradie free for 14 days.</p>
+          <p className="text-white/70 max-w-2xl mt-4">{TEMPLATES.length} field-tested Australian WHS templates — SWMS, toolbox talks, risk registers, inductions. Download, edit, use. When you're ready for automation, try SafeBase free for 14 days.</p>
         </div>
       </section>
 
@@ -83,7 +83,7 @@ export default function TemplatesLibrary() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="label-eyebrow">/ Or, skip the editing</div>
           <h2 className="font-display text-4xl font-black tracking-tighter mt-2 text-ink">Generate a SWMS in 30 seconds.</h2>
-          <p className="text-ink/80 mt-4">Instead of editing a template, tell SafeTradie your trade + job and Claude 4.5 writes it for you. 14 days free.</p>
+          <p className="text-ink/80 mt-4">Instead of editing a template, tell SafeBase your trade + job and Claude 4.5 writes it for you. 14 days free.</p>
           <Link to="/register"><Button className="btn-sharp mt-6 bg-ink text-white hover:bg-authority">Try it free <ArrowRight className="ml-1" /></Button></Link>
         </div>
       </section>

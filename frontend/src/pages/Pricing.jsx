@@ -63,7 +63,7 @@ const TIERS = {
         "Everything in Small Business",
         "Unlimited sites",
         "TradeCheck contractor credentials — included (worth A$149/mo)",
-        "SafeTradie Academy (10 workers) — included (worth A$199/mo)",
+        "SafeBase Academy (10 workers) — included (worth A$199/mo)",
         "Risk register",
         "Hazardous substances and SDS register",
         "Advanced compliance analytics and benchmarking",
@@ -77,12 +77,12 @@ const TIERS = {
     {
       name: "Enterprise", price: "1,299", period: "/mo", users: "up to 50 users",
       enterprise: true, badge: "FOR LARGER OPERATIONS",
-      desc: "Multi-site businesses with 20–50 workers who need enterprise-grade compliance, dedicated support, and the complete SafeTradie ecosystem.",
+      desc: "Multi-site businesses with 20–50 workers who need enterprise-grade compliance, dedicated support, and the complete SafeBase ecosystem.",
       cta: "Book a demo",
       secondaryCta: "Start free trial",
       features: [
         "Everything in Growing Business",
-        "SafeTradie Academy (30 workers) — included (worth A$299/mo)",
+        "SafeBase Academy (30 workers) — included (worth A$299/mo)",
         "Dedicated Account Manager",
         "Quarterly Business Reviews (60 min)",
         "Priority phone support · 4-hour SLA",
@@ -127,10 +127,10 @@ const TIERS = {
 const ADDONS = [
   { name: "TradeInduct", price: "A$129/mo + GST", standalone: true, sole: "Add-on", small: "Included", growing: "Included", ent: "Included", body: "QR-code site inductions. Subbies scan, complete, auto-logged." },
   { name: "TradeCheck", price: "A$149/mo + GST", standalone: true, sole: "Add-on", small: "Add-on", growing: "Included", ent: "Included", body: "Portable compliance credentials for subcontractors." },
-  { name: "SafeTradie Academy (10)", price: "A$199/mo + GST", standalone: true, sole: "Add-on", small: "Add-on", growing: "Included", ent: "Included (30)", body: "AI-adaptive safety microlearning. Tiers: 10 / 30 / 60 workers." },
-  { name: "SafeTradie Academy (11–30)", price: "A$299/mo + GST", standalone: true, sole: "—", small: "—", growing: "Upgrade", ent: "Included", body: "Expands Academy to 30 workers." },
-  { name: "SafeTradie Academy (31–60)", price: "A$449/mo + GST", standalone: true, sole: "—", small: "—", growing: "Upgrade", ent: "Upgrade", body: "Expands Academy to 60 workers." },
-  { name: "WHS Consulting Retainer", price: "A$999–A$1,500/mo + GST", standalone: true, sole: "Add-on", small: "Add-on", growing: "Add-on", ent: "Add-on", body: "Qualified advisor working inside your SafeTradie data." },
+  { name: "SafeBase Academy (10)", price: "A$199/mo + GST", standalone: true, sole: "Add-on", small: "Add-on", growing: "Included", ent: "Included (30)", body: "AI-adaptive safety microlearning. Tiers: 10 / 30 / 60 workers." },
+  { name: "SafeBase Academy (11–30)", price: "A$299/mo + GST", standalone: true, sole: "—", small: "—", growing: "Upgrade", ent: "Included", body: "Expands Academy to 30 workers." },
+  { name: "SafeBase Academy (31–60)", price: "A$449/mo + GST", standalone: true, sole: "—", small: "—", growing: "Upgrade", ent: "Upgrade", body: "Expands Academy to 60 workers." },
+  { name: "WHS Consulting Retainer", price: "A$999–A$1,500/mo + GST", standalone: true, sole: "Add-on", small: "Add-on", growing: "Add-on", ent: "Add-on", body: "Qualified advisor working inside your SafeBase data." },
   { name: "White-Label Partner Program", price: "A$1,299/mo + GST", standalone: true, sole: "—", small: "—", growing: "Add-on", ent: "Add-on", body: "Co-branded instance + multi-client console for consultants." },
 ];
 
@@ -148,7 +148,7 @@ const FAQ = [
   { q: "Is there a free trial?", a: "Yes — 14 days full access, no credit card required. All prices exclude GST." },
   { q: "Is the Enterprise trial a full 14-day trial?", a: "Yes — full access to all Enterprise features for 14 days. We recommend starting with a 30-minute discovery call so your onboarding is configured correctly before your trial begins." },
   { q: "Can I have more than 50 users on Enterprise?", a: "Yes — additional users are A$19/month + GST each. For teams over 75 users, contact us for a custom Enterprise+ quote." },
-  { q: "What does a Dedicated Account Manager actually do?", a: "Your Account Manager is a named SafeTradie specialist who knows your business. They are your first call for complex compliance questions, guide your quarterly reviews, and are available during notifiable incidents for real-time support. Not a help desk — a relationship." },
+  { q: "What does a Dedicated Account Manager actually do?", a: "Your Account Manager is a named SafeBase specialist who knows your business. They are your first call for complex compliance questions, guide your quarterly reviews, and are available during notifiable incidents for real-time support. Not a help desk — a relationship." },
   { q: "What is covered in the 4-session onboarding?", a: "Session 1 — platform configuration. Session 2 — team training. Session 3 — SWMS library build. Session 4 — live run-through and sign-off. Delivered over your first 30 days." },
   { q: "Can I switch from Growing Business to Enterprise?", a: "Yes — upgrade any time. Your data carries over instantly. Your Account Manager is assigned within 24 hours of upgrading." },
   { q: "Is my data stored in Australia?", a: "Yes — all data hosted in AWS Sydney region." },
@@ -176,7 +176,7 @@ const FEATURE_MATRIX = [
   { category: "Add-on products included", rows: [
     { label: "TradeInduct", sole: false, small: true, growing: true, ent: true },
     { label: "TradeCheck", sole: false, small: false, growing: true, ent: true },
-    { label: "SafeTradie Academy (workers)", sole: false, small: false, growing: "10 workers", ent: "30 workers" },
+    { label: "SafeBase Academy (workers)", sole: false, small: false, growing: "10 workers", ent: "30 workers" },
     { label: "White-Label Partner access", sole: false, small: false, growing: true, ent: true },
   ]},
   { category: "AI & Intelligence", rows: [
@@ -478,7 +478,7 @@ export default function Pricing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8">
             <div className="label-eyebrow text-warning mb-3">/ 30-day money-back guarantee</div>
-            <h2 className="font-display text-3xl lg:text-5xl font-black tracking-tighter">If SafeTradie doesn't save you at least 3 hours of admin per week in your first month, we'll refund you in full. No questions asked. From A$249/month + GST.</h2>
+            <h2 className="font-display text-3xl lg:text-5xl font-black tracking-tighter">If SafeBase doesn't save you at least 3 hours of admin per week in your first month, we'll refund you in full. No questions asked. From A$249/month + GST.</h2>
           </div>
           <div className="lg:col-span-4 lg:text-right">
             <Link to="/register"><Button className="btn-sharp h-14 px-8 bg-warning text-ink hover:bg-white" data-testid="pricing-final-cta">Start free trial <ArrowRight className="ml-2" /></Button></Link>

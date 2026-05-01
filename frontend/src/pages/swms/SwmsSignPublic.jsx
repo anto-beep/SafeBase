@@ -76,7 +76,7 @@ export default function SwmsSignPublic() {
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-4" data-testid="swms-public-sign">
       <div className="border-b-2 border-ink pb-3">
-        <div className="label-eyebrow">SafeTradie · SWMS Sign-off</div>
+        <div className="label-eyebrow">SafeBase · SWMS Sign-off</div>
         <div className="font-display text-2xl md:text-3xl font-black tracking-tighter mt-1">{doc.reference}</div>
         <div className="text-sm">{doc.company_name} · {doc.work_activity}</div>
         <div className="text-xs text-muted-foreground">{doc.site_location}</div>
@@ -143,7 +143,7 @@ export default function SwmsSignPublic() {
       </div>
 
       <div className="text-[10px] text-muted-foreground text-center py-4">
-        Powered by SafeTradie · Secure link · Expires {(doc.expires_at || "").slice(0, 10)}
+        Powered by SafeBase · Secure link · Expires {(doc.expires_at || "").slice(0, 10)}
       </div>
     </div>
   );

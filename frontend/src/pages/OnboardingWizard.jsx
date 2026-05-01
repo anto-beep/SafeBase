@@ -143,7 +143,7 @@ export default function OnboardingWizard({ onClose }) {
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-ink flex items-center justify-center"><HardHat weight="fill" className="text-warning" size={18} /></div>
             <div>
-              <div className="font-display font-black text-sm tracking-tight">SAFETRADIE</div>
+              <div className="font-display font-black text-sm tracking-tight">SAFEBASE</div>
               <div className="label-eyebrow text-[10px]">/ Onboarding · ~8 minutes total</div>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function OnboardingWizard({ onClose }) {
       <div className="max-w-4xl mx-auto px-6 py-12">
         {step === 1 && (
           <div data-testid="onb-step-1">
-            <h1 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Let's set up your SafeTradie account.</h1>
+            <h1 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Let's set up your SafeBase account.</h1>
             <p className="mt-3 text-muted-foreground">We'll use this to pre-load relevant WHS rules and SWMS templates for your trade and state.</p>
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><Label className="label-eyebrow">Business name</Label><Input data-testid="onb-biz-name" value={biz.company_name} onChange={(e) => setBiz({ ...biz, company_name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>

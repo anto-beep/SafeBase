@@ -23,7 +23,7 @@ export default function Integrations() {
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow text-warning">/ Integrations</div>
           <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-3">Plays well with<br />the tools you already use.</h1>
-          <p className="text-white/70 max-w-2xl mt-4">SafeTradie connects to accounting, job management, rostering, comms, and 800+ more apps via Zapier.</p>
+          <p className="text-white/70 max-w-2xl mt-4">SafeBase connects to accounting, job management, rostering, comms, and 800+ more apps via Zapier.</p>
         </div>
       </section>
 
@@ -57,7 +57,7 @@ export default function Integrations() {
           <Plug size={36} weight="duotone" className="mx-auto text-warning" />
           <div className="label-eyebrow text-warning mt-3">/ Don't see what you use?</div>
           <h2 className="font-display text-4xl font-black tracking-tighter mt-2">Build it with our API.</h2>
-          <p className="text-white/70 mt-4">Public REST API with webhooks + Zapier triggers. Any tool that speaks HTTP works with SafeTradie.</p>
+          <p className="text-white/70 mt-4">Public REST API with webhooks + Zapier triggers. Any tool that speaks HTTP works with SafeBase.</p>
           <Link to="/register"><Button className="btn-sharp mt-6 bg-warning text-ink hover:bg-warning/90">Get API access <ArrowRight className="ml-1" /></Button></Link>
         </div>
       </section>

@@ -136,7 +136,7 @@ export default function SwmsPreview({ doc, hrcwCatalog = [] }) {
       </Section>
 
       <div className="text-[9px] text-muted-foreground italic border-t border-border pt-2 mt-3">
-        This SWMS was generated using SafeTradie. It must be reviewed and tailored on site before HRCW commences.
+        This SWMS was generated using SafeBase. It must be reviewed and tailored on site before HRCW commences.
       </div>
     </div>
   );

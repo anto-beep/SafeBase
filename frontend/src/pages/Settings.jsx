@@ -246,7 +246,7 @@ export default function Settings() {
             ) : (
               <>
                 <div className="font-display font-bold text-xl">API access is an Enterprise feature</div>
-                <p className="text-sm text-muted-foreground">Connect SafeTradie to your ERP, HRIS or BI stack with our full REST API, webhooks and priority integration support. Available on Enterprise — A$1,299/mo + GST.</p>
+                <p className="text-sm text-muted-foreground">Connect SafeBase to your ERP, HRIS or BI stack with our full REST API, webhooks and priority integration support. Available on Enterprise — A$1,299/mo + GST.</p>
                 <Button
                   className="btn-sharp bg-ink text-white hover:bg-authority h-11"
                   onClick={() => setApiUpsellOpen(true)}

@@ -67,7 +67,7 @@ export default function Academy() {
     <div className="space-y-6" data-testid="academy-page">
       <div className="border-b border-border pb-6">
         <div className="label-eyebrow">/ Academy</div>
-        <h1 className="font-display text-4xl font-black tracking-tighter mt-1">SafeTradie Academy.</h1>
+        <h1 className="font-display text-4xl font-black tracking-tighter mt-1">SafeBase Academy.</h1>
         <p className="text-muted-foreground mt-2 max-w-xl">On-demand WHS training for you and your crew. Short, practical, Australian. Certificates on completion — stored on the worker's profile forever.</p>
       </div>
 

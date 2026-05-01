@@ -15,13 +15,13 @@ const PERSONAS = [
   { icon: Lightning, title: "Multi-Site Electrical Contractors", body: "You have depots in three cities, 35 electricians, and a rotating roster of subcontractors. You need compliance that scales across every location without requiring a safety manager at each site." },
   { icon: Buildings, title: "Regional Plumbing & Mechanical Businesses", body: "You operate across multiple postcodes, engage specialist subcontractors regularly, and get audited by principal contractors before every major job. Your compliance record is part of your pitch." },
   { icon: UsersThree, title: "Construction Companies with Growing Headcount", body: "You have grown past 20 people. Your SWMS library is expanding, your incident history needs proper analysis, and your board is starting to ask about WHS performance. You need reporting they can read." },
-  { icon: ShieldCheck, title: "Trade Businesses Tendering for Government Work", body: "Government and large commercial contracts require demonstrated safety management systems. SafeTradie Enterprise gives you the documentation, the audit trail, and the compliance score to win those tenders." },
+  { icon: ShieldCheck, title: "Trade Businesses Tendering for Government Work", body: "Government and large commercial contracts require demonstrated safety management systems. SafeBase Enterprise gives you the documentation, the audit trail, and the compliance score to win those tenders." },
 ];
 
 const FEATURES = [
   { title: "Up to 50 named users", sub: "Additional users A$19/mo + GST each. Enterprise+ quotes available beyond 75 users." },
-  { title: "All add-ons included", sub: "TradeInduct (A$129), TradeCheck (A$149), SafeTradie Academy 30 workers (A$299) — A$6,924/year in savings." },
-  { title: "Dedicated Account Manager", sub: "A named SafeTradie specialist who knows your business, by phone and email." },
+  { title: "All add-ons included", sub: "TradeInduct (A$129), TradeCheck (A$149), SafeBase Academy 30 workers (A$299) — A$6,924/year in savings." },
+  { title: "Dedicated Account Manager", sub: "A named SafeBase specialist who knows your business, by phone and email." },
   { title: "Quarterly Business Reviews", sub: "60-minute structured reviews covering score, incidents, credential forecast, and legislation." },
   { title: "Priority phone support · 4h SLA", sub: "Business-hours phone with a 4-hour response SLA." },
   { title: "Structured 4-session onboarding", sub: "Over your first 30 days: configuration, training, SWMS build, live sign-off." },
@@ -67,7 +67,7 @@ export default function Enterprise() {
       setSubmitted(r.data);
       toast.success("Request received — we'll respond within 4 business hours.");
     } catch (e2) {
-      toast.error(e2?.response?.data?.detail || "Could not submit — please email hello@safetradie.com.au");
+      toast.error(e2?.response?.data?.detail || "Could not submit — please email hello@safebase.com.au");
     } finally { setLoading(false); }
   };
 
@@ -77,7 +77,7 @@ export default function Enterprise() {
       <section className="bg-[#1B3A5C] text-white py-20 px-6" data-testid="enterprise-hero">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-2 label-eyebrow text-warning">
-            <Crown weight="fill" />/ SafeTradie Enterprise
+            <Crown weight="fill" />/ SafeBase Enterprise
           </div>
           <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter mt-4">For businesses with 20 to 50 workers, multiple sites, and zero tolerance for compliance gaps.</h1>
           <p className="text-white/70 mt-6 max-w-3xl text-lg">When your business reaches a certain size, WHS compliance stops being an admin task and starts being a board-level concern. One notifiable incident, one WorkSafe prosecution, one lapsed subcontractor insurance — the consequences are not just financial. They are reputational, operational, and personal.</p>
@@ -140,7 +140,7 @@ export default function Enterprise() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <div className="label-eyebrow mb-3">/ Dedicated Account Manager</div>
-            <h2 className="font-display text-4xl font-black tracking-tighter">Your own SafeTradie expert — not a help desk ticket.</h2>
+            <h2 className="font-display text-4xl font-black tracking-tighter">Your own SafeBase expert — not a help desk ticket.</h2>
             <p className="text-muted-foreground mt-4">Enterprise customers are assigned a dedicated Account Manager who understands your trade, your sites, and your compliance obligations. Available by phone during business hours. They know your incident history. They join your quarterly reviews prepared.</p>
             <p className="text-muted-foreground mt-4">When something goes wrong — a notifiable incident, a WorkSafe notice, a principal contractor audit request — <strong>you call one person who knows your file.</strong></p>
           </div>
@@ -171,7 +171,7 @@ export default function Enterprise() {
       <section className="py-20 px-6 border-b border-border bg-background" data-testid="roi-calculator-section">
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow mb-3">/ Instant ROI calculator</div>
-          <h2 className="font-display text-4xl font-black tracking-tighter">What SafeTradie Enterprise pays back, every month.</h2>
+          <h2 className="font-display text-4xl font-black tracking-tighter">What SafeBase Enterprise pays back, every month.</h2>
           <p className="text-muted-foreground mt-3 max-w-2xl">Most teams save <strong>4–8 hours per user per month</strong> on SWMS, incident logging, licence chasing and reporting. Slide the numbers to match your business. Australian tradie billable rate: A${RATE}/hr (Fair Work average).</p>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-10">
@@ -255,7 +255,7 @@ export default function Enterprise() {
           <h2 className="font-display text-4xl font-black tracking-tighter">The cost of Enterprise. The cost of not.</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
             <div className="border-2 border-[#1B3A5C] bg-[#1B3A5C] text-white p-6" data-testid="roi-enterprise">
-              <div className="label-eyebrow text-warning">SafeTradie Enterprise</div>
+              <div className="label-eyebrow text-warning">SafeBase Enterprise</div>
               <div className="font-display text-3xl font-black mt-2">A$1,299<span className="text-sm font-normal">/mo + GST</span></div>
               <div className="text-sm text-white/70 mt-1">A$12,990/yr + GST (annual)</div>
               <ul className="mt-4 space-y-1 text-sm">
@@ -293,7 +293,7 @@ export default function Enterprise() {
             </div>
           </div>
           <div className="mt-8 bg-warning border-2 border-ink p-5 text-center font-bold">
-            SafeTradie Enterprise at A$12,990/year is 6.5% of the average WorkSafe fine. Before the legal costs.
+            SafeBase Enterprise at A$12,990/year is 6.5% of the average WorkSafe fine. Before the legal costs.
           </div>
         </div>
       </section>

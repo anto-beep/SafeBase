@@ -23,7 +23,7 @@ export default function ServiceIntelligence() {
           <div className="lg:col-span-7">
             <div className="label-eyebrow text-warning mb-3">/ 04 Compliance Intelligence</div>
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">The AI<br />layer that<br /><span className="bg-warning text-ink px-2">sees patterns</span><br />you can't.</h1>
-            <p className="mt-8 text-lg text-white/70 max-w-2xl">No small business owner has time to sift through six months of incident logs to find a Friday-afternoon trend. SafeTradie's intelligence layer does it continuously — and tells you what to do about it.</p>
+            <p className="mt-8 text-lg text-white/70 max-w-2xl">No small business owner has time to sift through six months of incident logs to find a Friday-afternoon trend. SafeBase's intelligence layer does it continuously — and tells you what to do about it.</p>
             <div className="mt-8 flex gap-3">
               <Link to="/register"><Button className="btn-sharp h-12 bg-warning text-ink hover:bg-white" data-testid="intel-cta">Start free trial <ArrowRight className="ml-2" /></Button></Link>
             </div>
