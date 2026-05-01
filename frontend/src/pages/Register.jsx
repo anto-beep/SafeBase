@@ -4,35 +4,77 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { HardHat, GoogleLogo, CheckCircle, Quotes } from "@phosphor-icons/react";
+import {
+  HardHat, ChefHat, Truck, HeartStraight, ShoppingBag,
+  ArrowRight, ArrowLeft, CheckCircle, GoogleLogo, Quotes,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { ROLES_BY_INDUSTRY, findRole } from "@/data/roles.config";
 
-const TRADES = ["Electrician", "Plumber", "Builder", "Carpenter", "Roofer", "Gasfitter", "Other"];
-const STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT"];
-const WORKER_BANDS = ["Just me", "2-5", "6-10", "11-20", "20+"];
-const INDUSTRIES = [
-  { slug: "trades", label: "Trades and Construction" },
-  { slug: "hospitality", label: "Hospitality" },
-  { slug: "transport", label: "Transport and Logistics" },
-  { slug: "healthcare", label: "Healthcare and Aged Care" },
-  { slug: "retail", label: "Retail" },
+const INDUSTRY_TILES = [
+  {
+    slug: "trades",
+    name: "Trades and Construction",
+    blurb: "Electricians, plumbers, builders, roofers, concreters, carpenters and all construction trades",
+    icon: HardHat,
+    bg: "bg-[#0A1F44]",
+    accent: "ring-[#0DC4B5]",
+  },
+  {
+    slug: "hospitality",
+    name: "Hospitality",
+    blurb: "Restaurants, cafes, bars, hotels, catering, events and food service businesses",
+    icon: ChefHat,
+    bg: "bg-[#5B2A0A]",
+    accent: "ring-[#F59E0B]",
+  },
+  {
+    slug: "transport",
+    name: "Transport and Logistics",
+    blurb: "Truck operators, couriers, freight managers, warehousing and supply chain businesses",
+    icon: Truck,
+    bg: "bg-[#0E3B3B]",
+    accent: "ring-[#0DC4B5]",
+  },
+  {
+    slug: "healthcare",
+    name: "Healthcare and Aged Care",
+    blurb: "Allied health, aged care, disability support, medical centres and community health",
+    icon: HeartStraight,
+    bg: "bg-[#1E3A8A]",
+    accent: "ring-[#60A5FA]",
+  },
+  {
+    slug: "retail",
+    name: "Retail",
+    blurb: "Retail stores, shopping centres, franchise retail and multi-site retail operations",
+    icon: ShoppingBag,
+    bg: "bg-[#4C1D95]",
+    accent: "ring-[#A855F7]",
+  },
 ];
 
 export default function Register() {
   const { registerEmail } = useAuth();
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);  // 1=industry, 2=role, 3=details
+  const [industry, setIndustry] = useState(null);
+  const [role, setRole] = useState(null); // {id, label, variant, permission_role}
   const [form, setForm] = useState({
     name: "", email: "", password: "", company_name: "",
-    industry: "trades",
-    trade_type: "Electrician", primary_state: "NSW", worker_count_band: "Just me",
-    phone: "", role: "owner", agree: false, marketing: true,
+    agree: false, marketing: true,
   });
   const [loading, setLoading] = useState(false);
+
+  const googleLogin = () => {
+    const redirectUrl = window.location.origin + "/dashboard";
+    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.agree) { toast.error("Please accept the Terms of Service"); return; }
+    if (!industry || !role) { toast.error("Please pick your industry and role"); return; }
     setLoading(true);
     try {
       await registerEmail({
@@ -40,10 +82,12 @@ export default function Register() {
         email: form.email,
         password: form.password,
         company_name: form.company_name,
-        role: form.role,
-        industry: form.industry,
+        role: role.permission_role,
+        industry,
+        role_title: role.id,
+        role_variant: role.variant,
       });
-      toast.success("Account created — let's get you set up");
+      toast.success(`Welcome aboard. Setting up your ${industry} workspace.`);
       navigate("/dashboard");
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Registration failed");
@@ -52,23 +96,145 @@ export default function Register() {
     }
   };
 
-  const googleLogin = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = window.location.origin + "/dashboard";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
-  };
-
-  return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12">
-      <div className="lg:col-span-7 p-6 md:p-12 flex items-center">
-        <div className="w-full max-w-2xl mx-auto">
-          <Link to="/" className="flex items-center gap-2 mb-10" data-testid="brand-back">
-            <div className="w-8 h-8 bg-ink flex items-center justify-center"><HardHat weight="fill" className="text-warning" size={20} /></div>
-            <span className="font-display font-black">SAFEBASE</span>
+  // ---------- STEP 1 — INDUSTRY TILES ----------
+  if (step === 1) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] text-white" data-testid="signup-step-industry">
+        <div className="max-w-7xl mx-auto px-6 py-10 md:py-16">
+          <Link to="/" className="inline-flex items-center gap-2 mb-12 hover:text-warning" data-testid="signup-brand-back">
+            <div className="w-8 h-8 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={20} /></div>
+            <span className="font-display font-black tracking-tight">SAFEBASE</span>
           </Link>
-          <div className="label-eyebrow mb-3">/ Create account</div>
-          <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-2">Start free.<br />14-day trial.</h2>
+          <div className="label-eyebrow text-warning">/ Step 1 of 3 · Choose your industry</div>
+          <h1 className="font-display text-4xl md:text-6xl font-black tracking-tighter mt-3 max-w-3xl">What industry are you in?</h1>
+          <p className="text-white/70 mt-4 max-w-2xl text-base md:text-lg">
+            SafeBase configures itself completely for your industry — features, documents, terminology, and compliance requirements all adapt.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">
+            {INDUSTRY_TILES.map((t) => {
+              const selected = industry === t.slug;
+              return (
+                <button
+                  key={t.slug}
+                  type="button"
+                  onClick={() => setIndustry(t.slug)}
+                  data-testid={`signup-industry-tile-${t.slug}`}
+                  className={`text-left p-7 ${t.bg} ring-2 transition-all duration-150 ${selected ? `${t.accent} scale-[1.02]` : "ring-white/5 hover:ring-white/30"}`}
+                >
+                  <t.icon weight="fill" size={42} className="text-white/90" />
+                  <div className="font-display font-black text-xl mt-5 tracking-tight uppercase">{t.name}</div>
+                  <p className="text-white/70 text-sm mt-2">{t.blurb}</p>
+                  {selected && (
+                    <div className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold tracking-widest text-warning">
+                      <CheckCircle weight="fill" size={14} /> SELECTED
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-10 flex items-center justify-between flex-wrap gap-3">
+            <Link to="/login" className="text-sm text-white/60 hover:text-white" data-testid="signup-link-login">
+              Already have an account? Log in →
+            </Link>
+            <Button
+              onClick={() => industry && setStep(2)}
+              disabled={!industry}
+              className="btn-sharp h-12 bg-warning text-ink hover:bg-yellow-300 disabled:bg-white/20 disabled:text-white/40 px-7"
+              data-testid="signup-industry-continue"
+            >
+              Continue <ArrowRight className="ml-2" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- STEP 2 — ROLE TILES ----------
+  if (step === 2) {
+    const roles = ROLES_BY_INDUSTRY[industry] || [];
+    const tile = INDUSTRY_TILES.find((t) => t.slug === industry);
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] text-white" data-testid="signup-step-role">
+        <div className="max-w-7xl mx-auto px-6 py-10 md:py-16">
+          <button onClick={() => setStep(1)} className="inline-flex items-center gap-2 mb-10 text-white/60 hover:text-white text-sm" data-testid="signup-role-back">
+            <ArrowLeft size={16} /> Back to industry
+          </button>
+          <div className="label-eyebrow text-warning">/ Step 2 of 3 · Choose your role · {tile?.name}</div>
+          <h1 className="font-display text-4xl md:text-6xl font-black tracking-tighter mt-3 max-w-3xl">What is your role?</h1>
+          <p className="text-white/70 mt-4 max-w-2xl text-base md:text-lg">
+            Your role determines your dashboard view and what you see first when you log in.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-8">
+            {roles.map((r) => {
+              const selected = role?.id === r.id;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setRole(r)}
+                  data-testid={`signup-role-tile-${r.id}`}
+                  className={`text-left p-4 bg-white/5 ring-2 transition-all duration-150 ${selected ? `ring-warning scale-[1.02] bg-warning/10` : "ring-white/10 hover:ring-white/40"}`}
+                >
+                  <div className="font-display font-black text-base tracking-tight">{r.label}</div>
+                  <div className="label-eyebrow text-white/50 mt-2 text-[10px]">
+                    {r.variant === "owner" && "Full management view"}
+                    {r.variant === "safety_lead" && "Compliance lead view"}
+                    {r.variant === "supervisor" && "Team supervisor view"}
+                    {r.variant === "worker" && "Mobile-first worker view"}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {role && (
+            <div className="mt-8 bg-warning/10 border-l-4 border-warning p-5 max-w-2xl" data-testid="signup-role-confirm">
+              <div className="label-eyebrow text-warning">CONFIRMED</div>
+              <p className="text-white mt-1 text-base">
+                You are a <strong>{role.label}</strong> in a <strong>{tile?.name}</strong> business. Your SafeBase dashboard is ready.
+              </p>
+            </div>
+          )}
+
+          <div className="mt-10 flex items-center justify-end">
+            <Button
+              onClick={() => role && setStep(3)}
+              disabled={!role}
+              className="btn-sharp h-12 bg-warning text-ink hover:bg-yellow-300 disabled:bg-white/20 disabled:text-white/40 px-7"
+              data-testid="signup-role-continue"
+            >
+              Continue <ArrowRight className="ml-2" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- STEP 3 — DETAILS ----------
+  const tile = INDUSTRY_TILES.find((t) => t.slug === industry);
+  return (
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12" data-testid="signup-step-details">
+      <div className="lg:col-span-7 p-6 md:p-12 flex items-center bg-white">
+        <div className="w-full max-w-xl mx-auto">
+          <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-ink mb-6" data-testid="signup-details-back">
+            <ArrowLeft size={16} /> Back to role
+          </button>
+          <div className="label-eyebrow mb-3">/ Step 3 of 3 · Create your account</div>
+          <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mb-2">Almost there.<br />14-day free trial.</h2>
           <p className="text-muted-foreground mb-6">No credit card. Cancel anytime.</p>
+
+          <div className="bg-muted border-l-4 border-ink p-4 mb-6" data-testid="signup-details-summary">
+            <div className="label-eyebrow">Your selection</div>
+            <div className="mt-1.5 text-sm">
+              <strong>{tile?.name}</strong> · {role?.label}
+            </div>
+          </div>
 
           <Button onClick={googleLogin} variant="outline" className="w-full btn-sharp h-12 border-ink mb-4" data-testid="google-register-btn">
             <GoogleLogo weight="bold" className="mr-2" /> Sign up with Google
@@ -76,50 +242,22 @@ export default function Register() {
           <div className="flex items-center gap-3 my-6"><div className="flex-1 h-px bg-border" /><span className="label-eyebrow">or</span><div className="flex-1 h-px bg-border" /></div>
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="register-form">
+            <div className="md:col-span-1">
+              <Label className="label-eyebrow">First name</Label>
+              <Input data-testid="reg-name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" />
+            </div>
+            <div className="md:col-span-1">
+              <Label className="label-eyebrow">Business name</Label>
+              <Input data-testid="reg-company" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" />
+            </div>
             <div className="md:col-span-2">
-              <Label className="label-eyebrow">Your industry</Label>
-              <Select value={form.industry} onValueChange={(v) => setForm({ ...form, industry: v })}>
-                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-industry"><SelectValue /></SelectTrigger>
-                <SelectContent>{INDUSTRIES.map((i) => <SelectItem key={i.slug} value={i.slug} data-testid={`reg-industry-${i.slug}`}>{i.label}</SelectItem>)}</SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1.5">SafeBase tailors your library, documents, and compliance obligations to this choice. You can change it later in Settings.</p>
+              <Label className="label-eyebrow">Email</Label>
+              <Input data-testid="reg-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-2 h-12 rounded-none border-ink" />
             </div>
-            <div><Label className="label-eyebrow">First name</Label><Input data-testid="reg-name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
-            <div><Label className="label-eyebrow">Business name</Label><Input data-testid="reg-company" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
-            <div><Label className="label-eyebrow">Email</Label><Input data-testid="reg-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
-            <div><Label className="label-eyebrow">Mobile</Label><Input data-testid="reg-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="mt-2 h-12 rounded-none border-ink" placeholder="For SMS alerts" /></div>
-            <div>
-              <Label className="label-eyebrow">Trade</Label>
-              <Select value={form.trade_type} onValueChange={(v) => setForm({ ...form, trade_type: v })}>
-                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-trade"><SelectValue /></SelectTrigger>
-                <SelectContent>{TRADES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
+            <div className="md:col-span-2">
+              <Label className="label-eyebrow">Password</Label>
+              <Input data-testid="reg-password" type="password" required minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="mt-2 h-12 rounded-none border-ink" />
             </div>
-            <div>
-              <Label className="label-eyebrow">State</Label>
-              <Select value={form.primary_state} onValueChange={(v) => setForm({ ...form, primary_state: v })}>
-                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-state"><SelectValue /></SelectTrigger>
-                <SelectContent>{STATES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="label-eyebrow">Workers</Label>
-              <Select value={form.worker_count_band} onValueChange={(v) => setForm({ ...form, worker_count_band: v })}>
-                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-workers"><SelectValue /></SelectTrigger>
-                <SelectContent>{WORKER_BANDS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="label-eyebrow">I am</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
-                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-role"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="owner">Business owner</SelectItem>
-                  <SelectItem value="worker">Worker / Crew</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2"><Label className="label-eyebrow">Password</Label><Input data-testid="reg-password" type="password" required minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
 
             <label className="md:col-span-2 flex items-start gap-2 text-sm mt-2">
               <input type="checkbox" checked={form.agree} onChange={(e) => setForm({ ...form, agree: e.target.checked })} className="mt-1" data-testid="reg-agree" required />
@@ -130,7 +268,7 @@ export default function Register() {
               <span>Send me WHS compliance tips (unsubscribe anytime)</span>
             </label>
             <Button type="submit" disabled={loading} className="md:col-span-2 btn-sharp h-14 bg-ink text-white hover:bg-authority mt-2 text-base" data-testid="register-submit-btn">
-              {loading ? "Creating account…" : "Start my free 14-day trial"}
+              {loading ? "Creating account…" : "Go to my dashboard"}
             </Button>
           </form>
           <div className="mt-6 text-sm">Have an account? <Link to="/login" className="font-bold underline" data-testid="link-to-login">Log in</Link></div>

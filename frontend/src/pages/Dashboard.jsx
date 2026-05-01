@@ -12,6 +12,9 @@ import {
 import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
 import useTier from "@/hooks/useTier";
 import useIndustry from "@/hooks/useIndustry";
+import WorkerDashboard from "./dashboards/WorkerDashboard";
+import SafetyLeadDashboard from "./dashboards/SafetyLeadDashboard";
+import SupervisorDashboard from "./dashboards/SupervisorDashboard";
 
 // Growing Business plan covers 5 active sites — 6+ triggers Enterprise upsell banner.
 const GROWING_SITES_CAP = 5;
@@ -47,6 +50,15 @@ const sevStyle = {
 };
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const variant = user?.role_variant || "owner";
+  if (variant === "worker") return <WorkerDashboard />;
+  if (variant === "safety_lead") return <SafetyLeadDashboard />;
+  if (variant === "supervisor") return <SupervisorDashboard />;
+  return <OwnerDashboard />;
+}
+
+function OwnerDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [incidents, setIncidents] = useState([]);

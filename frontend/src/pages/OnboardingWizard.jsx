@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { HardHat, ArrowRight, ArrowLeft, CheckCircle, Sparkle, X, FileText, Users, Bell, EnvelopeSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import useIndustry from "@/hooks/useIndustry";
 
 const STEPS = [
   { n: 1, title: "Business Setup", eta: "2 min" },
-  { n: 2, title: "Add first worker", eta: "2 min" },
-  { n: 3, title: "Create first SWMS", eta: "1 min" },
+  { n: 2, title: "Add first team member", eta: "2 min" },
+  { n: 3, title: "Create first compliance doc", eta: "1 min" },
   { n: 4, title: "Compliance alerts", eta: "1 min" },
   { n: 5, title: "Invite team", eta: "1 min" },
   { n: 6, title: "Launch", eta: "30 sec" },
@@ -22,11 +23,31 @@ const STEPS = [
 const TRADES = ["Electrician", "Plumber", "Builder", "Carpenter", "Roofer", "Gasfitter", "Other"];
 const STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT"];
 const WORKER_BANDS = ["Just me", "2-5", "6-10", "11-20", "20+"];
-const CRED_TYPES = ["white_card", "electrical_licence", "plumbing_licence", "high_risk_work", "first_aid", "working_at_heights"];
+
+// Industry-aware credential types — Step 4 picker.
+const CRED_TYPES_BY_INDUSTRY = {
+  trades: ["white_card", "electrical_licence", "plumbing_licence", "high_risk_work", "first_aid", "working_at_heights"],
+  hospitality: ["rsa", "food_handler", "food_safety_supervisor", "first_aid", "liquor_approved_manager"],
+  transport: ["hr_licence", "hc_licence", "mc_licence", "dangerous_goods", "professional_driver_medical", "fatigue_management"],
+  healthcare: ["ahpra_registration", "ndis_screening", "aged_care_screening", "working_with_children", "first_aid", "manual_handling"],
+  retail: ["first_aid", "rsa", "forklift_licence", "manual_handling", "lone_worker_training"],
+};
+
+// Industry-aware sub-context labels for step 1 / step 6 summary.
+const INDUSTRY_CONTEXT = {
+  trades: { primary_doc: "SWMS", trade_label: "Trade", state_label: "Primary state", focus: "WHS legislation + SWMS templates" },
+  hospitality: { primary_doc: "HACCP plan", trade_label: "Venue type", state_label: "Primary state", focus: "WHS + Food Safety obligations + council inspection prep" },
+  transport: { primary_doc: "CoR plan + fitness for duty form", trade_label: "Operation type", state_label: "Primary state", focus: "WHS + Chain of Responsibility + NHVR fatigue rules" },
+  healthcare: { primary_doc: "AHPRA + worker screening register", trade_label: "Practice type", state_label: "Primary state", focus: "WHS + ACQSC standards + NDIS Practice Standards" },
+  retail: { primary_doc: "Quick induct + lone worker check-in", trade_label: "Retail format", state_label: "Primary state", focus: "WHS + induction + lone worker safety" },
+};
 
 export default function OnboardingWizard({ onClose }) {
   const { user, checkAuth } = useAuth();
   const navigate = useNavigate();
+  const { slug: industrySlug, term, meta } = useIndustry();
+  const ctx = INDUSTRY_CONTEXT[industrySlug] || INDUSTRY_CONTEXT.trades;
+  const CRED_TYPES = CRED_TYPES_BY_INDUSTRY[industrySlug] || CRED_TYPES_BY_INDUSTRY.trades;
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -39,7 +60,7 @@ export default function OnboardingWizard({ onClose }) {
   const [swmsForm, setSwmsForm] = useState({ job_description: "", site_location: "", hazards: "" });
   const [swmsDone, setSwmsDone] = useState(false);
   // Step 4
-  const [cred, setCred] = useState({ licence_type: "white_card", licence_number: "", expiry_date: "" });
+  const [cred, setCred] = useState({ licence_type: CRED_TYPES[0], licence_number: "", expiry_date: "" });
   // Step 5
   const [invites, setInvites] = useState([{ email: "", role: "worker" }]);
 
@@ -166,7 +187,7 @@ export default function OnboardingWizard({ onClose }) {
         {step === 1 && (
           <div data-testid="onb-step-1">
             <h1 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Let's set up your SafeBase account.</h1>
-            <p className="mt-3 text-muted-foreground">We'll use this to pre-load relevant WHS rules and SWMS templates for your trade and state.</p>
+            <p className="mt-3 text-muted-foreground">We'll use this to pre-load relevant {ctx.focus} for your {meta?.badge?.toLowerCase() || "business"}.</p>
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><Label className="label-eyebrow">Business name</Label><Input data-testid="onb-biz-name" value={biz.company_name} onChange={(e) => setBiz({ ...biz, company_name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
               <div><Label className="label-eyebrow">ABN</Label><Input data-testid="onb-biz-abn" value={biz.abn} onChange={(e) => setBiz({ ...biz, abn: e.target.value })} className="mt-2 h-12 rounded-none border-ink" placeholder="11-digit ABN" /></div>
@@ -186,17 +207,17 @@ export default function OnboardingWizard({ onClose }) {
                   <SelectContent>{WORKER_BANDS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select></div>
             </div>
-            <div className="mt-6 bg-warning border-2 border-ink p-4 text-sm font-bold">Based on {biz.trade_type} in {biz.primary_state}, we'll pre-load relevant WHS legislation + SWMS templates.</div>
+            <div className="mt-6 bg-warning border-2 border-ink p-4 text-sm font-bold">Based on {biz.trade_type} in {biz.primary_state}, we'll pre-load relevant {ctx.focus}.</div>
             <div className="mt-8 flex justify-end">
-              <Button onClick={submitBusiness} disabled={loading || !biz.company_name} className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="onb-step1-next">Add your first worker <ArrowRight className="ml-2" /></Button>
+              <Button onClick={submitBusiness} disabled={loading || !biz.company_name} className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="onb-step1-next">Add your first {term.worker_singular} <ArrowRight className="ml-2" /></Button>
             </div>
           </div>
         )}
 
         {step === 2 && (
           <div data-testid="onb-step-2">
-            <h1 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Who works with you?</h1>
-            <p className="mt-3 text-muted-foreground">Add yourself first. You can add the rest of the crew any time from the Workers page.</p>
+            <h1 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Who's on your {term.worker_plural}?</h1>
+            <p className="mt-3 text-muted-foreground">Add yourself first. You can add the rest of your {term.worker_plural} any time from the {term.worker_plural.replace(/^./, (c) => c.toUpperCase())} page.</p>
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><Label className="label-eyebrow">Name</Label><Input data-testid="onb-w-name" value={firstWorker.name} onChange={(e) => setFirstWorker({ ...firstWorker, name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
               <div><Label className="label-eyebrow">Role</Label><Input data-testid="onb-w-role" value={firstWorker.role} onChange={(e) => setFirstWorker({ ...firstWorker, role: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
@@ -206,15 +227,15 @@ export default function OnboardingWizard({ onClose }) {
             </div>
             <div className="mt-8 flex justify-between">
               <Button variant="outline" onClick={back} className="btn-sharp h-12 border-ink"><ArrowLeft className="mr-2" /> Back</Button>
-              <Button onClick={submitWorker} disabled={loading || !firstWorker.name} className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="onb-step2-next">Generate your first SWMS <ArrowRight className="ml-2" /></Button>
+              <Button onClick={submitWorker} disabled={loading || !firstWorker.name} className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="onb-step2-next">Generate your first {ctx.primary_doc} <ArrowRight className="ml-2" /></Button>
             </div>
           </div>
         )}
 
         {step === 3 && (
           <div data-testid="onb-step-3">
-            <h1 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Generate your first SWMS.</h1>
-            <p className="mt-3 text-muted-foreground">This is the document WorkSafe will ask for first. Our AI creates it in 60 seconds.</p>
+            <h1 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Generate your first {ctx.primary_doc}.</h1>
+            <p className="mt-3 text-muted-foreground">{industrySlug === "trades" ? "This is the document WorkSafe will ask for first." : "We'll preload an industry-specific template — you can fine-tune later from the Document Library."} Our AI creates it in 60 seconds.</p>
             <div className="mt-8 space-y-4">
               <div><Label className="label-eyebrow">Describe the job</Label><Textarea data-testid="onb-swms-job" rows={3} value={swmsForm.job_description} onChange={(e) => setSwmsForm({ ...swmsForm, job_description: e.target.value })} className="mt-2 rounded-none border-ink" placeholder={`e.g. Install hot water system on a 2-storey roof in ${biz.primary_state}`} /></div>
               <div><Label className="label-eyebrow">Site location</Label><Input data-testid="onb-swms-site" value={swmsForm.site_location} onChange={(e) => setSwmsForm({ ...swmsForm, site_location: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
@@ -293,9 +314,9 @@ export default function OnboardingWizard({ onClose }) {
             <div className="w-20 h-20 bg-warning border-4 border-ink mx-auto flex items-center justify-center mb-6"><CheckCircle size={48} weight="fill" className="text-ink" /></div>
             <h1 className="font-display text-5xl font-black tracking-tighter">You're set up.<br />Your business is protected.</h1>
             <div className="mt-8 max-w-md mx-auto space-y-2 text-left">
-              <div className="flex gap-2"><CheckCircle weight="fill" className="text-ink" /> Business configured for {biz.trade_type} in {biz.primary_state}</div>
-              <div className="flex gap-2"><CheckCircle weight="fill" className="text-ink" /> First worker added</div>
-              <div className="flex gap-2"><CheckCircle weight="fill" className="text-ink" /> {swmsDone ? "First SWMS generated" : "First SWMS ready to generate"}</div>
+              <div className="flex gap-2"><CheckCircle weight="fill" className="text-ink" /> Business configured for {biz.trade_type} in {biz.primary_state} ({meta?.badge})</div>
+              <div className="flex gap-2"><CheckCircle weight="fill" className="text-ink" /> First {term.worker_singular} added</div>
+              <div className="flex gap-2"><CheckCircle weight="fill" className="text-ink" /> {swmsDone ? `First ${ctx.primary_doc} generated` : `First ${ctx.primary_doc} ready to generate`}</div>
               <div className="flex gap-2"><CheckCircle weight="fill" className="text-ink" /> Alerts configured</div>
             </div>
             <Button onClick={finishWizard} className="btn-sharp h-14 bg-ink text-white hover:bg-authority mt-10 px-8" data-testid="onb-finish">Go to my dashboard <ArrowRight className="ml-2" /></Button>

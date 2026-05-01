@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import BillingPanel from "./BillingPanel";
 import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
 import useTier from "@/hooks/useTier";
+import { ROLES_BY_INDUSTRY, findRole } from "@/data/roles.config";
 
 const ROLES = [
   { v: "admin", l: "Owner / Admin", d: "Full access including billing" },
@@ -31,6 +32,7 @@ export default function Settings() {
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker", name: "" });
   const [apiUpsellOpen, setApiUpsellOpen] = useState(false);
   const [industry, setIndustry] = useState(user?.industry || "trades");
+  const [roleTitle, setRoleTitle] = useState(user?.role_title || "owner");
 
   const load = async () => {
     const [b, t, p] = await Promise.all([
@@ -50,11 +52,31 @@ export default function Settings() {
     setIndustry(nextIndustry);
     try {
       await api.patch("/auth/me/industry", { industry: nextIndustry });
-      if (setUser && user) setUser({ ...user, industry: nextIndustry });
+      // Reset role to default for new industry — then persist
+      const firstRole = (ROLES_BY_INDUSTRY[nextIndustry] || [])[0];
+      if (firstRole) {
+        setRoleTitle(firstRole.id);
+        await api.patch("/auth/me/role", { role_title: firstRole.id, role_variant: firstRole.variant });
+        if (setUser && user) setUser({ ...user, industry: nextIndustry, role_title: firstRole.id, role_variant: firstRole.variant });
+      } else if (setUser && user) {
+        setUser({ ...user, industry: nextIndustry });
+      }
       toast.success("Industry updated — dashboard has been re-tuned.");
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Could not update industry");
       setIndustry(user?.industry || "trades");
+    }
+  };
+
+  const saveRoleTitle = async (nextRoleId) => {
+    setRoleTitle(nextRoleId);
+    const role = findRole(industry, nextRoleId);
+    try {
+      await api.patch("/auth/me/role", { role_title: role.id, role_variant: role.variant });
+      if (setUser && user) setUser({ ...user, role_title: role.id, role_variant: role.variant });
+      toast.success(`Dashboard view set to: ${role.variant.replace("_", " ")}.`);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not update role");
     }
   };
   const savePrefs = async () => {
@@ -123,6 +145,34 @@ export default function Settings() {
                     <SelectItem value="transport" data-testid="settings-industry-transport">Transport &amp; Logistics</SelectItem>
                     <SelectItem value="healthcare" data-testid="settings-industry-healthcare">Healthcare &amp; Aged Care</SelectItem>
                     <SelectItem value="retail" data-testid="settings-industry-retail">Retail</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Role — drives which dashboard variant the user sees */}
+          <div className="bg-background border border-border p-6" data-testid="settings-role-card">
+            <div className="flex items-end justify-between flex-wrap gap-2">
+              <div>
+                <div className="label-eyebrow">/ My profile · Role</div>
+                <div className="font-display font-bold text-xl mt-1">Your role in this business</div>
+                <div className="text-sm text-muted-foreground mt-1 max-w-xl">
+                  Determines which dashboard you land on after login. Owners see a full management view, safety leads see a compliance view, supervisors see today's team, workers see a mobile-first shift view.
+                </div>
+              </div>
+              <div className="w-full md:w-80">
+                <Label className="label-eyebrow">Current role</Label>
+                <Select value={roleTitle} onValueChange={saveRoleTitle}>
+                  <SelectTrigger className="mt-2 h-11 rounded-none border-ink" data-testid="settings-role-select">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(ROLES_BY_INDUSTRY[industry] || []).map((r) => (
+                      <SelectItem key={r.id} value={r.id} data-testid={`settings-role-${r.id}`}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

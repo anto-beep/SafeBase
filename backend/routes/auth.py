@@ -23,6 +23,8 @@ class RegisterIn(BaseModel):
     company_name: Optional[str] = None
     role: Literal["owner", "worker"] = "owner"
     industry: Optional[Literal["trades", "hospitality", "transport", "healthcare", "retail"]] = "trades"
+    role_title: Optional[str] = None  # e.g. "head_chef" — drives dashboard variant
+    role_variant: Optional[Literal["owner", "safety_lead", "supervisor", "worker"]] = "owner"
 
 
 class LoginIn(BaseModel):
@@ -53,6 +55,8 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
             "role": body.role,
             "company_name": body.company_name,
             "industry": body.industry or "trades",
+            "role_title": body.role_title or "owner",
+            "role_variant": body.role_variant or "owner",
             "auth_provider": "email",
             "password_hash": hash_password(body.password),
             "created_at": now.isoformat(),
@@ -71,6 +75,8 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
                 "role": body.role,
                 "company_name": body.company_name,
                 "industry": body.industry or "trades",
+                "role_title": body.role_title or "owner",
+                "role_variant": body.role_variant or "owner",
                 "auth_provider": "email",
             },
         }
@@ -92,6 +98,8 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
                 "role": user_doc.get("role", "owner"),
                 "company_name": user_doc.get("company_name"),
                 "industry": user_doc.get("industry") or "trades",
+                "role_title": user_doc.get("role_title") or "owner",
+                "role_variant": user_doc.get("role_variant") or "owner",
                 "auth_provider": user_doc.get("auth_provider", "email"),
             },
         }
@@ -170,7 +178,23 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
         if user_doc:
             data["onboarding_complete"] = user_doc.get("onboarding_complete", False)
             data["industry"] = user_doc.get("industry") or "trades"
+            data["role_title"] = user_doc.get("role_title") or "owner"
+            data["role_variant"] = user_doc.get("role_variant") or "owner"
         return data
+
+    @api_router.patch("/auth/me/role")
+    async def update_role_title(body: dict, current_user=Depends(get_current_user)):
+        """Update role_title + role_variant — used by Settings → My Profile."""
+        role_title = body.get("role_title")
+        role_variant = body.get("role_variant")
+        if not role_title or role_variant not in ("owner", "safety_lead", "supervisor", "worker"):
+            raise HTTPException(400, "role_title and role_variant required")
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": {"role_title": role_title, "role_variant": role_variant,
+                       "role_updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return {"role_title": role_title, "role_variant": role_variant}
 
     @api_router.patch("/auth/me/industry")
     async def update_industry(body: dict, current_user=Depends(get_current_user)):

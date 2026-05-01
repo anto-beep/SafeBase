@@ -1,0 +1,48 @@
+{
+  "summary": "iter29 Batch A — role_title + role_variant + 4-variant dashboard routing + industry-aware OnboardingWizard. Backend: 49/49 tests PASS (iter29: 5/5, iter28: 12/12, iter27: 20/20, iter9: 12/12 — same TestBillingTiers::test_tiers_public deselected as last run). Frontend signup 3-step flow works end-to-end (industry tile picker → role tile picker → details). Dashboard variant routing verified for owner/safety_lead/supervisor/worker (note: worker testid uses industry-specific suffix `worker-dashboard-{slug}`, NOT `worker-dashboard-safe-systems` as listed in spec — see action item below). Settings → Business shows BOTH new cards (settings-industry-card + settings-role-card with settings-role-select Radix combobox). Changing role via Settings UI to food_safety_supervisor → reload /dashboard → safety-lead-dashboard renders. OnboardingWizard step 1 copy is industry-aware ('WHS + Food Safety obligations + council inspection prep'), step 2 button says 'Add your first team member'. End-of-test cleanup confirmed: owner@safetradie.demo reset to industry=trades, role_title=owner, role_variant=owner.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Worker dashboard data-testid mismatch",
+        "issue": "Spec lists data-testid='worker-dashboard-safe-systems' but actual rendered testid is `worker-dashboard-${slug}` from useIndustry() hook (e.g. 'worker-dashboard-trades', '-hospitality', '-transport', '-healthcare', '-retail'). The component itself renders correctly when role_variant='worker'; only the spec wording is off. Either update the spec to match implementation OR add a stable wrapping testid 'worker-dashboard-safe-systems' alongside the per-industry one if cross-industry test stability is required.",
+        "affected_selectors": ["[data-testid='worker-dashboard-safe-systems']"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "OnboardingWizard step 1 (Business setup)",
+        "issues": [
+          "Form retains the trades-original labels 'TRADE TYPE' (with default 'Electrician') and 'WORKERS' even when industry=hospitality. The narrative copy at the top adapts ('We'll use this to pre-load relevant WHS + Food Safety obligations + council inspection prep for your hospitality.') but the field label and dropdown options still say 'TRADE TYPE: Electrician'. Should be 'BUSINESS TYPE / VENUE TYPE' for hospitality (e.g. Restaurant / Cafe / Bar) per Part 1 brief. Owner brief acknowledges Batch A may not have full per-industry forms — flag for Batch B."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter29_role_variants.py",
+    "/app/backend/tests/test_iter28_routes_split.py",
+    "/app/backend/tests/test_iter27_industries_and_refactor.py",
+    "/app/backend/tests/test_iter9_billing_webhooks_pwa.py",
+    "/app/test_reports/pytest/iter29_results.xml"
+  ],
+  "action_items": [
+    "Decide on worker dashboard testid: keep dynamic `worker-dashboard-${slug}` (current) and update task spec wording, OR add a stable 'worker-dashboard-safe-systems' testid alongside the dynamic one in /app/frontend/src/pages/dashboards/WorkerDashboard.jsx line 40.",
+    "(Batch B candidate) OnboardingWizard form fields ('TRADE TYPE', 'WORKERS') should adapt to industry — currently only the prose copy adapts via INDUSTRY_CONTEXT, not the form labels/options.",
+    "(Cleanup) iter9 TestBillingTiers::test_tiers_public is still asserting 6 tiers when current API exposes 8 — same deselect pattern as iter27/iter28. Update that assertion in a future cleanup pass to remove the --deselect."
+  ],
+  "critical_code_review_comments": [
+    "RegisterIn schema accepts arbitrary `role_title` strings (only `role_variant` is Literal-validated). This is fine because the dashboard routes purely off role_variant, but `role_title` could be tightened to a Literal union of all known IDs across ROLES_BY_INDUSTRY for stricter input. Low priority.",
+    "PATCH /api/auth/me/role accepts any non-empty role_title. Same observation as above — non-blocking.",
+    "Dashboard.jsx switch on role_variant (top of file) is clean and predictable; safety_lead/supervisor/worker each map to one dedicated component, default falls through to existing OwnerDashboard.",
+    "roles.config.js is single-source-of-truth for both UI tile lists and dashboard variant mapping — solid pattern. VALID_VARIANTS export aligns with the backend Literal in RegisterIn.",
+    "WorkerDashboard data-testid is dynamic per industry (`worker-dashboard-${slug}`) — by design supports per-industry visual smoke testing, but breaks generic 'is this a worker view' assertions. Consider adding a static fallback testid (see action item)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (49/49, 1 deselected per existing pattern)", "frontend": "100% on all in-scope flows: 3-step signup, dashboard routing (owner/safety_lead/supervisor/worker), settings industry+role cards, role-change-via-settings + reload"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (verified working). Reset to industry=trades / role_title=owner / role_variant=owner at end of run.",
+  "seed_data_creation": "Created throwaway signup user batchA+1777628180@example.com (Test Bistro, hospitality, head_chef/supervisor) + iter29 fixture users with random emails (iter29+xxxx, iter29def+xxxx). All have onboarding_complete=false; safe to leave or purge.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter29 Batch A fully validated. Backend regression cmd: `cd /app && export $(grep -v ^# /app/frontend/.env | xargs) && pytest backend/tests/test_iter29_role_variants.py backend/tests/test_iter28_routes_split.py backend/tests/test_iter27_industries_and_refactor.py backend/tests/test_iter9_billing_webhooks_pwa.py --deselect backend/tests/test_iter9_billing_webhooks_pwa.py::TestBillingTiers::test_tiers_public`. Frontend localStorage token key is `st_token`. settings-role-select is a Radix combobox (button with role='combobox'), NOT a native <select> — use click + click on option, not page.select_option. The owner/dashboard-overview testid is on OwnerDashboard root; worker dashboard uses `worker-dashboard-${industry_slug}` where slug is one of trades/hospitality/transport/healthcare/retail. Reset state at end: industry=trades, role_title=owner, role_variant=owner."
+}
