@@ -161,6 +161,15 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - Frontend `DocumentForm` gains 4 new table field widgets: `responsibilities` (role/responsibility), `asbestos_items` (7-col ACM register), `test_results` (test/result), `plumbing_items` (item/standard/result).
 - All 8 new PDFs render 17–22 KB with `%PDF-` magic and pass 34/34 new pytest cases; 43/43 Phase-2 regression remains green after count assertion update. Frontend 12/12 live-driven steps pass including `lift_plan` end-to-end create + PDF download — iteration_22.json.
 
+### Iteration 23 — Document Library Phase 3 Part 2 (remaining 15 types — full library complete) (Feb 2026)
+- **+15 NEW doc types** added — Document Library now **31 types total across 6 categories** (20 safety · 1 worker · 7 trade · 3 plant):
+  - Trade: **Gas Compliance Certificate** (GAS — AS/NZS 5601), **Pressure Test Record** (PT — AS 4041), **Backflow Test Report** (BFT — AS/NZS 2845.3), **Welding Procedure Specification** (WPS — AS/NZS 3834), **Electrical Test & Tag Register** (TT — AS/NZS 3760)
+  - Plant: **Plant/Equipment Pre-Start Check** (PPS — Reg 213), **Scaffold Handover Certificate** (SCF — AS/NZS 4576)
+  - Safety: **Traffic Management Plan** (TMP — AS 1742.3), **Working at Heights Permit** (WAH — Reg 78), **Lock-Out / Tag-Out Permit** (LOTO — AS/NZS 4024), **Manual Handling RA** (MHR — Reg 60), **Noise Assessment** (NOISE — AS/NZS 1269), **Silica / Dust Control Plan** (SIL — Reg 49-50), **Fire Safety Plan** (FSP — AS 3745), **Environmental Management Plan** (EMP — ISO 14001)
+- 15 more table-field widgets in `DocumentForm.jsx` (backflow_tests, tmp_signage, loto_points, mh_factors/controls, noise_measurements, silica_tasks, rpe_items, test_tag_items, fire_detection, fire_equipment, emp_aspects, waste_streams, emp_compliance).
+- **135/135 backend pytest PASS** across iter21+22+23; **100% critical frontend flows** (31-card hub render + welding_procedure end-to-end + spot-check of 5 new widgets) — iteration_23.json.
+- Minor UX fix: DocumentForm now replaces `/new` URL with `/{doc_id}` after first save so refresh/back retains state.
+
 ---
 
 ## Backend endpoints (current summary)
@@ -180,14 +189,17 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 
 ## Backlog (Deferred)
 
-### P1 (next session — Document Library Phase 3 remainder)
-- **15 remaining specialty docs** (after iter22 curated 8): Gas Compliance Certificate, Pressure Test Record, Backflow Test, TMP (Traffic Mgmt Plan), Plant/Equipment Pre-Start, Scaffold Handover, Working at Heights Permit, Lock-Out/Tag-Out, Manual Handling RA, Noise Assessment, Silica/Dust Control Plan, Welding Procedure, Electrical Test & Tag Register, Fire Safety Plan, Environmental Management Plan.
-
-### P1 (deferred — no user-facing value; high refactor risk)
-- Split `server.py` (~2600 lines) into /app/backend/routes/{auth,safety,reports,workflows,tradeinduct,tradecheck,academy,partner,worker,billing,webhooks}.py
-- `docs_module.py` now 1249 lines — split into `docs_pdf.py` (renderers) + `docs_registry.py` (register calls) + `docs_module.py` (routes only)
-- Replace 4 duplicate table field types in `DocumentForm.jsx` with a single generic `table` widget driven by `columns:[{key,label}]` schema
-- Typed Pydantic models per module (replace `body: dict`) — prevents silent typo'd field keys persisting
+### P1 (next session — technical debt + UX polish)
+- **Refactor oversized modules**:
+  - `docs_module.py` is now ~2100 lines → split into `docs_pdf.py` (31 render_* + CSS), `docs_registry.py` (31 register_doc_type calls), `docs_module.py` (routes + CRUD only)
+  - `server.py` still ~2600 lines → split into `/app/backend/routes/{auth,safety,reports,workflows,tradeinduct,tradecheck,academy,partner,worker,billing,webhooks}.py`
+- **Unify table field widget**: replace 18+ duplicate table-type branches in `DocumentForm.jsx` with one generic `table` field type driven by `spec.columns=[{key,label,type}]` in the registry.
+- **Typed Pydantic models per doc type** — build DocCreate / DocUpdate models from `spec['fields']` at registration time so typo'd keys (e.g. `lod_weight_kg` on lift_plan) fail-fast instead of silently persisting.
+- **PATCH version bump** on Document Library — currently only `updated_at` changes; compliance audits want `version` bumped on every successful PATCH (and `revisions[]` on material change when not in draft).
+- **shadcn Calendar** replacing native `<input type=date/datetime-local>` across DocumentForm + SWMS step-1 for UI consistency.
+- **/api/docs/stats aggregation** so `DocumentLibraryHub` doesn't need to fetch every doc to compute per-category counts.
+- **WeasyPrint timeout hardening**: wrap `write_pdf` in `asyncio.wait_for(timeout=30)` for large registers (test_tag_register with many items).
+- **Safety category sub-grouping** in hub: 20 safety docs in one column will scroll — group into Permits / Plans / Assessments for ergonomics.
 
 ### P2 (out-of-scope for this env)
 - React Native / Capacitor wrapper — Emergent preview env can't build mobile binaries. The existing PWA at `/worker` is installable on iOS/Android and covers ~95% of native UX.

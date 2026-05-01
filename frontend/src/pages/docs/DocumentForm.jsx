@@ -47,6 +47,7 @@ export default function DocumentForm() {
     setSaving(true);
     try {
       let res;
+      const isNew = !form.doc_id;
       if (form.doc_id) {
         res = await api.patch(`/docs/${form.doc_id}`, form);
       } else {
@@ -54,7 +55,12 @@ export default function DocumentForm() {
       }
       setForm(res.data);
       toast.success(`Saved — ${res.data.reference}`);
-      if (navigate) nav(`/dashboard/document-library/${res.data.doc_type}`);
+      if (navigate) {
+        nav(`/dashboard/document-library/${res.data.doc_type}`);
+      } else if (isNew && res.data.doc_id) {
+        // Update URL from /new -> /:doc_id so refresh/back keeps the saved doc
+        nav(`/dashboard/document-library/${res.data.doc_type}/${res.data.doc_id}`, { replace: true });
+      }
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Save failed");
     }

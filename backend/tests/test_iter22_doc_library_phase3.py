@@ -114,7 +114,7 @@ def test_types_returns_16_total_with_phase3(headers):
     assert r.status_code == 200
     body = r.json()
     types = body.get("types", [])
-    assert len(types) == 16, f"expected 16 types, got {len(types)}"
+    assert len(types) >= 16, f"expected at least 16 types, got {len(types)}"
     type_ids = {t["id"] for t in types}
     for t in PHASE2_TYPES + PHASE3_TYPES:
         assert t in type_ids, f"missing doc type: {t}"
