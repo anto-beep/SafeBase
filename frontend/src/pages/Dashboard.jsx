@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
 import useTier from "@/hooks/useTier";
+import useIndustry from "@/hooks/useIndustry";
 
 // Growing Business plan covers 5 active sites — 6+ triggers Enterprise upsell banner.
 const GROWING_SITES_CAP = 5;
@@ -30,11 +31,11 @@ function ScoreRing({ value }) {
   );
 }
 
-const STAT_CARDS = [
-  { key: "documents", label: "Active SWMS", icon: FileText, link: "/dashboard/documents" },
-  { key: "incidents_open", label: "Open Incidents", icon: Warning, link: "/dashboard/incidents" },
-  { key: "workers", label: "Workers", icon: Users, link: "/dashboard/workers" },
-  { key: "licences_expiring_30d", label: "Licences expiring", icon: IdentificationBadge, link: "/dashboard/licences" },
+const STAT_CARDS_BASE = [
+  { key: "documents", labelDefault: "Active SWMS", icon: FileText, link: "/dashboard/documents" },
+  { key: "incidents_open", labelDefault: "Open Incidents", icon: Warning, link: "/dashboard/incidents" },
+  { key: "workers", labelDefault: "Workers", icon: Users, link: "/dashboard/workers" },
+  { key: "licences_expiring_30d", labelDefault: "Licences expiring", icon: IdentificationBadge, link: "/dashboard/licences" },
 ];
 
 const sevStyle = {
@@ -58,6 +59,18 @@ export default function Dashboard() {
     typeof window !== "undefined" && localStorage.getItem("trial_banner_dismissed_v1") === "1"
   );
   const { isEnterprise, onTrial, trialDaysLeft, trialExpired, readOnly } = useTier();
+  const { slug: industrySlug, term: industryTerm, meta: industryMeta } = useIndustry();
+
+  // Industry-aware stat labels: Workers → Drivers / Team depending on vertical.
+  const STAT_CARDS = STAT_CARDS_BASE.map((c) => {
+    if (c.key === "workers") {
+      return { ...c, label: industryTerm.worker_plural.replace(/^./, (ch) => ch.toUpperCase()) };
+    }
+    if (c.key === "documents") {
+      return { ...c, label: industryTerm.primary_doc_label };
+    }
+    return { ...c, label: c.labelDefault };
+  });
 
   // Stripe checkout return handler: poll billing status until paid (up to ~20s)
   useEffect(() => {
@@ -172,10 +185,10 @@ export default function Dashboard() {
 
       <div className="flex items-end justify-between flex-wrap gap-4 border-b border-border pb-6">
         <div>
-          <div className="label-eyebrow">/ Overview · {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</div>
-          <h1 className="font-display text-4xl font-black tracking-tighter mt-1">G'day, {user?.name?.split(" ")[0] || "Tradie"}.</h1>
+          <div className="label-eyebrow" data-testid="dashboard-eyebrow">/ Overview · {industryMeta?.badge || "Multi-industry"} · {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</div>
+          <h1 className="font-display text-4xl font-black tracking-tighter mt-1" data-testid="dashboard-greeting">G'day, {user?.name?.split(" ")[0] || industryTerm.greeting.replace(/^./, (ch) => ch.toUpperCase())}.</h1>
         </div>
-        <Link to="/dashboard/documents"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="quick-generate-btn"><Sparkle className="mr-2" weight="fill" />Generate SWMS</Button></Link>
+        <Link to={industryTerm.primary_doc_route}><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="quick-generate-btn"><Sparkle className="mr-2" weight="fill" />{industryTerm.primary_doc_cta_label}</Button></Link>
       </div>
 
       {/* Top row */}
@@ -221,6 +234,40 @@ export default function Dashboard() {
             <div className="label-eyebrow mt-1">{c.label}</div>
           </Link>
         ))}
+      </div>
+
+      {/* Industry starter — surfaces industry-specific doc shortcuts (new tenants) */}
+      <div
+        className="bg-background border border-border p-5"
+        data-testid={`industry-starter-${industrySlug}`}
+      >
+        <div className="flex items-end justify-between mb-3 flex-wrap gap-2">
+          <div>
+            <div className="label-eyebrow">/ {industryMeta?.badge || "Industry"} starter</div>
+            <h2 className="font-display text-xl md:text-2xl font-black tracking-tighter mt-1">
+              {industryTerm.starter_title}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+              {industryTerm.starter_blurb}
+            </p>
+          </div>
+          <Link to="/dashboard/settings" className="label-eyebrow underline" data-testid="industry-change-link">
+            Change industry →
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {industryTerm.starter_actions.map((a) => (
+            <Link
+              key={a.testid}
+              to={a.to}
+              data-testid={a.testid}
+              className="group border border-border p-4 hover:border-ink hover:bg-warning transition-colors flex items-center justify-between"
+            >
+              <span className="font-display font-black text-base">{a.label}</span>
+              <ArrowRight className="opacity-40 group-hover:opacity-100 group-hover:text-ink" />
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Apps & Add-ons — discoverability for ecosystem (always visible) */}
@@ -274,7 +321,7 @@ export default function Dashboard() {
                 {competency.active_hazards.length} hazard{competency.active_hazards.length === 1 ? "" : "s"}
               </h2>
               <p className="text-sm text-white/80 mt-1 max-w-2xl">
-                Hazards with open SWMS revisions or recent failing controls — who on the tools
+                Hazards with open SWMS revisions or recent failing controls — who on your {industryTerm.worker_plural}{" "}
                 still hasn't been briefed?
               </p>
             </div>
@@ -378,19 +425,19 @@ export default function Dashboard() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link to="/dashboard/documents" className="bg-background border border-border p-6 hover:bg-muted transition-colors">
+        <Link to={industryTerm.primary_doc_route} className="bg-background border border-border p-6 hover:bg-muted transition-colors" data-testid="quick-action-primary">
           <FileText size={32} weight="duotone" />
-          <div className="font-display font-bold text-xl mt-4">Generate SWMS</div>
-          <div className="text-sm text-muted-foreground mt-1">AI-built safe work method statement in 60 seconds.</div>
+          <div className="font-display font-bold text-xl mt-4">{industryTerm.primary_doc_cta_label}</div>
+          <div className="text-sm text-muted-foreground mt-1">{industryTerm.primary_doc_cta_blurb}</div>
         </Link>
         <Link to="/dashboard/incidents" className="bg-background border border-border p-6 hover:bg-muted transition-colors">
           <Warning size={32} weight="duotone" />
           <div className="font-display font-bold text-xl mt-4">Log incident</div>
-          <div className="text-sm text-muted-foreground mt-1">Mobile-first capture from the job site.</div>
+          <div className="text-sm text-muted-foreground mt-1">Mobile-first capture from the {industryTerm.site_singular}.</div>
         </Link>
         <Link to="/dashboard/workers" className="bg-background border border-border p-6 hover:bg-muted transition-colors">
           <Users size={32} weight="duotone" />
-          <div className="font-display font-bold text-xl mt-4">Add worker</div>
+          <div className="font-display font-bold text-xl mt-4">Add {industryTerm.worker_singular}</div>
           <div className="text-sm text-muted-foreground mt-1">Track licences, certificates, induction records.</div>
         </Link>
       </div>
@@ -404,9 +451,9 @@ export default function Dashboard() {
           <div className="flex items-start gap-3">
             <Buildings size={28} weight="duotone" className="shrink-0" />
             <div>
-              <div className="label-eyebrow text-warning">/ Multi-site detected</div>
-              <div className="font-display font-bold text-lg mt-1 text-white">You're running {uniqueSites.length} active sites.</div>
-              <div className="text-sm text-white/70">Growing Business caps at 5. Enterprise unlocks unlimited sites + regional rollups — A$1,299/mo + GST.</div>
+              <div className="label-eyebrow text-warning">/ Multi-{industryTerm.site_singular} detected</div>
+              <div className="font-display font-bold text-lg mt-1 text-white">You're running {uniqueSites.length} active {industryTerm.site_plural}.</div>
+              <div className="text-sm text-white/70">Growing Business caps at 5. Enterprise unlocks unlimited {industryTerm.site_plural} + regional rollups — A$1,299/mo + GST.</div>
             </div>
           </div>
           <Button

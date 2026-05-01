@@ -22,7 +22,7 @@ const ROLES = [
 ];
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { isEnterprise } = useTier();
   const [biz, setBiz] = useState({});
   const [team, setTeam] = useState([]);
@@ -30,6 +30,7 @@ export default function Settings() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker", name: "" });
   const [apiUpsellOpen, setApiUpsellOpen] = useState(false);
+  const [industry, setIndustry] = useState(user?.industry || "trades");
 
   const load = async () => {
     const [b, t, p] = await Promise.all([
@@ -44,6 +45,17 @@ export default function Settings() {
   const saveBiz = async () => {
     try { await api.put("/settings/business", biz); toast.success("Business profile saved"); }
     catch { toast.error("Save failed"); }
+  };
+  const saveIndustry = async (nextIndustry) => {
+    setIndustry(nextIndustry);
+    try {
+      await api.patch("/auth/me/industry", { industry: nextIndustry });
+      if (setUser && user) setUser({ ...user, industry: nextIndustry });
+      toast.success("Industry updated — dashboard has been re-tuned.");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not update industry");
+      setIndustry(user?.industry || "trades");
+    }
   };
   const savePrefs = async () => {
     try { await api.put("/settings/notifications", prefs); toast.success("Preferences saved"); }
@@ -89,6 +101,33 @@ export default function Settings() {
 
         {/* BUSINESS */}
         <TabsContent value="business" className="space-y-4">
+          {/* Industry — drives vocabulary + gated document library */}
+          <div className="bg-background border border-border p-6" data-testid="settings-industry-card">
+            <div className="flex items-end justify-between flex-wrap gap-2">
+              <div>
+                <div className="label-eyebrow">/ Industry</div>
+                <div className="font-display font-bold text-xl mt-1">Which industry are you in?</div>
+                <div className="text-sm text-muted-foreground mt-1 max-w-xl">
+                  SafeBase tailors your dashboard, terminology, and available document templates to this choice. Change it any time.
+                </div>
+              </div>
+              <div className="w-full md:w-72">
+                <Label className="label-eyebrow">Current industry</Label>
+                <Select value={industry} onValueChange={saveIndustry}>
+                  <SelectTrigger className="mt-2 h-11 rounded-none border-ink" data-testid="settings-industry-select">
+                    <SelectValue placeholder="Select industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="trades" data-testid="settings-industry-trades">Trades &amp; Construction</SelectItem>
+                    <SelectItem value="hospitality" data-testid="settings-industry-hospitality">Hospitality</SelectItem>
+                    <SelectItem value="transport" data-testid="settings-industry-transport">Transport &amp; Logistics</SelectItem>
+                    <SelectItem value="healthcare" data-testid="settings-industry-healthcare">Healthcare &amp; Aged Care</SelectItem>
+                    <SelectItem value="retail" data-testid="settings-industry-retail">Retail</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
           <div className="bg-background border border-border p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><Label className="label-eyebrow">Company name</Label><Input data-testid="biz-name" value={biz.company_name || ""} onChange={(e) => setBiz({ ...biz, company_name: e.target.value })} className="mt-2 h-11 rounded-none border-ink" /></div>
             <div><Label className="label-eyebrow">ABN</Label><Input data-testid="biz-abn" value={biz.abn || ""} onChange={(e) => setBiz({ ...biz, abn: e.target.value })} className="mt-2 h-11 rounded-none border-ink" /></div>
