@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, BookOpen, CheckCircle, Lightning, Certificate } from "@phosphor-icons/react";
+import { GraduationCap, BookOpen, CheckCircle, Lightning, Certificate, X } from "@phosphor-icons/react";
 
 /**
  * SafeBase Academy — industry-tagged module catalogue.
@@ -15,6 +15,7 @@ export default function Academy() {
   const [data, setData] = useState({ industry: "trades", microlearning: [], full_courses: [], total_modules: 0 });
   const [completed, setCompleted] = useState({});
   const [busy, setBusy] = useState(null);
+  const [quiz, setQuiz] = useState(null);  // {module_slug, title, questions, answers, result}
 
   const load = async () => {
     try {
@@ -30,6 +31,24 @@ export default function Academy() {
   };
   useEffect(() => { load(); }, []);
 
+  const startQuiz = async (slug) => {
+    try {
+      const r = await api.get(`/academy/${slug}/quiz`);
+      setQuiz({ ...r.data, answers: Array(r.data.questions.length).fill(null), result: null });
+    } catch (e) { /* */ }
+  };
+
+  const submitQuiz = async () => {
+    if (!quiz) return;
+    setBusy(quiz.module_slug);
+    try {
+      const r = await api.post(`/academy/${quiz.module_slug}/submit-quiz`, { answers: quiz.answers });
+      setQuiz({ ...quiz, result: r.data });
+      if (r.data.passed) await load();
+    } catch (e) { /* */ }
+    finally { setBusy(null); }
+  };
+
   const markComplete = async (slug) => {
     setBusy(slug);
     try {
@@ -41,8 +60,84 @@ export default function Academy() {
 
   const completedCount = Object.keys(completed).length;
 
+  const downloadCert = (cert_id) => {
+    // Open in new tab. Cert PDF endpoint requires bearer auth — pass via query param.
+    const url = `${process.env.REACT_APP_BACKEND_URL}/api/academy/cert/${cert_id}.pdf`;
+    fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem("st_token")}` } })
+      .then((r) => r.blob())
+      .then((b) => {
+        const u = URL.createObjectURL(b);
+        const a = document.createElement("a");
+        a.href = u; a.download = `${cert_id}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+  };
+
   return (
     <div className="space-y-8" data-testid="academy-page">
+      {quiz && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6" data-testid="academy-quiz-modal">
+          <div className="bg-background border border-ink max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-start justify-between border-b border-border pb-3">
+              <div>
+                <div className="label-eyebrow">Quiz · {quiz.module_slug}</div>
+                <h2 className="font-display text-2xl font-black tracking-tight mt-1">{quiz.title}</h2>
+              </div>
+              <button onClick={() => setQuiz(null)} className="text-muted-foreground hover:text-ink" data-testid="quiz-close-btn"><X size={20} /></button>
+            </div>
+            {!quiz.result ? (
+              <>
+                <p className="text-sm text-muted-foreground mt-4">Answer all questions. 80% required to pass and earn certificate.</p>
+                <div className="space-y-5 mt-5">
+                  {quiz.questions.map((q, qi) => (
+                    <div key={qi} data-testid={`quiz-q-${qi}`}>
+                      <div className="font-bold text-sm">{qi + 1}. {q.q}</div>
+                      <div className="space-y-1.5 mt-2">
+                        {q.options.map((opt, oi) => (
+                          <label key={oi} className={`flex items-center gap-2 p-2 border cursor-pointer ${quiz.answers[qi] === oi ? "border-ink bg-warning/10" : "border-border hover:bg-muted"}`} data-testid={`quiz-opt-${qi}-${oi}`}>
+                            <input
+                              type="radio"
+                              name={`q${qi}`}
+                              checked={quiz.answers[qi] === oi}
+                              onChange={() => {
+                                const newAnswers = [...quiz.answers];
+                                newAnswers[qi] = oi;
+                                setQuiz({ ...quiz, answers: newAnswers });
+                              }}
+                            />
+                            <span className="text-sm">{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 border-t border-border pt-4 mt-6">
+                  <Button variant="outline" className="btn-sharp border-ink" onClick={() => setQuiz(null)}>Cancel</Button>
+                  <Button onClick={submitQuiz} disabled={busy === quiz.module_slug || quiz.answers.includes(null)} className="btn-sharp bg-ink text-white" data-testid="quiz-submit-btn">
+                    {busy === quiz.module_slug ? "Scoring…" : "Submit"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8" data-testid="quiz-result">
+                <div className={`font-display text-6xl font-black ${quiz.result.passed ? "text-emerald-600" : "text-red-600"}`}>{quiz.result.score}%</div>
+                <div className={`label-eyebrow mt-3 ${quiz.result.passed ? "text-emerald-700" : "text-red-700"}`}>{quiz.result.passed ? "Passed · certificate earned" : "Not passed · 80% required"}</div>
+                <div className="text-sm text-muted-foreground mt-2">{quiz.result.correct} of {quiz.result.total} correct</div>
+                {quiz.result.passed && quiz.result.cert_id && (
+                  <Button onClick={() => downloadCert(quiz.result.cert_id)} className="btn-sharp bg-warning text-ink hover:bg-warning/90 mt-6 uppercase tracking-widest" data-testid="quiz-download-cert">
+                    <Certificate weight="bold" className="mr-2" /> Download certificate (PDF)
+                  </Button>
+                )}
+                <div className="mt-6">
+                  <Button variant="outline" className="btn-sharp border-ink" onClick={() => setQuiz(null)}>Close</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="border-b border-border pb-4">
         <div className="label-eyebrow flex items-center gap-2">
           <GraduationCap size={14} className="text-warning" />
@@ -77,13 +172,23 @@ export default function Academy() {
                 {c.note && <div className="text-[10px] text-amber-700 italic border-t border-border pt-2">{c.note}</div>}
                 <Button
                   type="button"
-                  onClick={() => markComplete(c.slug)}
+                  onClick={() => done ? null : startQuiz(c.slug)}
                   disabled={busy === c.slug || done}
                   className={`btn-sharp h-10 mt-auto uppercase tracking-widest text-xs ${done ? "bg-emerald-50 text-emerald-700" : "bg-ink text-white hover:bg-authority"}`}
                   data-testid={`academy-complete-${c.slug}`}
                 >
-                  {done ? "Completed" : busy === c.slug ? "…" : "Mark complete"}
+                  {done ? "Completed" : busy === c.slug ? "…" : "Take quiz to complete"}
                 </Button>
+                {done && completed[c.slug]?.completion_id && (
+                  <button
+                    type="button"
+                    onClick={() => downloadCert(completed[c.slug].completion_id)}
+                    className="text-xs text-emerald-700 underline mt-2"
+                    data-testid={`academy-cert-${c.slug}`}
+                  >
+                    Download certificate (PDF)
+                  </button>
+                )}
               </div>
             );
           })}

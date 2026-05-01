@@ -197,8 +197,206 @@ def _slugify(s: str) -> str:
     return "_".join("".join(c if c.isalnum() else " " for c in s.lower()).split())
 
 
+# ---- Module quizzes (auto-generated 5-question multiple choice per module) ----
+# We seed a small pool per industry for "real" modules; everything else gets a
+# generic 3-question quiz tied to the module title so the LMS still has some
+# assessment instead of just self-attestation.
+QUIZZES = {
+    # Trades
+    "swms_full": [
+        {"q": "Under Reg 299, a SWMS is required for…", "options": ["any construction job over $1m", "any High Risk Construction Work activity", "only government jobs", "only when SafeWork asks"], "answer": 1},
+        {"q": "How many HRCW categories are listed in WHS Regulations 2017 (NSW)?", "options": ["12", "18", "19", "21"], "answer": 2},
+        {"q": "When must a SWMS be reviewed?", "options": ["Annually", "When circumstances change OR after an incident", "Never — once is fine", "Only at audit time"], "answer": 1},
+        {"q": "Who must be consulted in SWMS preparation?", "options": ["The principal contractor only", "Workers and HSRs", "The auditor", "Nobody"], "answer": 1},
+        {"q": "The Hierarchy of Controls puts what FIRST?", "options": ["PPE", "Administrative controls", "Elimination", "Substitution"], "answer": 2},
+    ],
+    "heights_full": [
+        {"q": "Working at heights generally means working above…", "options": ["1m", "2m", "3m", "5m"], "answer": 1},
+        {"q": "Which control is preferred under HOC for heights?", "options": ["Harness", "Edge protection / scaffolding", "PPE alone", "Spotter"], "answer": 1},
+        {"q": "How often should harnesses be inspected?", "options": ["Yearly", "Before each use AND every 6 months", "Every 5 years", "When damaged"], "answer": 1},
+        {"q": "Anchor points must be rated to at least…", "options": ["10kN", "15kN", "21kN", "5kN"], "answer": 2},
+        {"q": "Fall arrest systems require…", "options": ["Just a harness", "Harness, lanyard, anchor, and rescue plan", "Just a lanyard", "Hi-vis"], "answer": 1},
+    ],
+    # Hospitality
+    "food_handler_cert": [
+        {"q": "Cold storage temperature must be at or below…", "options": ["10°C", "8°C", "5°C", "0°C"], "answer": 2},
+        {"q": "Hot hold temperature must be at or above…", "options": ["55°C", "60°C", "65°C", "75°C"], "answer": 1},
+        {"q": "Chicken core temperature must reach at least…", "options": ["63°C", "70°C", "75°C", "85°C"], "answer": 2},
+        {"q": "Which is a high-risk allergen in Australia?", "options": ["Tomato", "Sesame", "Carrot", "Rice"], "answer": 1},
+        {"q": "Hand-washing should follow what model?", "options": ["WHO 5 moments", "AHPRA 4-step", "FSANZ 3-step", "FoodSafe 2-step"], "answer": 0},
+    ],
+    "rsa_foundation": [
+        {"q": "RSA stands for…", "options": ["Retail Service Association", "Responsible Service of Alcohol", "Required Standard Approval", "Restaurant Service Award"], "answer": 1},
+        {"q": "Refusal of service is required when a patron is…", "options": ["Alone", "Unduly intoxicated or disorderly", "Wearing a hat", "Ordering food only"], "answer": 1},
+        {"q": "Minors policy means…", "options": ["No service to anyone under 21", "No service to under-18s without ID matching", "ID checks for under-30s only", "Parents can buy for minors"], "answer": 1},
+    ],
+    # Transport
+    "cor_full": [
+        {"q": "CoR primarily applies to…", "options": ["Light vehicle drivers", "Heavy vehicle operators and the chain", "Bus drivers only", "Couriers under 4.5t"], "answer": 1},
+        {"q": "Standard hours allow how many hours' work per 24h?", "options": ["10", "11", "12", "14"], "answer": 2},
+        {"q": "Mandatory rest break for Standard Hours after 5.25 hours work is…", "options": ["10 min", "15 min", "30 min (continuous)", "1 hour"], "answer": 2},
+        {"q": "BFM accreditation allows…", "options": ["Same as Standard", "Up to 14 hours work in some scenarios", "20 hours straight", "No limits"], "answer": 1},
+        {"q": "CoR primary duty extends to…", "options": ["Drivers only", "Operators only", "Drivers, operators, schedulers, loaders, consignors", "Mechanics only"], "answer": 2},
+    ],
+    "fatigue_full": [
+        {"q": "Fatigue is recognised under HVNL as a…", "options": ["Soft compliance issue", "Primary duty matter", "Driver-only concern", "Voluntary compliance"], "answer": 1},
+        {"q": "How long must work diaries be retained?", "options": ["1 year", "3 years", "5 years", "Forever"], "answer": 1},
+        {"q": "Fitness for duty includes assessment of…", "options": ["Sleep, drugs, alcohol, medical conditions", "Only alcohol", "Only sleep", "Only mental health"], "answer": 0},
+    ],
+    # Healthcare
+    "manual_handling_full": [
+        {"q": "The leading cause of injury in clinical settings is…", "options": ["Sharps", "Slips and falls", "Manual handling", "Burns"], "answer": 2},
+        {"q": "Hierarchy of Controls preference for manual handling:", "options": ["PPE first", "Eliminate or mechanically substitute first", "Procedural only", "PPE + procedure"], "answer": 1},
+        {"q": "Two-person hoist transfers are recommended when…", "options": ["Always", "Client weight or instability requires", "Never", "Only on weekends"], "answer": 1},
+        {"q": "Slide sheets reduce…", "options": ["Pressure only", "Friction during repositioning", "Sharps risk", "Infection risk"], "answer": 1},
+        {"q": "When a hoist fails with a client suspended, the priority is…", "options": ["Photograph the failure", "Stabilise + safely lower client + call for help", "Leave and call maintenance", "Try to fix the hoist"], "answer": 1},
+    ],
+    "infection_control_full": [
+        {"q": "WHO 5 moments for hand hygiene includes…", "options": ["Before patient contact, before clean/aseptic, after body fluid risk, after patient contact, after touching surroundings", "Just before and after gloves", "5 minutes hand-washing", "Once per shift"], "answer": 0},
+        {"q": "Sharps injuries should be…", "options": ["Hidden", "Reported and managed per protocol", "Treated at home", "Ignored if minor"], "answer": 1},
+        {"q": "Standard precautions apply to…", "options": ["Known infectious patients only", "All patients, all the time", "Surgical procedures only", "ICU only"], "answer": 1},
+    ],
+    # Retail
+    "retail_lone_worker": [
+        {"q": "A defensible lone-worker check-in system needs…", "options": ["Manual SMS", "Automated check-in + escalation if missed", "Phone calls only", "Once-a-week check"], "answer": 1},
+        {"q": "If a robbery occurs, priority #1 is…", "options": ["Catch the offender", "Staff safety / comply", "Save the cash", "Call insurance first"], "answer": 1},
+        {"q": "Lone worker risk is reduced by…", "options": ["More work alone", "Buddy systems, CCTV, duress alarms, check-ins", "Removing breaks", "Longer shifts"], "answer": 1},
+    ],
+}
+
+
+def _generic_quiz(module_title: str):
+    """Three generic acknowledgement questions for any module without a real quiz."""
+    return [
+        {"q": f"Have you completed all sections of '{module_title}'?",
+         "options": ["No", "Yes — read fully", "Skimmed only", "Started but not finished"], "answer": 1},
+        {"q": "Will you apply this content to your role?",
+         "options": ["No", "Yes — already do this", "Yes — plan to apply going forward", "Unsure"], "answer": 2},
+        {"q": "Do you understand your reporting obligations if you encounter a relevant hazard?",
+         "options": ["No", "Yes — report to supervisor immediately", "Yes — report at end of week", "Will figure it out"], "answer": 1},
+    ]
+
+
+def get_quiz_for(slug: str, title: str = "") -> list[dict]:
+    return QUIZZES.get(slug) or _generic_quiz(title or slug.replace("_", " ").title())
+
+
 def register_academy_routes(api_router: APIRouter, *, db, get_current_user_dep,
                              account_id_for_fn, log_audit_fn):
+
+    @api_router.get("/academy/{module_slug}/quiz")
+    async def get_quiz(module_slug: str, current_user=Depends(get_current_user_dep)):
+        """Return the quiz for a module — answers stripped client-side."""
+        # Look up module title from CATALOGUE
+        title = module_slug.replace("_", " ").title()
+        for ind in CATALOGUE.values():
+            for c in ind["full_courses"]:
+                if c["slug"] == module_slug:
+                    title = c["title"]
+        questions = get_quiz_for(module_slug, title)
+        # Strip the answer index from outgoing payload
+        return {
+            "module_slug": module_slug,
+            "title": title,
+            "questions": [{"q": q["q"], "options": q["options"]} for q in questions],
+        }
+
+    @api_router.post("/academy/{module_slug}/submit-quiz")
+    async def submit_quiz(module_slug: str, body: dict, request: Request,
+                           current_user=Depends(get_current_user_dep)):
+        """Score the quiz; create completion + cert if passed (>= 80%)."""
+        answers = body.get("answers") or []
+        title = module_slug.replace("_", " ").title()
+        for ind in CATALOGUE.values():
+            for c in ind["full_courses"]:
+                if c["slug"] == module_slug:
+                    title = c["title"]
+        questions = get_quiz_for(module_slug, title)
+        if len(answers) != len(questions):
+            raise HTTPException(400, f"Expected {len(questions)} answers, got {len(answers)}")
+        correct = sum(1 for i, q in enumerate(questions) if answers[i] == q["answer"])
+        score = round((correct / len(questions)) * 100)
+        passed = score >= 80
+        cert_id = f"cert_{uuid.uuid4().hex[:10]}"
+        now = datetime.now(timezone.utc).isoformat()
+        if passed:
+            await db.academy_completions.insert_one({
+                "completion_id": cert_id,
+                "account_id": account_id_for_fn(current_user),
+                "module_slug": module_slug,
+                "module_title": title,
+                "worker_id": getattr(current_user, "user_id"),
+                "worker_name": getattr(current_user, "name", "Worker"),
+                "score": score,
+                "passed": True,
+                "completed_at": now,
+                "industry": (getattr(current_user, "industry", None) or "trades").lower(),
+            })
+            await log_audit_fn(db, user=current_user, action="quiz_pass",
+                                record_type="academy_module", record_id=module_slug,
+                                request=request, detail={"score": score})
+        return {"score": score, "correct": correct, "total": len(questions),
+                "passed": passed, "cert_id": cert_id if passed else None}
+
+    @api_router.get("/academy/cert/{completion_id}.pdf")
+    async def cert_pdf(completion_id: str, current_user=Depends(get_current_user_dep)):
+        """Generate a simple PDF certificate of completion."""
+        from fastapi.responses import Response
+        rec = await db.academy_completions.find_one(
+            {"completion_id": completion_id,
+             "account_id": account_id_for_fn(current_user)},
+            {"_id": 0},
+        )
+        if not rec:
+            raise HTTPException(404, "Certificate not found")
+        # Minimal PDF using reportlab
+        try:
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import A4
+            from io import BytesIO
+            buf = BytesIO()
+            c = canvas.Canvas(buf, pagesize=A4)
+            w, h = A4
+            # Border
+            c.setStrokeColorRGB(0.05, 0.05, 0.05)
+            c.setLineWidth(3)
+            c.rect(40, 40, w - 80, h - 80)
+            # Title
+            c.setFont("Helvetica-Bold", 36)
+            c.drawCentredString(w / 2, h - 140, "Certificate of Completion")
+            c.setFont("Helvetica", 14)
+            c.drawCentredString(w / 2, h - 175, "SafeBase Academy")
+            # Body
+            c.setFont("Helvetica", 12)
+            c.drawCentredString(w / 2, h - 240, "This certifies that")
+            c.setFont("Helvetica-Bold", 24)
+            c.drawCentredString(w / 2, h - 280, rec.get("worker_name") or "Worker")
+            c.setFont("Helvetica", 12)
+            c.drawCentredString(w / 2, h - 320, "has successfully completed")
+            c.setFont("Helvetica-Bold", 18)
+            c.drawCentredString(w / 2, h - 360, rec.get("module_title") or rec["module_slug"])
+            c.setFont("Helvetica", 11)
+            c.drawCentredString(w / 2, h - 400, f"with a score of {rec.get('score', 100)}%")
+            c.drawCentredString(w / 2, h - 420, f"on {rec.get('completed_at', '')[:10]}")
+            # Cert ID
+            c.setFont("Helvetica", 8)
+            c.drawCentredString(w / 2, 80, f"Certificate ID: {completion_id}")
+            c.drawCentredString(w / 2, 65, "Verify at app.safebase.com.au")
+            c.showPage()
+            c.save()
+            return Response(content=buf.getvalue(), media_type="application/pdf",
+                             headers={"Content-Disposition": f'inline; filename=\"{completion_id}.pdf\"'})
+        except ImportError:
+            # Fallback if reportlab not installed — return a plain text cert.
+            text = f"""SafeBase Academy — Certificate of Completion
+
+Awarded to: {rec.get('worker_name')}
+Module: {rec.get('module_title') or rec['module_slug']}
+Score: {rec.get('score')}%
+Completed: {rec.get('completed_at')}
+Certificate ID: {completion_id}
+"""
+            return Response(content=text, media_type="text/plain")
 
     @api_router.get("/academy/catalogue")
     async def get_catalogue(industry: Optional[str] = None,

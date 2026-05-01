@@ -196,6 +196,13 @@ def register_ai_docs_routes(api_router: APIRouter, *, db, get_current_user_dep,
                              account_id_for_fn, stamp_account_fn,
                              log_audit_fn, logger):
     """Mount the AI documents routes."""
+    # Merge extra doc types — built once at startup so prompts are compiled.
+    try:
+        from ai_docs_extra import build_extra_specs
+        for industry, types in build_extra_specs().items():
+            AI_DOC_REGISTRY.setdefault(industry, {}).update(types)
+    except Exception:
+        pass
 
     @api_router.get("/ai-docs/types")
     async def list_ai_doc_types(industry: Optional[str] = None,

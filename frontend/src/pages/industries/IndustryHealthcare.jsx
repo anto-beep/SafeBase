@@ -1,3 +1,2 @@
-import IndustryPage from "@/components/industry/IndustryPage";
-import { INDUSTRIES } from "@/data/industries.config";
-export default function IndustryHealthcare() { return <IndustryPage industry={INDUSTRIES.healthcare} />; }
+import IndustryProductPage from "@/pages/IndustryProductPage";
+export default function IndustryHealthcare() { return <IndustryProductPage industry="healthcare" />; }

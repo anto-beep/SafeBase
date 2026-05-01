@@ -53,10 +53,25 @@ const sevStyle = {
   critical: "bg-ink text-warning",
 };
 
+import { RoleVariantDashboard } from "@/pages/dashboards/RoleVariantDashboard";
+
 export default function Dashboard() {
   const { user } = useAuth();
   const variant = user?.role_variant || "owner";
   const industry = user?.industry || "trades";
+  const role_title = (user?.role_title || "").toLowerCase();
+
+  // Variant-specific dashboards (industry × role)
+  if (industry === "hospitality" && (role_title === "food_safety_supervisor" || variant === "safety_lead")) {
+    return <RoleVariantDashboard variant_key="food_safety_supervisor" />;
+  }
+  if (industry === "transport" && (role_title === "dispatcher" || role_title === "scheduler")) {
+    return <RoleVariantDashboard variant_key="dispatcher" />;
+  }
+  if (industry === "healthcare" && variant === "manager") {
+    return <RoleVariantDashboard variant_key="healthcare_manager" />;
+  }
+
   if (variant === "worker") return <WorkerDashboard />;
   if (variant === "safety_lead") return <SafetyLeadDashboard />;
   if (variant === "supervisor") return <SupervisorDashboard />;

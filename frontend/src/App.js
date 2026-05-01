@@ -40,6 +40,7 @@ import Tradeinduct from "@/pages/Tradeinduct";import InductionPublic from "@/pag
 import AddOnsMarketplace from "@/pages/AddOnsMarketplace";
 import AcademyApp from "@/pages/Academy";
 import AIDocsPage from "@/pages/AIDocsPage";
+import IndustryResourcesPage from "@/pages/IndustryResourcesPage";
 import TradecheckMarketplace from "@/pages/TradecheckMarketplace";
 import TradecheckMy from "@/pages/TradecheckMy";
 import AcademyLMS from "@/pages/AcademyLMS";
@@ -119,6 +120,7 @@ function AppRouter() {
       <Route path="/partners" element={<Partners />} />
       <Route path="/franchises" element={<Franchises />} />
       <Route path="/resources" element={<Resources />} />
+      <Route path="/resources/:industry" element={<IndustryResourcesPage />} />
       <Route path="/resources/:industry/:slug" element={<ResourceArticle />} />
       <Route path="/about" element={<About />} />
       <Route path="/login" element={<Login />} />
