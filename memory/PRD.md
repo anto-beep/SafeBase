@@ -12,6 +12,29 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 
 ## Implemented
 
+### Iteration 39 — P1/P2 Mega-batch: ROI Calculators + Admin Demos + Regulatory Digest + SEO Landing Pages (Feb 2026)
+- **Backend `/app/backend/routes/iter39_aux.py`** — 4 endpoints mounted via `register_iter39_routes()`:
+  - `GET /api/plan-rightsizer/recommend?industry=&team=&locations=` — server-side tier recommendation mirroring the frontend wizard. Returns plan_name, user_limit, annual_aud_ex_gst, monthly_aud_ex_gst, annual_saving_aud, risk_anchor, cta_register_url. Full PRICING dict for all 5 industries stays in lock-step with `pricing.config.js`.
+  - `GET /api/demo-requests` (owner-only, 403 for non-owners) — lists demo_requests from `POST /api/demo/request`, grouped counts {new/contacted/qualified/closed}, filter by status + industry.
+  - `PATCH /api/demo-requests/{id}` — owner updates status (one of new/contacted/qualified/closed) + internal note.
+  - `GET /api/regulatory-digest?industry=` — curated 11-item list across 5 industries (ACQSC Aged Care Act 2024, AHPRA CPD audits, NDIS 24h clarification, NHVR s26C executive audits, fatigue record-keeping, FSANZ 3.2.2A FSS transition, NSW RSA refresh, retail psychosocial Code of Practice, Fair Work casual conversion, silica exposure threshold, NSW height-fall notifiable).
+- **Frontend — 7 new public/dashboard routes wired into `App.js`**:
+  - `/credential-expiry-calculator` — per-industry hidden-cost calculator (worker count × creds/worker × lapse-rate) with replacement/downtime/legal exposure breakdown and ROI multiple vs entry-tier plan.
+  - `/insurance-discount-calculator` — premium × industry ceiling (7–15%) × WHS maturity multiplier → annual saving vs SafeBase cost; "pays for itself" threshold.
+  - `/regulatory-digest` — "What changed this month" public page with Industry Select filter, severity chips, regulator link, CTA to Plan Right-sizer + 14-day trial.
+  - `/seo/ndis-compliance`, `/seo/cor-compliance`, `/seo/haccp-compliance` — 3 SEO landing pages rendered by shared `SeoLandingPage.jsx` component. Each page has hero + painPoints + feature list + **inline Plan Right-sizer** (2-question form that POSTs to `/api/plan-rightsizer/recommend` and persists to localStorage `safebase_rightsizer`) + FAQ + regulator chips + ROI anchor.
+  - `/dashboard/admin/demos` — owner-only admin view: 4 stat cards per status, filter by status + industry, expandable rows with inline status Select + internal notes.
+- **Dashboard integrations**:
+  - `RegulatoryDigestWidget` mounts below `ComplianceInboxWidget` on every Dashboard — top-3 items for the user's industry, deep-links to full digest.
+  - `DashboardLayout` sidebar gains owner-only "Demo Requests" link (`nav-admin-demos`).
+- **Register.jsx + Dashboard.jsx** — read `safebase_rightsizer` localStorage key (written by PlanRightsizer flow + any SEO landing page inline form) and surface a `signup-rightsizer-hint` panel so prospects carry their industry/team/locations context seamlessly from wizard → register → dashboard tuning.
+- **MarketingNav + Footer**: TOOLS dropdown gains Credential Expiry + Insurance Discount calculators; RESOURCES dropdown gains Regulatory Digest; footer Tools and Resources columns updated. **Fixed link mismatch**: `/fine-calculator` → `/tools/fine-calculator` across nav + footer.
+- **Testing verdict** (`/app/test_reports/iteration_39.json`): backend 17/17 pytest PASS (4 right-sizer scenarios including healthcare Enterprise A$139,990, regulatory digest filter, demo-requests owner-only + PATCH flow, regression). Frontend all 7 new routes render, inline right-sizer on /seo/ndis-compliance computes correctly, calculators update live, digest-widget shows on owner dashboard, admin demos page populated and interactive, marketing nav exposes all new entries. `retest_needed: False`.
+- **Email delivery explicitly skipped** per user direction — no Resend integration added.
+
+### Iteration 38 — Plan Right-sizer + Industry Risk Calculator + Book-a-Demo + Ecosystem Consolidation (Feb 2026)
+*(See Iteration 38 section further below for full details.)*
+
 ### Iterations 1-3 — Foundation + Marketing (Dec 2025)
 - JWT + Emergent Google auth · Workers/Licences/Incidents/Documents CRUD · SWMS AI gen (Claude Sonnet 4.5) · Compliance score
 - 15 public marketing routes + Pricing + MarketingNav
