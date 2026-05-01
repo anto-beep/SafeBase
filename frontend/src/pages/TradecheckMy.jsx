@@ -14,10 +14,23 @@ const STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT"];
 export default function TradecheckMy() {
   const [listing, setListing] = useState({});
   const [saving, setSaving] = useState(false);
+  const [credSpec, setCredSpec] = useState({ industry: "trades", credentials: [] });
+  const [validation, setValidation] = useState(null);
 
   useEffect(() => {
     api.get("/tradecheck/my").then((r) => setListing(r.data || {})).catch(() => {});
+    api.get("/tradecheck/required-credentials").then((r) => setCredSpec(r.data)).catch(() => {});
   }, []);
+
+  const toggleCred = (code) => {
+    const held = new Set(listing.licences || []);
+    if (held.has(code)) held.delete(code); else held.add(code);
+    setListing({ ...listing, licences: Array.from(held) });
+    // re-run validation against the saved spec
+    api.post("/tradecheck/validate-listing", { credentials: Array.from(held) })
+      .then((r) => setValidation(r.data))
+      .catch(() => setValidation(null));
+  };
 
   const save = async (e) => {
     e.preventDefault();
@@ -86,6 +99,43 @@ export default function TradecheckMy() {
           )}
         </div>
       </form>
+
+      {/* Industry-aware credential checklist (SafeCheck) — replaces the
+          one-size-fits-all White Card / Trade Licence assumptions of the
+          old TradeCheck. Hospitality operators see RSA + Food Safety
+          Supervisor; healthcare sees AHPRA + NDIS screen + manual handling;
+          transport sees HR licence + fatigue management; retail sees
+          induction + lone-worker briefing. */}
+      <div className="bg-background border border-border p-6" data-testid="safecheck-credentials-panel">
+        <div className="flex items-end justify-between gap-3 border-b border-border pb-3">
+          <div>
+            <div className="label-eyebrow">SafeCheck · {credSpec.industry} credentials</div>
+            <h2 className="font-display text-2xl font-black tracking-tight mt-1">Credential checklist.</h2>
+            <p className="text-sm text-muted-foreground mt-1">Tick every credential your business holds. Missing required items will block verification.</p>
+          </div>
+          {validation && (
+            <div className={`px-4 py-2 text-xs font-bold ${validation.ok ? "bg-emerald-600 text-white" : "bg-red-600 text-white"}`} data-testid="safecheck-coverage-badge">
+              {validation.coverage_pct}% covered{validation.ok ? " · ready" : ` · ${validation.missing_required.length} missing`}
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+          {credSpec.credentials.map((c) => {
+            const held = (listing.licences || []).includes(c.code);
+            return (
+              <label key={c.code} className={`flex items-start gap-3 p-3 border cursor-pointer ${held ? "bg-emerald-50 border-emerald-600" : "border-border hover:bg-muted"}`} data-testid={`safecheck-cred-${c.code}`}>
+                <input type="checkbox" checked={held} onChange={() => toggleCred(c.code)} className="mt-1" data-testid={`safecheck-cred-cb-${c.code}`} />
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-ink">{c.label}</div>
+                  <div className="text-[10px] uppercase tracking-wide font-bold mt-1">
+                    {c.required ? <span className="text-red-600">Required</span> : <span className="text-muted-foreground">Recommended</span>}
+                  </div>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

@@ -12,9 +12,16 @@ export default function Tradeinduct() {
   const [submissions, setSubmissions] = useState({});
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", site: "", trade: "" });
+  const [defaultQs, setDefaultQs] = useState({ industry: "trades", questions: [] });
 
   const load = () => api.get("/tradeinduct/programs").then((r) => setPrograms(r.data)).catch(() => {});
   useEffect(() => { load(); }, []);
+  // Fetch the industry-aware default question bank so the modal preview shows
+  // the right credential checks (RSA for hospitality, AHPRA for healthcare,
+  // White Card for trades, etc.)
+  useEffect(() => {
+    api.get("/tradeinduct/default-questions").then((r) => setDefaultQs(r.data)).catch(() => {});
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -67,6 +74,19 @@ export default function Tradeinduct() {
               <div><Label className="label-eyebrow">Title</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-2 h-11 rounded-none border-ink" required data-testid="induction-f-title" /></div>
               <div><Label className="label-eyebrow">Site</Label><Input value={form.site} onChange={(e) => setForm({ ...form, site: e.target.value })} className="mt-2 h-11 rounded-none border-ink" /></div>
               <div><Label className="label-eyebrow">Trade</Label><Input value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} className="mt-2 h-11 rounded-none border-ink" /></div>
+              {defaultQs.questions?.length > 0 && (
+                <div className="border border-ink/20 bg-muted p-3" data-testid="induction-industry-preview">
+                  <div className="label-eyebrow text-ink">Default {defaultQs.industry} questions</div>
+                  <ul className="mt-2 text-xs text-muted-foreground space-y-1 list-disc pl-5">
+                    {defaultQs.questions.slice(0, 4).map((q, i) => (
+                      <li key={i}>{q.q}{q.required && <span className="text-red-600 font-bold ml-1">*</span>}</li>
+                    ))}
+                    {defaultQs.questions.length > 4 && (
+                      <li className="text-[10px] text-muted-foreground/70">+ {defaultQs.questions.length - 4} more — auto-applied on create</li>
+                    )}
+                  </ul>
+                </div>
+              )}
               <div className="flex justify-end gap-2"><Button type="button" variant="outline" className="btn-sharp border-ink" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" className="btn-sharp bg-ink text-white" data-testid="induction-submit">Create</Button></div>
             </form>
           </DialogContent>

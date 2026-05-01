@@ -62,6 +62,11 @@ class User(BaseModel):
     picture: Optional[str] = None
     auth_provider: str = "email"
     created_at: datetime
+    industry: Optional[str] = "trades"
+    role_title: Optional[str] = "owner"
+    role_variant: Optional[str] = "owner"
+    active_industries: Optional[List[str]] = None
+    primary_industry: Optional[str] = None
 
 
 class WorkerIn(BaseModel):
@@ -236,6 +241,11 @@ register_auth_routes(
 # ----------- INDUSTRIES (public registry + live signal) -----------
 from routes.industries import register_industry_routes  # noqa: E402
 register_industry_routes(api_router, db=db)
+
+
+# ----------- PERMISSION GATE (industry × role × plan → 403 hard-block) -----------
+from permissions import make_require_feature  # noqa: E402
+require_feature = make_require_feature(get_current_user, db)
 
 
 # ----------- WORKERS -----------
@@ -1395,11 +1405,76 @@ async def delete_workflow(wtype: str, instance_id: str, current_user: User = Dep
 # BATCH (d) — Ecosystem Apps
 # ============================================================
 
+# -------- SafeInduct (formerly TradeInduct): industry-aware induction template --------
+# Default question banks per industry — used when the caller doesn't supply
+# their own questions. Trade-specific creds (White Card) are replaced by RSA
+# / RSG for hospitality, HR licence + fatigue training for transport, AHPRA
+# verification for healthcare, casual roster + lone-worker for retail.
+INDUCTION_DEFAULT_QUESTIONS = {
+    "trades": [
+        {"q": "Have you read the site-specific SWMS?", "required": True},
+        {"q": "Do you hold a valid White Card (General Construction Induction)?", "required": True},
+        {"q": "Do you have the PPE required for this site (helmet, hi-vis, boots, eye/ear)?", "required": True},
+        {"q": "Have you been briefed on the emergency evacuation procedure and assembly point?", "required": True},
+        {"q": "Any pre-existing medical conditions or medications we should know about?", "required": False},
+    ],
+    "hospitality": [
+        {"q": "Have you read this venue's Food Safety Program?", "required": True},
+        {"q": "Do you hold a current RSA (Responsible Service of Alcohol) certificate?", "required": True},
+        {"q": "Do you hold a Food Safety Supervisor certificate (where required)?", "required": False},
+        {"q": "Have you been briefed on allergen handling and cross-contamination procedures?", "required": True},
+        {"q": "Have you been briefed on the venue evacuation route and emergency contacts?", "required": True},
+        {"q": "Any allergies or medical conditions affecting food handling duties?", "required": False},
+    ],
+    "transport": [
+        {"q": "Do you hold a current Australian driver licence valid for the vehicle class?", "required": True},
+        {"q": "Have you completed Basic / Advanced Fatigue Management training (where applicable)?", "required": True},
+        {"q": "Have you been briefed on the Chain of Responsibility (CoR) obligations for this job?", "required": True},
+        {"q": "Have you completed the pre-trip vehicle inspection checklist?", "required": True},
+        {"q": "Are you fit for duty (no fatigue, alcohol, drugs or medication impairing driving)?", "required": True},
+        {"q": "Any medical conditions affecting your fitness to drive?", "required": False},
+    ],
+    "healthcare": [
+        {"q": "Is your AHPRA registration current and unrestricted (where applicable)?", "required": True},
+        {"q": "Have you completed an NDIS Worker Screening Check or Aged Care Worker Screen?", "required": True},
+        {"q": "Are your mandatory immunisations up to date (per role requirements)?", "required": True},
+        {"q": "Have you completed manual handling training in the last 12 months?", "required": True},
+        {"q": "Have you been briefed on infection control and PPE protocols for this site?", "required": True},
+        {"q": "Have you completed First Aid / CPR training in the last 12-36 months?", "required": True},
+    ],
+    "retail": [
+        {"q": "Have you completed the store-specific safety induction video / orientation?", "required": True},
+        {"q": "Do you understand the lone-worker check-in procedure and safe-cash-handling rules?", "required": True},
+        {"q": "Have you been briefed on aggressive customer / armed-robbery response procedures?", "required": True},
+        {"q": "Do you know the emergency evacuation plan and assembly point for this store?", "required": True},
+        {"q": "Have you been shown manual handling techniques for stock / bulky goods?", "required": True},
+        {"q": "Any medical conditions affecting your work?", "required": False},
+    ],
+}
+
+
 # -------- TradeInduct: induction programs + invite codes --------
 @api_router.get("/tradeinduct/programs")
 async def list_induction_programs(current_user: User = Depends(get_current_user)):
     rows = await db.induction_programs.find({"user_id": current_user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return rows
+
+
+@api_router.get("/tradeinduct/default-questions")
+async def get_default_induction_questions(current_user: User = Depends(get_current_user)):
+    """Returns the default induction question bank for the user's industry.
+
+    Used by the SafeInduct UI to prefill the question list when creating a new
+    program — so a hospitality operator gets RSA + Food Safety Supervisor +
+    allergen questions instead of the trades default (White Card + SWMS).
+    """
+    user_doc = await db.users.find_one(
+        {"user_id": current_user.user_id}, {"_id": 0, "industry": 1}) or {}
+    industry = (user_doc.get("industry") or "trades").lower()
+    return {
+        "industry": industry,
+        "questions": INDUCTION_DEFAULT_QUESTIONS.get(industry, INDUCTION_DEFAULT_QUESTIONS["trades"]),
+    }
 
 
 @api_router.post("/tradeinduct/programs")
@@ -1409,6 +1484,11 @@ async def create_induction_program(body: dict, current_user: User = Depends(get_
     # ensure uniqueness across ALL programs
     while await db.induction_programs.find_one({"code": code}):
         code = uuid.uuid4().hex[:6].upper()
+    # Default questions — pull from the user's industry bank if not supplied.
+    user_doc = await db.users.find_one(
+        {"user_id": current_user.user_id}, {"_id": 0, "industry": 1}) or {}
+    user_industry = (user_doc.get("industry") or "trades").lower()
+    default_qs = INDUCTION_DEFAULT_QUESTIONS.get(user_industry, INDUCTION_DEFAULT_QUESTIONS["trades"])
     doc = {
         "program_id": pid,
         "user_id": current_user.user_id,
@@ -1416,13 +1496,8 @@ async def create_induction_program(body: dict, current_user: User = Depends(get_
         "title": body.get("title") or "Site induction",
         "site": body.get("site", ""),
         "trade": body.get("trade", ""),
-        "questions": body.get("questions") or [
-            {"q": "Have you read the site-specific SWMS?", "required": True},
-            {"q": "Do you hold a valid White Card?", "required": True},
-            {"q": "Do you have the PPE required for this site?", "required": True},
-            {"q": "Have you been briefed on emergency procedures?", "required": True},
-            {"q": "Any pre-existing medical conditions we should know about?", "required": False},
-        ],
+        "industry": user_industry,
+        "questions": body.get("questions") or default_qs,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.induction_programs.insert_one({**doc})
@@ -1474,6 +1549,122 @@ async def submit_induction(code: str, body: dict):
     await db.induction_submissions.insert_one({**doc})
     return {"certificate_id": doc["certificate_id"], "submitted_at": doc["submitted_at"],
             "program_title": prog["title"], "worker_name": doc["worker_name"]}
+
+
+# -------- SafeCheck (formerly TradeCheck): industry-aware credential bank --------
+# Per-industry required credential types. Each entry maps `code` → human label
+# + indicates whether it's mandatory or recommended for typical operators in
+# that industry. Used by SafeCheck to validate listings + drive the credential
+# checklist UI.
+SAFECHECK_REQUIRED_CREDENTIALS = {
+    "trades": [
+        {"code": "white_card", "label": "White Card (General Construction Induction)", "required": True},
+        {"code": "trade_licence", "label": "Trade licence (state-specific)", "required": True},
+        {"code": "public_liability", "label": "Public liability insurance ≥ $20m", "required": True},
+        {"code": "workers_comp", "label": "Workers compensation insurance", "required": True},
+        {"code": "first_aid", "label": "First aid certificate (HLTAID011)", "required": False},
+        {"code": "high_risk", "label": "High Risk Work Licence (where applicable)", "required": False},
+    ],
+    "hospitality": [
+        {"code": "rsa", "label": "RSA — Responsible Service of Alcohol", "required": True},
+        {"code": "food_safety_supervisor", "label": "Food Safety Supervisor certificate", "required": True},
+        {"code": "food_handlers", "label": "Food Handlers certificate", "required": False},
+        {"code": "rcg_rsg", "label": "RCG/RSG (where gaming applies)", "required": False},
+        {"code": "public_liability", "label": "Public liability insurance ≥ $20m", "required": True},
+        {"code": "workers_comp", "label": "Workers compensation insurance", "required": True},
+        {"code": "first_aid", "label": "First aid certificate (HLTAID011)", "required": False},
+    ],
+    "transport": [
+        {"code": "drivers_licence", "label": "Driver licence (HC / HR / MC as required)", "required": True},
+        {"code": "fatigue_management", "label": "Basic / Advanced Fatigue Management training", "required": True},
+        {"code": "dangerous_goods", "label": "Dangerous Goods (DG) licence (where applicable)", "required": False},
+        {"code": "forklift", "label": "Forklift / High-Risk Work Licence", "required": False},
+        {"code": "public_liability", "label": "Public liability insurance ≥ $20m", "required": True},
+        {"code": "workers_comp", "label": "Workers compensation insurance", "required": True},
+        {"code": "vehicle_rego", "label": "Vehicle registration current", "required": True},
+        {"code": "vehicle_inspection", "label": "Heavy vehicle inspection certificate (where required)", "required": False},
+    ],
+    "healthcare": [
+        {"code": "ahpra", "label": "AHPRA registration (current, unrestricted)", "required": True},
+        {"code": "ndis_screen", "label": "NDIS Worker Screening Check", "required": True},
+        {"code": "aged_care_screen", "label": "Aged Care Worker Screening", "required": False},
+        {"code": "wwcc", "label": "Working With Children Check", "required": False},
+        {"code": "first_aid_cpr", "label": "First Aid + CPR (HLTAID011 + HLTAID009)", "required": True},
+        {"code": "manual_handling", "label": "Manual handling training (annual)", "required": True},
+        {"code": "infection_control", "label": "Infection control / hand hygiene training", "required": True},
+        {"code": "professional_indemnity", "label": "Professional indemnity insurance", "required": True},
+    ],
+    "retail": [
+        {"code": "store_induction", "label": "Store-specific induction completed", "required": True},
+        {"code": "rsa", "label": "RSA (where alcohol is sold)", "required": False},
+        {"code": "first_aid", "label": "First aid certificate (HLTAID011)", "required": False},
+        {"code": "wwcc", "label": "Working With Children Check (where applicable)", "required": False},
+        {"code": "manual_handling", "label": "Manual handling training", "required": True},
+        {"code": "lone_worker", "label": "Lone-worker procedure briefing", "required": True},
+        {"code": "public_liability", "label": "Public liability insurance ≥ $20m", "required": True},
+        {"code": "workers_comp", "label": "Workers compensation insurance", "required": True},
+    ],
+}
+
+
+@api_router.get("/tradecheck/required-credentials")
+async def get_required_credentials(industry: Optional[str] = None,
+                                    current_user: User = Depends(get_current_user)):
+    """Returns the credential checklist for the user's (or query) industry.
+
+    The SafeCheck UI renders this list as a checkbox grid when an operator is
+    creating their listing — they tick off each credential they hold and
+    upload supporting evidence. Industries with non-overlapping credentials
+    (e.g. AHPRA for healthcare vs RSA for hospitality) means a hospitality
+    operator never sees White Card and a trades operator never sees AHPRA.
+    """
+    user_doc = await db.users.find_one(
+        {"user_id": current_user.user_id}, {"_id": 0, "industry": 1}) or {}
+    target = (industry or user_doc.get("industry") or "trades").lower()
+    if target not in SAFECHECK_REQUIRED_CREDENTIALS:
+        target = "trades"
+    creds = SAFECHECK_REQUIRED_CREDENTIALS[target]
+    return {
+        "industry": target,
+        "credentials": creds,
+        "required_count": sum(1 for c in creds if c.get("required")),
+        "total_count": len(creds),
+    }
+
+
+@api_router.post("/tradecheck/validate-listing")
+async def validate_tradecheck_listing(body: dict,
+                                       current_user: User = Depends(get_current_user)):
+    """Validate a listing's credential set against the industry checklist.
+
+    Body: `{industry?: str, credentials: [str|{code:str}, ...]}`. Returns
+    `{ok, missing_required[], coverage_pct}`. Used by the SafeCheck listing
+    form before allowing submission.
+    """
+    user_doc = await db.users.find_one(
+        {"user_id": current_user.user_id}, {"_id": 0, "industry": 1}) or {}
+    industry = (body.get("industry") or user_doc.get("industry") or "trades").lower()
+    if industry not in SAFECHECK_REQUIRED_CREDENTIALS:
+        industry = "trades"
+    spec = SAFECHECK_REQUIRED_CREDENTIALS[industry]
+    submitted_codes = set()
+    for c in body.get("credentials") or []:
+        if isinstance(c, str):
+            submitted_codes.add(c.lower())
+        elif isinstance(c, dict) and c.get("code"):
+            submitted_codes.add(c["code"].lower())
+    required = [c for c in spec if c.get("required")]
+    missing = [c for c in required if c["code"] not in submitted_codes]
+    held = [c for c in spec if c["code"] in submitted_codes]
+    coverage = round((len(held) / len(spec)) * 100) if spec else 0
+    return {
+        "ok": len(missing) == 0,
+        "industry": industry,
+        "missing_required": missing,
+        "held": held,
+        "required_count": len(required),
+        "coverage_pct": coverage,
+    }
 
 
 # -------- TradeCheck: verified contractor marketplace --------
@@ -2015,7 +2206,7 @@ api_router.include_router(_inc_router)
 _comp_router = register_competency_routes(db, get_current_user)
 api_router.include_router(_comp_router)
 
-_swms_router = register_swms_routes(db, get_current_user, LlmChat, UserMessage, EMERGENT_LLM_KEY)
+_swms_router = register_swms_routes(db, get_current_user, LlmChat, UserMessage, EMERGENT_LLM_KEY, feature_gate=require_feature("swms_generator"))
 api_router.include_router(_swms_router)
 
 _docs_router = register_docs_routes(db, get_current_user, LlmChat, UserMessage, EMERGENT_LLM_KEY)

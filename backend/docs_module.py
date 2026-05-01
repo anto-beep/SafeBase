@@ -88,6 +88,29 @@ def register_docs_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
         spec = DOC_TYPES.get(doc_type)
         if not spec:
             raise HTTPException(404, f"Unknown doc type: {doc_type}")
+        # Industry hard-block — if this doc_type is industry-gated and the
+        # user's industry is not in the allowed list, return 403. Universal
+        # types (no `industries` key) bypass this check.
+        gate = spec.get("industries")
+        if gate:
+            user_doc = await app_db.users.find_one(
+                {"user_id": current_user.user_id}, {"_id": 0, "industry": 1}) or {}
+            user_industry = (user_doc.get("industry") or "trades").lower()
+            if user_industry not in gate:
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "error": "feature_not_available",
+                        "code": f"doc_type:{doc_type}",
+                        "label": spec.get("label", doc_type),
+                        "industry": user_industry,
+                        "allowed_industries": list(gate),
+                        "message": (
+                            f"'{spec.get('label', doc_type)}' is only available for "
+                            f"{', '.join(gate)} industries — your account is set to {user_industry}."
+                        ),
+                    },
+                )
         allowed_keys = {f["key"] for f in spec.get("fields", [])}
         allowed_keys |= {"status", "signatures"}
         clean_body = {k: v for k, v in body.items() if k in allowed_keys}

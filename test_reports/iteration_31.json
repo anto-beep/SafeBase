@@ -1,0 +1,62 @@
+{
+  "summary": "iter32 strict permission gate (industry × role × plan) tested end-to-end. Backend: 7/7 existing tests in test_iter32_permission_gate.py pass + 10/11 new tests in test_iter32_extras.py pass (only PUT /api/auth/me/industries fails 422). Frontend: IndustrySwitcher renders, SafeCheck credential panel renders with trades-specific creds, SafeInduct modal previews default trades questions. Switching industries (PATCH) works and SWMS Library nav correctly disappears for hospitality. One UX gap: Food Safety nav (food_safety_module) does not surface in hospitality sidebar even though it has nav_path in features_registry.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "PUT /api/auth/me/industries",
+        "issue": "Returns 422 'Field required' for body even when correct JSON {active_industries, primary_industry} is sent. RCA: _IndustriesUpdate Pydantic model is defined INSIDE register_auth_routes() (closure local scope) while the file uses `from __future__ import annotations`. FastAPI's signature inspection cannot resolve the forward reference to the locally-scoped class so it falls back to interpreting `body` as a query/body field with type Any, then rejects the request. Fix: move _IndustriesUpdate to module level (alongside RegisterIn/LoginIn) OR remove `from __future__ import annotations` for this file OR add `_IndustriesUpdate.model_rebuild()` after the class. PATCH /auth/me/industry works because it uses `body: dict` not a Pydantic model.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "DashboardLayout sidebar",
+        "issue": "Food Safety nav item (food_safety_module, nav_path=/dashboard/food-safety) is not rendered in the sidebar when user industry=hospitality. The feature IS in compute_features for hospitality, but DashboardLayout NAV array likely doesn't reference its feature code, so the useFeatureFlags filter never includes it. Hospitality sidebar shows VenueInduct/VenueCheck (good) but no Food Safety entry.",
+        "selector": "aside nav a",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "DashboardLayout sidebar (hospitality)",
+        "issue": "Trades-specific items 'SWMS Revisions', 'Toolbox Talks', 'Plant', 'Substances' still render in hospitality sidebar. Either these are unintentionally tagged as universal in NAV array, or the gate doesn't enforce industry hide. SWMS Library (the headline test) IS correctly hidden — so partial coverage.",
+        "selector": "aside nav a",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter32_permission_gate.py",
+    "/app/backend/tests/test_iter32_extras.py",
+    "/app/test_reports/pytest/iter32_permission_gate.xml",
+    "/app/test_reports/pytest/iter32_extras.xml"
+  ],
+  "action_items": [
+    "Fix PUT /api/auth/me/industries — move _IndustriesUpdate model to module scope in /app/backend/routes/auth.py (current line 267), OR drop `from __future__ import annotations`, OR call _IndustriesUpdate.model_rebuild(_types_namespace=locals()).",
+    "Add Food Safety nav entry to DashboardLayout NAV array with feature code 'food_safety_module' so hospitality users see /dashboard/food-safety.",
+    "Audit DashboardLayout NAV: ensure trades-only items (SWMS Revisions, Toolbox Talks, Plant, Substances) carry their feature codes (swms_generator/toolbox_talks/plant_register/hazardous_substances) so useFeatureFlags filters them out for non-trades industries.",
+    "Optional: also include enabled_features at top level of POST /api/auth/login response (currently nested under user) so frontend doesn't need to read user.enabled_features."
+  ],
+  "critical_code_review_comments": [
+    "permissions.py + features_registry.py architecture is clean and correct. compute_features intersect (industry, role_min, plan_min) is well-designed.",
+    "auth.py forward-reference bug on _IndustriesUpdate is a tricky regression: pydantic 2.12 + __future__ annotations + nested-class is a known FastAPI footgun. Module-level model is the safest fix.",
+    "Login response shape inconsistency: enabled_features is nested under `user` but the brief states it should be present in the login payload. Acceptable as long as frontend reads user.enabled_features, but the contract is ambiguous.",
+    "Hardcoded NAV array in DashboardLayout is the most likely source of frontend gating drift. Any new feature added to features_registry without updating NAV won't surface; conversely, NAV items without feature codes bypass the gate."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter32_extras.py (new test file, 11 tests)"
+  ],
+  "success_rate": {
+    "backend": "94% (17/18 — 7/7 iter32_permission_gate + 10/11 iter32_extras; only PUT /api/auth/me/industries fails 422)",
+    "frontend": "85% (industry-switcher OK, SafeCheck panel OK, induction preview OK, SWMS Library hidden for hospitality OK; Food Safety nav missing for hospitality)"
+  },
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (from /app/memory/test_credentials.md). Token stored in localStorage as 'st_token'.",
+  "seed_data_creation": "Created two TEST_AutoQs induction programs via POST /api/tradeinduct/programs to verify auto-applied default questions. Industry reset to trades after test (PATCH /api/auth/me/industry → trades, status 200).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "PUT /api/auth/me/industries returns 422 because _IndustriesUpdate is defined inside register_auth_routes() with `from __future__ import annotations` active — FastAPI cannot resolve the forward reference. PATCH /auth/me/industry works since it uses `body: dict`. Token key in localStorage is 'st_token'. After PATCHing industry, /dashboard reload picks up the new sidebar correctly. SWMS Library hides on hospitality (good); Food Safety doesn't appear (gap). DashboardLayout NAV array is the gating bottleneck on frontend. Backend feature gate (require_feature) is solid — SWMS POST 403s for healthcare with correct payload, HACCP 403s for healthcare, hospitality can POST HACCP, trades can POST SWMS.",
+  "rca of the issue": "PUT /api/auth/me/industries 422 — root cause: combination of (1) `from __future__ import annotations` at top of routes/auth.py turning all type annotations into strings, (2) class _IndustriesUpdate defined inside register_auth_routes() function (lines 267-269), (3) FastAPI's get_typed_signature → pydantic schema-builder cannot resolve the local string reference because the class isn't in module globals. Result: FastAPI silently treats `body: _IndustriesUpdate` as a body parameter with no schema → expects a JSON-shaped 'body' field at the request root and rejects the actual JSON object as 'missing'. Reproduction: curl -X PUT $URL/api/auth/me/industries -H 'Authorization: Bearer $T' -d '{\"active_industries\":[\"trades\",\"hospitality\"],\"primary_industry\":\"trades\"}' → 422 detail loc=['query','body']. Mitigation: hoist _IndustriesUpdate to module level next to LoginIn/RegisterIn (line 30 area)."
+}

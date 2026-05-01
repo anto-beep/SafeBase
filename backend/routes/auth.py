@@ -89,6 +89,16 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
         if not verify_password(body.password, user_doc["password_hash"]):
             raise HTTPException(401, "Invalid credentials")
         token = make_jwt(user_doc["user_id"])
+        # Build a lightweight User-shaped object so we can compute feature flags
+        from permissions import compute_user_features  # local import
+        class _U:
+            user_id = user_doc["user_id"]
+            industry = user_doc.get("industry") or "trades"
+            role_variant = user_doc.get("role_variant") or "owner"
+        try:
+            enabled = sorted(await compute_user_features(_U(), db))
+        except Exception:
+            enabled = []
         return {
             "token": token,
             "user": {
@@ -101,6 +111,9 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
                 "role_title": user_doc.get("role_title") or "owner",
                 "role_variant": user_doc.get("role_variant") or "owner",
                 "auth_provider": user_doc.get("auth_provider", "email"),
+                "active_industries": user_doc.get("active_industries") or [user_doc.get("industry") or "trades"],
+                "primary_industry": user_doc.get("primary_industry") or user_doc.get("industry") or "trades",
+                "enabled_features": enabled,
             },
         }
 
@@ -180,7 +193,29 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
             data["industry"] = user_doc.get("industry") or "trades"
             data["role_title"] = user_doc.get("role_title") or "owner"
             data["role_variant"] = user_doc.get("role_variant") or "owner"
+            data["active_industries"] = user_doc.get("active_industries") or [data["industry"]]
+            data["primary_industry"] = user_doc.get("primary_industry") or data["industry"]
+        # Embed the feature flag set so the SPA can hide nav items + cards
+        # without an extra round-trip. The 403 hard-block on the API side
+        # remains the source of truth.
+        try:
+            from permissions import compute_user_features  # local import to avoid cycle
+            data["enabled_features"] = sorted(await compute_user_features(current_user, db))
+        except Exception:
+            data["enabled_features"] = []
         return data
+
+    @api_router.get("/features/me")
+    async def get_features_me(current_user=Depends(get_current_user)):
+        """Returns the full feature/nav payload for the current session.
+
+        Frontend `useFeatureFlags()` uses this to render the sidebar and to
+        decide which dashboard cards to show. The 403 hard-block on each
+        gated endpoint is the actual security boundary; this endpoint is
+        purely a UI hint.
+        """
+        from permissions import compute_user_session  # local import
+        return await compute_user_session(current_user, db)
 
     @api_router.patch("/auth/me/role")
     async def update_role_title(body: dict, current_user=Depends(get_current_user)):
@@ -201,12 +236,63 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
         industry = body.get("industry")
         if industry not in ("trades", "hospitality", "transport", "healthcare", "retail"):
             raise HTTPException(400, "Invalid industry")
+        # Also append to active_industries if not already there — switching
+        # implicitly adds the industry to the user's roster. Owner/manager can
+        # remove it later via /auth/me/industries.
+        user_doc = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0}) or {}
+        active = list(user_doc.get("active_industries") or [user_doc.get("industry") or "trades"])
+        if industry not in active:
+            active.append(industry)
+        primary = user_doc.get("primary_industry") or user_doc.get("industry") or industry
         await db.users.update_one(
             {"user_id": current_user.user_id},
             {"$set": {"industry": industry,
+                       "active_industries": active,
+                       "primary_industry": primary,
                        "industry_updated_at": datetime.now(timezone.utc).isoformat()}},
         )
-        return {"industry": industry}
+        return {"industry": industry, "active_industries": active, "primary_industry": primary}
+
+    @api_router.get("/auth/me/industries")
+    async def get_industries(current_user=Depends(get_current_user)):
+        """Returns the user's industry context: active list + primary + current."""
+        user_doc = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0}) or {}
+        current = user_doc.get("industry") or "trades"
+        return {
+            "current": current,
+            "primary_industry": user_doc.get("primary_industry") or current,
+            "active_industries": user_doc.get("active_industries") or [current],
+        }
+
+    class _IndustriesUpdate(BaseModel):
+        active_industries: list[Literal["trades", "hospitality", "transport", "healthcare", "retail"]]
+        primary_industry: Optional[Literal["trades", "hospitality", "transport", "healthcare", "retail"]] = None
+
+    @api_router.put("/auth/me/industries")
+    async def set_industries(body: _IndustriesUpdate, current_user=Depends(get_current_user)):
+        """Owner-level: update the full active_industries roster + primary."""
+        if not body.active_industries:
+            raise HTTPException(400, "At least one industry required")
+        primary = body.primary_industry or body.active_industries[0]
+        if primary not in body.active_industries:
+            raise HTTPException(400, "primary_industry must be in active_industries")
+        # Switch the live `industry` to primary if user is currently on a now-removed industry
+        user_doc = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0}) or {}
+        current = user_doc.get("industry") or primary
+        if current not in body.active_industries:
+            current = primary
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": {
+                "active_industries": body.active_industries,
+                "primary_industry": primary,
+                "industry": current,
+                "industries_updated_at": datetime.now(timezone.utc).isoformat(),
+            }},
+        )
+        return {"active_industries": body.active_industries,
+                "primary_industry": primary,
+                "current": current}
 
     @api_router.post("/auth/logout")
     async def logout(response: Response, session_token: Optional[str] = Cookie(None)):

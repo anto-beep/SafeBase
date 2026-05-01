@@ -2,21 +2,23 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
 import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
+import IndustrySwitcher from "@/components/IndustrySwitcher";
 
 const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
-  { to: "/dashboard/swms", labelKey: "primary_safety_module", label: "SWMS Library", icon: FileText },
-  { to: "/dashboard/document-library", label: "Document Library", icon: FileText },
-  { to: "/dashboard/incidents", label: "Incidents", icon: Warning },
-  { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning },
-  { to: "/dashboard/risk-register?tab=reviews", label: "Risk Reviews", icon: ClipboardText },
-  { to: "/dashboard/workers", labelKey: "workers", label: "Workers", icon: Users },
-  { to: "/dashboard/competency-matrix", label: "Competency Matrix", icon: GraduationCap },
-  { to: "/dashboard/licences", label: "Licences", icon: IdentificationBadge },
-  { to: "/dashboard/notifications", label: "Alerts", icon: Bell },
+  { to: "/dashboard/swms", labelKey: "primary_safety_module", label: "SWMS Library", icon: FileText, feature: "swms_generator" },
+  { to: "/dashboard/document-library", label: "Document Library", icon: FileText, feature: "document_library" },
+  { to: "/dashboard/incidents", label: "Incidents", icon: Warning, feature: "incident_management" },
+  { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning, feature: "risk_register" },
+  { to: "/dashboard/risk-register?tab=reviews", label: "Risk Reviews", icon: ClipboardText, feature: "risk_register" },
+  { to: "/dashboard/workers", labelKey: "workers", label: "Workers", icon: Users, feature: "workers" },
+  { to: "/dashboard/competency-matrix", label: "Competency Matrix", icon: GraduationCap, feature: "training" },
+  { to: "/dashboard/licences", label: "Licences", icon: IdentificationBadge, feature: "credential_tracking" },
+  { to: "/dashboard/notifications", label: "Alerts", icon: Bell, feature: "notifications" },
 ];
 
 // Industry-specific nav label overrides per Part 3 of the multi-industry brief.
@@ -77,6 +79,7 @@ const APPS_NAV = [
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
+  const { has, enabled_features } = useFeatureFlags();
   const navigate = useNavigate();
   const location = useLocation();
   const [unread, setUnread] = useState(0);
@@ -119,7 +122,13 @@ export default function DashboardLayout() {
   const industry = user?.industry || "trades";
   const labelOverrides = NAV_LABELS_BY_INDUSTRY[industry] || NAV_LABELS_BY_INDUSTRY.trades;
   const appAliases = APPS_NAV_BY_INDUSTRY[industry] || APPS_NAV_BY_INDUSTRY.trades;
-  const renderedNav = NAV.map((it) => it.labelKey && labelOverrides[it.labelKey] ? { ...it, label: labelOverrides[it.labelKey] } : it);
+  // Apply industry-specific label overrides AND filter by feature flags.
+  // While `enabled_features` is still loading, show all so the sidebar
+  // doesn't flicker. Once loaded, hide any item whose feature is not enabled.
+  const flagsReady = enabled_features && enabled_features.length > 0;
+  const renderedNav = NAV
+    .map((it) => it.labelKey && labelOverrides[it.labelKey] ? { ...it, label: labelOverrides[it.labelKey] } : it)
+    .filter((it) => !it.feature || !flagsReady || has(it.feature));
   const renderedAppsNav = APPS_NAV.map((it) => {
     if (it.to.endsWith("/tradeinduct")) return { ...it, label: appAliases.tradeinduct };
     if (it.to.endsWith("/tradecheck")) return { ...it, label: appAliases.tradecheck };
@@ -143,6 +152,7 @@ export default function DashboardLayout() {
           <div className="w-8 h-8 bg-warning flex items-center justify-center"><HardHat weight="fill" className="text-ink" size={20} /></div>
           <span className="font-display font-black">SAFEBASE</span>
         </Link>
+        <IndustrySwitcher />
         <nav className="flex-1 p-3 space-y-1">
           {renderedNav.map((item) => {
             const isActive = navActive(item.to, item.end);

@@ -379,7 +379,11 @@ async def _call_claude(system: str, user_prompt: str, fallback: Any,
 # Routes
 # ----------------------------------------------------------------
 
-def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cls, llm_key):
+def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cls, llm_key, feature_gate=None):
+    # `feature_gate` (optional) is a FastAPI dependency callable that resolves
+    # the current user AND enforces the SWMS feature gate (403 if industry/role
+    # disallows). When None we fall back to plain auth — useful for tests.
+    _auth = feature_gate or get_current_user
 
     # ---------------- Reference data ----------------
     @swms_router.get("/swms/reference")
@@ -396,13 +400,13 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
 
     # ---------------- AI ----------------
     @swms_router.post("/swms/ai/suggest-hrcw")
-    async def suggest_hrcw(body: dict, current_user=Depends(get_current_user)):
+    async def suggest_hrcw(body: dict, current_user=Depends(_auth)):
         trade = (body or {}).get("trade", "other")
         activity = (body or {}).get("activity", "")
         return {"hrcw_codes": _auto_hrcw_for(trade, activity)}
 
     @swms_router.post("/swms/ai/suggest-rows")
-    async def suggest_rows(body: dict, current_user=Depends(get_current_user)):
+    async def suggest_rows(body: dict, current_user=Depends(_auth)):
         trade = body.get("trade", "other")
         activity = body.get("activity", "")
         hrcw_codes = body.get("hrcw_codes", []) or []
@@ -466,7 +470,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
 
     # ---------------- CRUD ----------------
     @swms_router.post("/swms")
-    async def create_swms(body: SwmsCreate, current_user=Depends(get_current_user)):
+    async def create_swms(body: SwmsCreate, current_user=Depends(_auth)):
         swms_id = f"swms_{uuid.uuid4().hex[:10]}"
         ref = await _next_ref(current_user.user_id)
         now = _now_iso()
@@ -514,14 +518,14 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
         return {k: v for k, v in doc.items() if k != "_id"}
 
     @swms_router.get("/swms")
-    async def list_swms(current_user=Depends(get_current_user)):
+    async def list_swms(current_user=Depends(_auth)):
         rows = await app_db.swms.find(
             {"user_id": current_user.user_id}, {"_id": 0}
         ).sort("created_at", -1).to_list(500)
         return rows
 
     @swms_router.get("/swms/{swms_id}")
-    async def get_swms(swms_id: str, current_user=Depends(get_current_user)):
+    async def get_swms(swms_id: str, current_user=Depends(_auth)):
         doc = await app_db.swms.find_one(
             {"swms_id": swms_id, "user_id": current_user.user_id}, {"_id": 0}
         )
@@ -530,7 +534,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
         return doc
 
     @swms_router.patch("/swms/{swms_id}")
-    async def update_swms(swms_id: str, body: dict, current_user=Depends(get_current_user)):
+    async def update_swms(swms_id: str, body: dict, current_user=Depends(_auth)):
         doc = await app_db.swms.find_one(
             {"swms_id": swms_id, "user_id": current_user.user_id}
         )
@@ -568,7 +572,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
         return out
 
     @swms_router.delete("/swms/{swms_id}")
-    async def delete_swms(swms_id: str, current_user=Depends(get_current_user)):
+    async def delete_swms(swms_id: str, current_user=Depends(_auth)):
         doc = await app_db.swms.find_one(
             {"swms_id": swms_id, "user_id": current_user.user_id}
         )
@@ -587,7 +591,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
         return {"deleted": True, "swms_id": swms_id}
 
     @swms_router.post("/swms/{swms_id}/duplicate")
-    async def duplicate_swms(swms_id: str, current_user=Depends(get_current_user)):
+    async def duplicate_swms(swms_id: str, current_user=Depends(_auth)):
         src = await app_db.swms.find_one(
             {"swms_id": swms_id, "user_id": current_user.user_id}, {"_id": 0}
         )
@@ -620,7 +624,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
 
     # ---------------- Sign off ----------------
     @swms_router.post("/swms/{swms_id}/sign")
-    async def sign_swms(swms_id: str, body: dict, current_user=Depends(get_current_user)):
+    async def sign_swms(swms_id: str, body: dict, current_user=Depends(_auth)):
         """In-person digital sign-off. Body: {worker_id OR name, signature_data}."""
         doc = await app_db.swms.find_one(
             {"swms_id": swms_id, "user_id": current_user.user_id}
@@ -664,7 +668,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
         return {"signed": True, "all_signed": all_signed, "status": status}
 
     @swms_router.post("/swms/{swms_id}/send-sign-links")
-    async def send_sign_links(swms_id: str, current_user=Depends(get_current_user)):
+    async def send_sign_links(swms_id: str, current_user=Depends(_auth)):
         """Generate secure 7-day tokens for each unsigned worker. SMS delivery
         is MOCKED — we only log the link via in-app notification."""
         doc = await app_db.swms.find_one(
@@ -783,7 +787,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
 
     # ---------------- Status transitions ----------------
     @swms_router.post("/swms/{swms_id}/status")
-    async def set_status(swms_id: str, body: dict, current_user=Depends(get_current_user)):
+    async def set_status(swms_id: str, body: dict, current_user=Depends(_auth)):
         new_status = body.get("status")
         allowed = {"draft", "awaiting_signatures", "signed", "in_use", "reviewed", "archived"}
         if new_status not in allowed:
@@ -809,7 +813,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
         return {"status": new_status}
 
     @swms_router.post("/swms/{swms_id}/link-incident")
-    async def link_incident(swms_id: str, body: dict, current_user=Depends(get_current_user)):
+    async def link_incident(swms_id: str, body: dict, current_user=Depends(_auth)):
         """Mark SWMS as locked by notifiable incident (2 year retention from
         incident date). Used by the incident workflow when an investigation
         linked a SWMS + the incident was deemed notifiable."""
@@ -839,7 +843,7 @@ def register_swms_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
 
     # ---------------- PDF ----------------
     @swms_router.get("/swms/{swms_id}/pdf")
-    async def swms_pdf(swms_id: str, current_user=Depends(get_current_user)):
+    async def swms_pdf(swms_id: str, current_user=Depends(_auth)):
         doc = await app_db.swms.find_one(
             {"swms_id": swms_id, "user_id": current_user.user_id}, {"_id": 0}
         )
