@@ -2320,6 +2320,23 @@ register_retail_routes(
 )
 
 
+# ----------- COMPLIANCE INBOX (cross-industry aggregator) -----------
+from routes.compliance_inbox import register_compliance_inbox_routes  # noqa: E402
+register_compliance_inbox_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, logger=logger,
+)
+
+
+# ----------- INTEGRATION WEBHOOKS (IoT / EWD / AHPRA) -----------
+from routes.integrations import register_integration_routes  # noqa: E402
+register_integration_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, stamp_account_fn=stamp_account,
+    log_audit_fn=log_audit, logger=logger,
+)
+
+
 @api_router.get("/incident-workflow/meta/regulators")
 async def list_regulators():
     """State regulator phone numbers used by the Triage 'Call Now' button."""

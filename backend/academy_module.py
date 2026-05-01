@@ -68,6 +68,8 @@ CATALOGUE = {
             "Working in Extreme Heat (Kitchen)", "Incident Reporting in a Venue",
             "Psychosocial Safety in Hospitality (Bullying and Harassment)",
             "Mental Health in Hospitality",
+            "Food Allergen Death-Response Drill", "PEAL — Preventing Anaphylaxis in Food Service",
+            "Council Inspection — What They'll Check",
         ],
         "full_courses": [
             {"slug": "food_handler_cert", "title": "Food Handler Certification Course",
@@ -99,6 +101,8 @@ CATALOGUE = {
             "Incident Reporting in Transport", "CoR for Schedulers and Dispatchers",
             "CoR for Loaders and Packers",
             "Psychosocial Safety in Transport (Trucker's Helpline: 0439 263 001)",
+            "NHVR Notifiable Occurrences — What and When",
+            "Mass Management Basics", "Dangerous Goods Segregation Rules",
         ],
         "full_courses": [
             {"slug": "cor_full", "title": "Chain of Responsibility — Full Compliance Course", "modules": [
@@ -134,6 +138,9 @@ CATALOGUE = {
             "Mandatory Reporting Awareness", "Elder Abuse — Recognition and Reporting",
             "Fatigue in Healthcare Settings", "Mental Health and Resilience for Clinicians",
             "NDIS Worker Obligations Awareness", "Aged Care Quality Standards Overview",
+            "SIRS — What Triggers a Priority 1 Report",
+            "Restrictive Practices — Aged Care and NDIS Rules",
+            "Clinical Documentation Essentials",
         ],
         "full_courses": [
             {"slug": "manual_handling_full", "title": "Manual Handling for Healthcare — Full Course", "modules": [
@@ -172,6 +179,8 @@ CATALOGUE = {
             "Forklift Safety Awareness", "RSA Awareness (liquor retail)",
             "Incident Reporting in Retail", "Psychosocial Safety in Retail",
             "Mental Health — Resources for Retail Workers",
+            "Armed Robbery Response — 3-Minute Drill",
+            "Customer De-escalation in 60 Seconds",
         ],
         "full_courses": [
             {"slug": "retail_team_lead_whs", "title": "WHS for Retail Team Leaders", "modules": [

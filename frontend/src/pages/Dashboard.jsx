@@ -10,6 +10,7 @@ import {
   GraduationCap, DeviceMobile, Lock,
 } from "@phosphor-icons/react";
 import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
+import ComplianceInboxWidget from "@/components/ComplianceInboxWidget";
 import useTier from "@/hooks/useTier";
 import useIndustry from "@/hooks/useIndustry";
 import WorkerDashboard from "./dashboards/WorkerDashboard";
@@ -306,6 +307,9 @@ function OwnerDashboard() {
           ))}
         </div>
       </div>
+
+      {/* Compliance Inbox widget — cross-industry ranked deadlines */}
+      <ComplianceInboxWidget />
 
       {/* Apps & Add-ons — discoverability for ecosystem (always visible) */}
       <div className="bg-background border border-border p-5" data-testid="apps-addons-section">

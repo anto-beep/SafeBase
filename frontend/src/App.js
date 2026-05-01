@@ -45,6 +45,7 @@ import HospitalityFoodSafety from "@/pages/hospitality/FoodSafetyPage";
 import TransportFleetCoR from "@/pages/transport/FleetCoRPage";
 import HealthcareCareQuality from "@/pages/healthcare/CareQualityPage";
 import RetailInductionsLoneWorker from "@/pages/retail/InductionsLoneWorkerPage";
+import ComplianceInboxPage from "@/pages/ComplianceInboxPage";
 import TradecheckMarketplace from "@/pages/TradecheckMarketplace";
 import TradecheckMy from "@/pages/TradecheckMy";
 import AcademyLMS from "@/pages/AcademyLMS";
@@ -200,6 +201,7 @@ function AppRouter() {
         <Route path="cor" element={<TransportFleetCoR />} />
         <Route path="care-quality" element={<HealthcareCareQuality />} />
         <Route path="inductions" element={<RetailInductionsLoneWorker />} />
+        <Route path="compliance-inbox" element={<ComplianceInboxPage />} />
       </Route>
       <Route path="/products/safeinduct" element={<Navigate to="/addon/safeinduct" replace />} />
       <Route path="/products/safecheck" element={<Navigate to="/addon/safecheck" replace />} />

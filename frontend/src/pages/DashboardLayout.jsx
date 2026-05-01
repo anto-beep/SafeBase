@@ -11,6 +11,7 @@ import ActivityTicker from "@/components/ActivityTicker";
 
 const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
+  { to: "/dashboard/compliance-inbox", label: "Compliance Inbox", icon: Bell, feature: "compliance_dashboard" },
   { to: "/dashboard/swms", labelKey: "primary_safety_module", label: "SWMS Library", icon: FileText, feature: "swms_generator" },
   // Industry-specific primary modules — only one of these will be enabled per
   // industry by the feature registry, so the user always sees exactly one
