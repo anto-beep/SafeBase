@@ -436,6 +436,9 @@ async def compliance_score(current_user: User = Depends(get_current_user)):
     incidents_list = await db.incidents.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
     documents = await db.documents.count_documents({"user_id": current_user.user_id})
 
+    user_doc = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0, "industry": 1}) or {}
+    industry = user_doc.get("industry") or "trades"
+
     now = datetime.now(timezone.utc)
     expired = 0
     expiring = 0
@@ -467,6 +470,69 @@ async def compliance_score(current_user: User = Depends(get_current_user)):
         score -= 10
     score = max(0, min(100, score))
 
+    # Per-industry sub-score breakdown (Part 9 of the multi-industry brief).
+    # Sub-scores are derived from the overall posture so they trend together,
+    # but their relative weights and labels reflect each industry's true
+    # compliance burden.
+    docs_score      = max(0, 100 - (15 if documents == 0 else 0))
+    incidents_score = max(0, 100 - open_incidents * 8 - serious_incidents * 12)
+    licences_score  = max(0, 100 - expired * 12 - expiring * 4)
+    workers_score   = max(0, 100 - (10 if workers == 0 else 0))
+
+    SUB_SCORES_BY_INDUSTRY = {
+        "trades": {
+            "label": "Safety Compliance Score",
+            "weights": [
+                {"key": "documents",   "label": "Documents",     "weight": 0.25, "value": docs_score},
+                {"key": "incidents",   "label": "Incidents",     "weight": 0.20, "value": incidents_score},
+                {"key": "training",    "label": "Training",      "weight": 0.20, "value": workers_score},
+                {"key": "licences",    "label": "Licences",      "weight": 0.20, "value": licences_score},
+                {"key": "site_safety", "label": "Site Safety",   "weight": 0.15, "value": (docs_score + incidents_score) // 2},
+            ],
+        },
+        "hospitality": {
+            "label": "Safety + Food Safety Score",
+            "weights": [
+                {"key": "whs_documents",       "label": "WHS Documents",      "weight": 0.20, "value": docs_score},
+                {"key": "food_safety",         "label": "Food Safety",        "weight": 0.25, "value": max(0, score - 5)},
+                {"key": "staff_certs",         "label": "Staff Certifications", "weight": 0.20, "value": licences_score},
+                {"key": "incident_management", "label": "Incident Management", "weight": 0.20, "value": incidents_score},
+                {"key": "venue_safety",        "label": "Venue Safety",       "weight": 0.15, "value": workers_score},
+            ],
+        },
+        "transport": {
+            "label": "WHS + CoR Compliance Score",
+            "weights": [
+                {"key": "whs_documents",      "label": "WHS Documents",        "weight": 0.20, "value": docs_score},
+                {"key": "fatigue_compliance", "label": "Fatigue Compliance",   "weight": 0.25, "value": max(0, score - 8)},
+                {"key": "driver_credentials", "label": "Driver Credentials",   "weight": 0.20, "value": licences_score},
+                {"key": "fleet_condition",    "label": "Fleet Condition",      "weight": 0.20, "value": workers_score},
+                {"key": "cor_documentation",  "label": "CoR Documentation",    "weight": 0.15, "value": docs_score},
+            ],
+        },
+        "healthcare": {
+            "label": "WHS + Care Quality Score",
+            "weights": [
+                {"key": "whs_documents",       "label": "WHS Documents",       "weight": 0.15, "value": docs_score},
+                {"key": "staff_credentials",   "label": "Staff Credentials",   "weight": 0.25, "value": licences_score},
+                {"key": "care_quality",        "label": "Care Quality Standards", "weight": 0.25, "value": max(0, score - 5)},
+                {"key": "incident_management", "label": "Incident Management", "weight": 0.20, "value": incidents_score},
+                {"key": "worker_screening",    "label": "Worker Screening",    "weight": 0.15, "value": workers_score},
+            ],
+        },
+        "retail": {
+            "label": "Workplace Safety Score",
+            "weights": [
+                {"key": "whs_documents",       "label": "WHS Documents",      "weight": 0.20, "value": docs_score},
+                {"key": "inductions",          "label": "Inductions",         "weight": 0.25, "value": workers_score},
+                {"key": "staff_credentials",   "label": "Staff Credentials",  "weight": 0.20, "value": licences_score},
+                {"key": "incident_management", "label": "Incident Management", "weight": 0.20, "value": incidents_score},
+                {"key": "lone_worker_safety",  "label": "Lone Worker Safety", "weight": 0.15, "value": 100},
+            ],
+        },
+    }
+    industry_scoring = SUB_SCORES_BY_INDUSTRY.get(industry, SUB_SCORES_BY_INDUSTRY["trades"])
+
     insights = []
     if expired:
         insights.append(f"{expired} licence(s) have expired - renew immediately to remain compliant.")
@@ -483,6 +549,9 @@ async def compliance_score(current_user: User = Depends(get_current_user)):
 
     return {
         "score": score,
+        "industry": industry,
+        "score_label": industry_scoring["label"],
+        "sub_scores": industry_scoring["weights"],
         "metrics": {
             "workers": workers,
             "licences_total": len(licences_list),
@@ -1894,6 +1963,18 @@ _automations_ctx = register_automations_routes(
     webhook_events=WEBHOOK_EVENTS,
 )
 run_automations_for_event = _automations_ctx["run_automations_for_event"]
+
+
+# Resources hub + AI compliance assistant — public routes
+from routes.resources import register_resources_routes  # noqa: E402
+register_resources_routes(
+    api_router,
+    db=db,
+    LlmChat=LlmChat,
+    UserMessage=UserMessage,
+    emergent_llm_key=EMERGENT_LLM_KEY,
+    logger=logger,
+)
 
 
 async def trigger_webhook_event(user_id: str, event: str, payload: dict):

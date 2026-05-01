@@ -48,14 +48,14 @@ class TestBillingTiers:
         assert r.status_code == 200
         data = r.json()
         assert isinstance(data, list)
-        # 4 tiers × monthly/annual since iter12 (Enterprise added) — was 6 pre-iter12
-        assert len(data) == 8
+        # 4 industries: trades+retail share 8 slugs, hospitality has 8, transport has 8, healthcare has 8 = 32
+        assert len(data) == 32
         slugs = {t["slug"] for t in data}
         expected = {
             "sole_trader_monthly", "small_business_monthly", "growing_business_monthly", "enterprise_monthly",
             "sole_trader_annual", "small_business_annual", "growing_business_annual", "enterprise_annual",
         }
-        assert slugs == expected
+        assert expected.issubset(slugs)  # trades+retail share these 8 — hospitality/transport/healthcare add 24 more
         for t in data:
             assert "amount" in t and "currency" in t and "cycle" in t
             assert t["currency"] == "aud"

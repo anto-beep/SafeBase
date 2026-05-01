@@ -47,25 +47,30 @@ async def _call_claude(system: str, user_prompt: str, fallback: Any,
 def register_docs_routes(app_db, get_current_user, llm_chat_cls, user_message_cls, llm_key):
 
     @docs_router.get("/docs/types")
-    async def list_doc_types(current_user=Depends(get_current_user)):
-        """Returns lightweight catalog for the hub UI, filtered by the caller's
-        industry. Universal types (no `industries` key) show to everyone.
-        Industry-gated types only show if the user's industry is in the list.
+    async def list_doc_types(industry: str | None = None, current_user=Depends(get_current_user)):
+        """Returns lightweight catalog for the hub UI, filtered by industry.
+        Universal types (no `industries` key) show to everyone. Industry-gated
+        types only show if the requested industry is in the list.
+
+        If `industry` query param is provided, it overrides the user's saved
+        industry — used by the Document Library tab switcher (Part 7) to let
+        users preview docs for other industries before switching their account.
         """
         user_doc = await app_db.users.find_one(
             {"user_id": current_user.user_id}, {"_id": 0, "industry": 1}) or {}
-        user_industry = user_doc.get("industry") or "trades"
+        target_industry = industry or user_doc.get("industry") or "trades"
         out = []
         for t in DOC_TYPES.values():
             gate = t.get("industries")
-            if gate and user_industry not in gate:
+            if gate and target_industry not in gate:
                 continue
             out.append({k: v for k, v in t.items() if k != "pdf"})
         return {
             "categories": CATEGORIES,
             "types": out,
             "states": list(STATE_REGULATORS.keys()),
-            "user_industry": user_industry,
+            "user_industry": user_doc.get("industry") or "trades",
+            "viewing_industry": target_industry,
         }
 
     async def _next_ref(user_id: str, prefix: str) -> str:

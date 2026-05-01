@@ -42,10 +42,12 @@ class TestBillingRefactor:
         assert r.status_code == 200
         data = r.json()
         assert isinstance(data, list)
-        assert len(data) == 8  # 4 tiers × monthly/annual since iter12
+        # 4 industries: trades+retail share 8, hosp+transport+healthcare have 8 each = 32
+        assert len(data) == 32
         slugs = {t["slug"] for t in data}
         assert "enterprise_monthly" in slugs
         assert "sole_trader_annual" in slugs
+        assert "hosp_single_monthly" in slugs
 
     def test_my_subscription(self, auth):
         r = requests.get(f"{API}/billing/my-subscription", headers=auth)

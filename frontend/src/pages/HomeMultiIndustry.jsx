@@ -6,6 +6,7 @@ import {
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
+import IndustryDashboardPreview from "@/components/marketing/IndustryDashboardPreview";
 import { INDUSTRIES, INDUSTRY_LIST } from "@/data/industries.config";
 import { Icon } from "@/components/industry/IndustryPage";
 import axios from "axios";
@@ -225,6 +226,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+
+        {/* INDUSTRY DASHBOARD PREVIEW — interactive switcher per industry */}
+        <IndustryDashboardPreview />
 
         {/* How it works */}
         <section className="py-24 bg-ink text-white">

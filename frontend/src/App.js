@@ -75,6 +75,7 @@ import Pricing from "@/pages/Pricing";
 import Partners from "@/pages/Partners";
 import Franchises from "@/pages/Franchises";
 import Resources from "@/pages/Resources";
+import ResourceArticle from "@/pages/ResourceArticle";
 import About from "@/pages/About";
 import Ecosystem from "@/pages/Ecosystem";
 import Consulting from "@/pages/Consulting";
@@ -116,6 +117,7 @@ function AppRouter() {
       <Route path="/partners" element={<Partners />} />
       <Route path="/franchises" element={<Franchises />} />
       <Route path="/resources" element={<Resources />} />
+      <Route path="/resources/:industry/:slug" element={<ResourceArticle />} />
       <Route path="/about" element={<About />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
