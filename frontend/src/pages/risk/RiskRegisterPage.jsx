@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -343,6 +343,19 @@ function ReviewsTab() {
 }
 
 export default function RiskRegisterPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") === "reviews" ? "reviews" : "register";
+  const [tab, setTab] = useState(initialTab);
+  useEffect(() => {
+    const urlTab = searchParams.get("tab") === "reviews" ? "reviews" : "register";
+    if (urlTab !== tab) setTab(urlTab);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const onTabChange = (v) => {
+    setTab(v);
+    if (v === "reviews") setSearchParams({ tab: "reviews" }, { replace: true });
+    else setSearchParams({}, { replace: true });
+  };
   return (
     <div className="space-y-6" data-testid="risk-register-page">
       <div className="border-b border-border pb-6">
@@ -350,7 +363,7 @@ export default function RiskRegisterPage() {
         <h1 className="font-display text-4xl font-black tracking-tighter mt-1">Risk Register</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">Every identified risk across your business — linked to inspections, incidents, SWMS, and controls. With AI-assisted suggestions and scheduled reviews.</p>
       </div>
-      <Tabs defaultValue="register" className="space-y-4">
+      <Tabs value={tab} onValueChange={onTabChange} className="space-y-4">
         <TabsList className="bg-muted rounded-none border border-border p-1 h-auto flex flex-wrap gap-1">
           <TabsTrigger value="register" className="rounded-none" data-testid="tab-register"><ShieldWarning className="mr-2" />Risk Register</TabsTrigger>
           <TabsTrigger value="reviews" className="rounded-none" data-testid="tab-reviews"><Clock className="mr-2" />Risk Reviews</TabsTrigger>

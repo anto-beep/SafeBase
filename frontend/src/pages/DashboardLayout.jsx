@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,9 @@ const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
   { to: "/dashboard/swms", label: "SWMS Library", icon: FileText },
   { to: "/dashboard/document-library", label: "Document Library", icon: FileText },
-  { to: "/dashboard/documents", label: "Documents", icon: FileText },
   { to: "/dashboard/incidents", label: "Incidents", icon: Warning },
+  { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning },
+  { to: "/dashboard/risk-register?tab=reviews", label: "Risk Reviews", icon: ClipboardText },
   { to: "/dashboard/workers", label: "Workers", icon: Users },
   { to: "/dashboard/competency-matrix", label: "Competency Matrix", icon: GraduationCap },
   { to: "/dashboard/licences", label: "Licences", icon: IdentificationBadge },
@@ -23,9 +24,9 @@ const SAFETY_NAV = [
   { to: "/dashboard/plant", label: "Plant", icon: Truck },
   { to: "/dashboard/substances", label: "Substances", icon: Flask },
   { to: "/dashboard/inspections", label: "Inspections", icon: ClipboardText },
-  { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning },
   { to: "/dashboard/swms-revisions", label: "SWMS Revisions", icon: FileText },
   { to: "/dashboard/first-aid-ppe", label: "First Aid & PPE", icon: FirstAidKit },
+  { to: "/dashboard/documents", label: "Legacy Documents", icon: FileText },
 ];
 
 const LIBRARY_NAV = [
@@ -57,8 +58,19 @@ const APPS_NAV = [
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [unread, setUnread] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const navActive = (to, end) => {
+    const [toPath, toQuery] = to.split("?");
+    if (end) return location.pathname === toPath && location.search.replace(/^\?/, "") === (toQuery || "");
+    const pathMatches = location.pathname === toPath || location.pathname.startsWith(toPath + "/");
+    if (!pathMatches) return false;
+    // If the nav entry has a query, require it to match; if not, require current search to lack a tab=
+    if (toQuery) return location.search.includes(toQuery);
+    return !location.search.includes("tab=");
+  };
 
   useEffect(() => {
     if (user && !user.onboarding_complete && user.auth_provider !== "google") {
@@ -92,22 +104,23 @@ export default function DashboardLayout() {
           <span className="font-display font-black">SAFETRADIE</span>
         </Link>
         <nav className="flex-1 p-3 space-y-1">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              data-testid={`nav-${item.label.toLowerCase()}`}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+          {NAV.map((item) => {
+            const isActive = navActive(item.to, item.end);
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
+                className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                   isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
-                }`
-              }
-            >
-              <item.icon size={18} weight="bold" /> {item.label}
-              {item.label === "Alerts" && unread > 0 && <span className="ml-auto bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5">{unread}</span>}
-            </NavLink>
-          ))}
+                }`}
+              >
+                <item.icon size={18} weight="bold" /> {item.label}
+                {item.label === "Alerts" && unread > 0 && <span className="ml-auto bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5">{unread}</span>}
+              </NavLink>
+            );
+          })}
           <NavLink to="/dashboard/reports" data-testid="nav-reports" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
             <ChartLineUp size={18} weight="bold" /> Reports
           </NavLink>
