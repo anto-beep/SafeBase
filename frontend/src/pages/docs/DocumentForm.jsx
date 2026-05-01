@@ -11,8 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
-  Plus, Trash, FloppyDisk, FilePdf, Sparkle, ArrowLeft, CheckCircle,
+  Plus, Trash, FloppyDisk, FilePdf, Sparkle, ArrowLeft, CheckCircle, CalendarBlank,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -170,11 +172,7 @@ function FieldRenderer({ field, value, onChange }) {
     );
   }
   if (t === "date" || t === "datetime") {
-    return (
-      <div><Label className="label-eyebrow">{field.label}</Label>
-        <Input type={t === "datetime" ? "datetime-local" : "date"} value={value || ""} onChange={(e) => onChange(e.target.value)} className="h-10 rounded-none border-ink mt-1 w-64" data-testid={`field-${field.key}`} />
-      </div>
-    );
+    return <DateField field={field} value={value} onChange={onChange} withTime={t === "datetime"} />;
   }
   if (t === "number") {
     return (
@@ -195,93 +193,13 @@ function FieldRenderer({ field, value, onChange }) {
   if (t === "checklist") {
     return <ChecklistField field={field} value={value} onChange={onChange} />;
   }
-  if (t === "chemicals") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"product",l:"Product"},{k:"manufacturer",l:"Manufacturer"},{k:"sds_date",l:"SDS date"},{k:"hazard_class",l:"Hazard class"},{k:"location",l:"Location"},{k:"max_quantity",l:"Max qty"},{k:"ppe",l:"PPE"}]} />;
-  }
-  if (t === "contacts") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"name",l:"Name"},{k:"role",l:"Role"},{k:"phone",l:"Phone"}]} />;
-  }
-  if (t === "equipment") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"equipment",l:"Equipment"},{k:"location",l:"Location"}]} />;
-  }
-  if (t === "attendees") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"name",l:"Attendee name"}]} />;
-  }
-  if (t === "responsibilities") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"role",l:"Role"},{k:"responsibility",l:"Responsibility"}]} />;
-  }
-  if (t === "asbestos_items") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"location",l:"Location"},{k:"material",l:"Material"},{k:"friable",l:"Friable (Y/N)"},{k:"condition",l:"Condition"},{k:"risk",l:"Risk"},{k:"control",l:"Control"},{k:"accessible",l:"Accessible"}]} />;
-  }
-  if (t === "test_results") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"test",l:"Test"},{k:"result",l:"Result"}]} />;
-  }
-  if (t === "plumbing_items") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"item",l:"Item"},{k:"standard",l:"Standard"},{k:"result",l:"Result"}]} />;
-  }
-  if (t === "backflow_tests") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"test",l:"Test"},{k:"required",l:"Required"},{k:"actual",l:"Actual"},{k:"result",l:"Pass/Fail"}]} />;
-  }
-  if (t === "tmp_signage") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"device",l:"Device / sign"},{k:"location",l:"Location"},{k:"qty",l:"Qty"}]} />;
-  }
-  if (t === "loto_points") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"point",l:"Point / ID"},{k:"type",l:"Energy type"},{k:"device",l:"Lock/tag ID"},{k:"verified_by",l:"Verified by"}]} />;
-  }
-  if (t === "mh_factors") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"factor",l:"Factor"},{k:"rating",l:"Rating (L/M/H)"},{k:"detail",l:"Detail"}]} />;
-  }
-  if (t === "mh_controls") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"hierarchy",l:"Hierarchy"},{k:"control",l:"Control"},{k:"responsible",l:"Responsible"}]} />;
-  }
-  if (t === "noise_measurements") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"source",l:"Source"},{k:"location",l:"Location"},{k:"dba",l:"LAeq dB(A)"},{k:"duration",l:"Duration"},{k:"exposure",l:"8-hr exposure"}]} />;
-  }
-  if (t === "silica_tasks") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"task",l:"Task"},{k:"material",l:"Material"},{k:"duration",l:"Duration"},{k:"expected_exposure",l:"Est. exposure mg/m³"}]} />;
-  }
-  if (t === "rpe_items") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"task",l:"Task"},{k:"rpe_type",l:"RPE type"},{k:"protection_factor",l:"APF"}]} />;
-  }
-  if (t === "test_tag_items") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"asset_id",l:"Asset / tag ID"},{k:"description",l:"Description"},{k:"location",l:"Location"},{k:"class",l:"Class"},{k:"test_date",l:"Test date"},{k:"result",l:"Result"},{k:"next_test",l:"Next test"}]} />;
-  }
-  if (t === "fire_detection") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"system",l:"System"},{k:"location",l:"Location"},{k:"last_service",l:"Last service"},{k:"next_service",l:"Next service"}]} />;
-  }
-  if (t === "fire_equipment") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"equipment",l:"Equipment"},{k:"location",l:"Location"},{k:"qty",l:"Qty"},{k:"last_inspection",l:"Last inspection"}]} />;
-  }
-  if (t === "emp_aspects") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"aspect",l:"Aspect"},{k:"impact",l:"Impact"},{k:"rating",l:"Rating"},{k:"control",l:"Control"}]} />;
-  }
-  if (t === "waste_streams") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"stream",l:"Stream"},{k:"disposal",l:"Disposal"},{k:"contractor",l:"Contractor"}]} />;
-  }
-  if (t === "emp_compliance") {
-    return <TableField field={field} value={value} onChange={onChange}
-                       cols={[{k:"requirement",l:"Requirement"},{k:"source",l:"Source"},{k:"responsible",l:"Responsible"}]} />;
+  // ---- Unified table field renderer ----
+  // Accepts either (a) type === "table" with field.columns=[{key,label}]
+  // or (b) any legacy table-type id registered in TABLE_COLS below.
+  const cols = t === "table" ? (field.columns || []) : TABLE_COLS[t];
+  if (cols) {
+    const normalised = cols.map((c) => ({ k: c.k || c.key, l: c.l || c.label }));
+    return <TableField field={field} value={value} onChange={onChange} cols={normalised} />;
   }
   if (t === "atmosphere") {
     return <AtmosphereField field={field} value={value} onChange={onChange} />;
@@ -293,6 +211,78 @@ function FieldRenderer({ field, value, onChange }) {
   return (
     <div><Label className="label-eyebrow">{field.label}{field.required ? " *" : ""}</Label>
       <Input value={value || ""} onChange={(e) => onChange(e.target.value)} className="h-10 rounded-none border-ink mt-1" data-testid={`field-${field.key}`} />
+    </div>
+  );
+}
+
+// Legacy table-type id -> columns lookup (kept for back-compat; new types should
+// use type:"table" + columns:[{key,label}] directly in the backend registry).
+const TABLE_COLS = {
+  chemicals: [{k:"product",l:"Product"},{k:"manufacturer",l:"Manufacturer"},{k:"sds_date",l:"SDS date"},{k:"hazard_class",l:"Hazard class"},{k:"location",l:"Location"},{k:"max_quantity",l:"Max qty"},{k:"ppe",l:"PPE"}],
+  contacts: [{k:"name",l:"Name"},{k:"role",l:"Role"},{k:"phone",l:"Phone"}],
+  equipment: [{k:"equipment",l:"Equipment"},{k:"location",l:"Location"}],
+  attendees: [{k:"name",l:"Attendee name"}],
+  responsibilities: [{k:"role",l:"Role"},{k:"responsibility",l:"Responsibility"}],
+  asbestos_items: [{k:"location",l:"Location"},{k:"material",l:"Material"},{k:"friable",l:"Friable (Y/N)"},{k:"condition",l:"Condition"},{k:"risk",l:"Risk"},{k:"control",l:"Control"},{k:"accessible",l:"Accessible"}],
+  test_results: [{k:"test",l:"Test"},{k:"result",l:"Result"}],
+  plumbing_items: [{k:"item",l:"Item"},{k:"standard",l:"Standard"},{k:"result",l:"Result"}],
+  backflow_tests: [{k:"test",l:"Test"},{k:"required",l:"Required"},{k:"actual",l:"Actual"},{k:"result",l:"Pass/Fail"}],
+  tmp_signage: [{k:"device",l:"Device / sign"},{k:"location",l:"Location"},{k:"qty",l:"Qty"}],
+  loto_points: [{k:"point",l:"Point / ID"},{k:"type",l:"Energy type"},{k:"device",l:"Lock/tag ID"},{k:"verified_by",l:"Verified by"}],
+  mh_factors: [{k:"factor",l:"Factor"},{k:"rating",l:"Rating (L/M/H)"},{k:"detail",l:"Detail"}],
+  mh_controls: [{k:"hierarchy",l:"Hierarchy"},{k:"control",l:"Control"},{k:"responsible",l:"Responsible"}],
+  noise_measurements: [{k:"source",l:"Source"},{k:"location",l:"Location"},{k:"dba",l:"LAeq dB(A)"},{k:"duration",l:"Duration"},{k:"exposure",l:"8-hr exposure"}],
+  silica_tasks: [{k:"task",l:"Task"},{k:"material",l:"Material"},{k:"duration",l:"Duration"},{k:"expected_exposure",l:"Est. exposure mg/m³"}],
+  rpe_items: [{k:"task",l:"Task"},{k:"rpe_type",l:"RPE type"},{k:"protection_factor",l:"APF"}],
+  test_tag_items: [{k:"asset_id",l:"Asset / tag ID"},{k:"description",l:"Description"},{k:"location",l:"Location"},{k:"class",l:"Class"},{k:"test_date",l:"Test date"},{k:"result",l:"Result"},{k:"next_test",l:"Next test"}],
+  fire_detection: [{k:"system",l:"System"},{k:"location",l:"Location"},{k:"last_service",l:"Last service"},{k:"next_service",l:"Next service"}],
+  fire_equipment: [{k:"equipment",l:"Equipment"},{k:"location",l:"Location"},{k:"qty",l:"Qty"},{k:"last_inspection",l:"Last inspection"}],
+  emp_aspects: [{k:"aspect",l:"Aspect"},{k:"impact",l:"Impact"},{k:"rating",l:"Rating"},{k:"control",l:"Control"}],
+  waste_streams: [{k:"stream",l:"Stream"},{k:"disposal",l:"Disposal"},{k:"contractor",l:"Contractor"}],
+  emp_compliance: [{k:"requirement",l:"Requirement"},{k:"source",l:"Source"},{k:"responsible",l:"Responsible"}],
+};
+
+function DateField({ field, value, onChange, withTime }) {
+  // value is stored as ISO string "YYYY-MM-DD" (date) or "YYYY-MM-DDTHH:mm" (datetime)
+  const [open, setOpen] = useState(false);
+  const parts = (value || "").split("T");
+  const datePart = parts[0] || "";
+  const timePart = (parts[1] || "").slice(0, 5);
+  const date = datePart ? new Date(datePart + "T00:00:00") : undefined;
+  const display = value ? (withTime && timePart ? `${datePart} ${timePart}` : datePart) : "Pick a date";
+  const onSelect = (d) => {
+    if (!d) return;
+    const iso = d.toISOString().slice(0, 10);
+    onChange(withTime ? `${iso}T${timePart || "09:00"}` : iso);
+    if (!withTime) setOpen(false);
+  };
+  return (
+    <div>
+      <Label className="label-eyebrow">{field.label}</Label>
+      <div className="flex gap-2 mt-1">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-10 rounded-none border-ink justify-start font-normal w-56" data-testid={`field-${field.key}`}>
+              <CalendarBlank className="mr-2" /> {display}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 rounded-none border-ink" align="start">
+            <Calendar mode="single" selected={date} onSelect={onSelect} initialFocus />
+          </PopoverContent>
+        </Popover>
+        {withTime && (
+          <Input
+            type="time"
+            value={timePart}
+            onChange={(e) => {
+              const t = e.target.value;
+              if (datePart) onChange(`${datePart}T${t}`);
+            }}
+            className="h-10 rounded-none border-ink w-28"
+            data-testid={`field-${field.key}-time`}
+          />
+        )}
+      </div>
     </div>
   );
 }
