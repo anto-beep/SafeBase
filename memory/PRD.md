@@ -204,6 +204,24 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - **Trades dashboard preserved unchanged**.
 - **Industry-aware sidebar** — `DashboardLayout.jsx` reads `user.industry` and applies `NAV_LABELS_BY_INDUSTRY` (SWMS Library → Food Safety / Fleet & CoR / Care Quality / Inductions; Workers → Team Members / Drivers & Operators / Staff & Clinicians) + `APPS_NAV_BY_INDUSTRY` aliases (TradeInduct → VenueInduct/FleetInduct/ClinicInduct/StoreInduct) + `industryAccent` 4px left-border on active items.
 
+### Iteration 36 — Cross-Industry Compliance Inbox + Integration Webhooks + Content Expansion (Feb 2026)
+- **Cross-industry Compliance Inbox** (`/app/backend/routes/compliance_inbox.py`): aggregates 10 item sources from every industry into a single prioritised list — SIRS (P1 24h / P2 30d), NDIS reportable (24h / 5d), AHPRA expiring/expired, NHVR Notifiable Occurrences (24h regulatory), fatigue breaches (7d), lone-worker overdue (auto-escalate threshold), temperature breaches (24h), HACCP CCP breaches (7d), FSS + Liquor cert expiring (30d), long-open incidents (>7d). Severity classified as `critical` (overdue/≤4h regulatory), `high` (≤24h), `medium` (≤30d), `info`.
+  - `GET /api/compliance-inbox?severity=&industry=&limit=` — full list with counts_by_severity
+  - `GET /api/compliance-inbox/summary` — widget-friendly top_3 + counts
+- **Dashboard widget** (`/app/frontend/src/components/ComplianceInboxWidget.jsx`): mounted above Apps & Add-ons on every Dashboard. 60s auto-poll, red-banner if any `critical` items, severity chips, industry-accented left border per row, deep-links to the owning industry module.
+- **Full Compliance Inbox page** (`/dashboard/compliance-inbox`): 4 stat tiles, severity + industry Select filters, scrollable list with kind chip (NHVR/NDIS/SIRS/AHPRA/…) + industry chip + deadline countdown ("in 3h", "2d overdue"). Sidebar nav item added as item #2 under Overview.
+- **Integration webhook stubs** (`/app/backend/routes/integrations.py`):
+  - `POST /api/integrations/iot/temperature` — IoT sensor webhook → temperature_logs row with FSANZ Std 3.2.2 auto-range check (same logic as the manual endpoint)
+  - `POST /api/integrations/ewd/fatigue` — EWD provider webhook → fatigue_logs with auto-breach detection, `source='ewd'`
+  - `POST /api/integrations/ahpra/poll` — owner-only manual refresh stamping `last_checked_at` on all registrations
+  - `POST /api/integrations/ahpra/webhook` — upsert on `registration_number` for status/conditions changes
+  - Auth via `x-safebase-integration-token` header (per-account tokens) or `x-safebase-account` (test mode).
+- **Content expansion**:
+  - **AI docs extra**: added `peal_anaphylaxis_plan` (hospitality), `nhvas_audit_pack` + `nhvr_notifiable_occurrence` (transport), `sirs_investigation_report` (healthcare). Registry now has ≈35 industry-specific AI doc types across 4 industries.
+  - **Academy catalogue**: extended microlearning lists — hospitality +3 (PEAL, council inspection, allergen death-response drill), transport +3 (NHVR notifiable, mass, DG segregation), healthcare +3 (SIRS P1, restrictive practices, clinical docs), retail +2 (armed-robbery drill, 60s de-escalation).
+- **Backend tests**: 21/21 new pytest + trades regression + frontend smoke all PASS (iteration_36.json). `retest_needed: False`. Cross-account isolation verified (no inbox leakage). NHVR occurrence created 25h ago correctly surfaces as `critical`.
+- **Trades dashboard preserved unchanged** — new widget appears on Trades dashboard too (aggregates long-open trades incidents), but no Trades-specific UI changed.
+
 ### Iteration 35 — Industry-Specific Mega-Batch: Full Backend Modules for Hospitality / Transport / Healthcare / Retail (Feb 2026)
 - **Four dedicated route modules added at `/app/backend/routes/`** (all 403-gated via `require_feature()` — trades user hits any of them returns `{error:"feature_not_available", code, industry, role_variant}`):
   - **`hospitality.py`** — Temperature logs with automated FSANZ Std 3.2.2 range check (fridge/coolroom ≤5°C, freezer ≤-15°C, hot holding ≥60°C + breach stats 30d), Food Safety Supervisor register, HACCP CCP log, Allergen register, Cleaning schedule (w/ complete endpoint), Supplier register, RSA/Liquor register, Council inspection pack generator (manifest of all evidence counts).
