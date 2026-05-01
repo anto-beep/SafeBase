@@ -1,0 +1,32 @@
+{
+  "summary": "iter30 Batch B multi-industry dashboards — frontend-only test. All 4 new owner dashboards (hospitality/transport/healthcare/retail) render with 100% of required data-testids present, correct industry-aware sidebar labels (Food Safety/Team Members/VenueInduct/VenueCheck etc.) and correct active-NAV left-border colour accents (#E87722 amber, #0DC4B5 teal, #2196A6 blue, #A855F7 purple, #FFCC00 yellow for trades). Trades owner dashboard preserved unchanged with eyebrow '/ Overview · Trades and Construction'. Cleanup PATCHed back to industry=trades, role_variant=owner. Backend skipped per request.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "role_variant overrides industry layout (smoke test)",
+        "issue": "After PATCH /api/auth/me/industry with role_variant='safety_lead' (industry='healthcare') and reload, [data-testid='safety-lead-dashboard'] is NOT rendered AND [data-testid='healthcare-owner-dashboard'] IS still rendered. Same for role_variant='supervisor' (industry='hospitality') — supervisor-dashboard NOT found, hospitality-owner-dashboard still present. Suggests role_variant from PATCH is not being persisted/returned by /api/auth/me, OR the SafetyLead/Supervisor dashboards use a different testid than 'safety-lead-dashboard'/'supervisor-dashboard'. Dashboard.jsx logic does check variant before industry (lines 60-67), so most likely a backend persistence or testid-mismatch issue.",
+        "affected_selectors": ["[data-testid='safety-lead-dashboard']", "[data-testid='supervisor-dashboard']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Investigate why PATCH /api/auth/me/industry with role_variant='safety_lead'/'supervisor' does not switch the rendered dashboard. Confirm (a) PATCH actually updates role_variant in DB, (b) /api/auth/me returns updated role_variant after reload, (c) SafetyLeadDashboard and SupervisorDashboard root elements actually carry data-testid='safety-lead-dashboard' / 'supervisor-dashboard'."
+  ],
+  "critical_code_review_comments": [
+    "Dashboard.jsx role-variant routing happens BEFORE industry routing — correct order. But the smoke test failed; needs verification whether testids on those two dashboards match the spec.",
+    "DashboardLayout.jsx industryAccent only applied to top-level NAV items (renderedNav loop), not to apps/safety/workflow/library NAV groups — that's per-spec since brief says 'active NavLink only'.",
+    "All 4 new dashboards correctly use real /compliance/score, /incidents, /workers, /licences endpoints. Placeholder data (fleet rego, equipment temps, AHPRA rows etc.) is intentional per Batch C+D scope."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "skipped", "frontend": "95% (47/47 testids + 24/24 sidebar items present; 2/2 role-variant smoke tests failed)" },
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (from /app/memory/test_credentials.md). Auth token stored in localStorage key 'st_token'.",
+  "seed_data_creation": "None. Used PATCH /api/auth/me/industry to switch industries; cleanup reset to trades/owner.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Token key is 'st_token' (NOT 'token' or 'auth_token'). PATCH endpoint is /api/auth/me/industry and accepts {industry, role_variant} in same payload. After PATCH always reload /dashboard to pick up new user from /api/auth/me. All 4 industry dashboards have full data-testid coverage matching spec. Only outstanding issue is role_variant override: confirm SafetyLeadDashboard/SupervisorDashboard root testid names.",
+  "rca of the issue": "Smoke test for role_variant override (safety_lead/supervisor with non-trades industry) failed to find the variant dashboard testids. Either (a) those dashboards don't carry the documented data-testid, or (b) role_variant isn't persisted by the PATCH route. Industry PATCH itself works (status 200, dashboard switches correctly), so the PATCH endpoint is partially functional."
+}

@@ -8,16 +8,36 @@ import OnboardingWizard from "@/pages/OnboardingWizard";
 
 const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
-  { to: "/dashboard/swms", label: "SWMS Library", icon: FileText },
+  { to: "/dashboard/swms", labelKey: "primary_safety_module", label: "SWMS Library", icon: FileText },
   { to: "/dashboard/document-library", label: "Document Library", icon: FileText },
   { to: "/dashboard/incidents", label: "Incidents", icon: Warning },
   { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning },
   { to: "/dashboard/risk-register?tab=reviews", label: "Risk Reviews", icon: ClipboardText },
-  { to: "/dashboard/workers", label: "Workers", icon: Users },
+  { to: "/dashboard/workers", labelKey: "workers", label: "Workers", icon: Users },
   { to: "/dashboard/competency-matrix", label: "Competency Matrix", icon: GraduationCap },
   { to: "/dashboard/licences", label: "Licences", icon: IdentificationBadge },
   { to: "/dashboard/notifications", label: "Alerts", icon: Bell },
 ];
+
+// Industry-specific nav label overrides per Part 3 of the multi-industry brief.
+// `primary_safety_module` re-labels the SWMS Library link; `workers` re-labels
+// the Workers / Drivers / Team Members link.
+const NAV_LABELS_BY_INDUSTRY = {
+  trades: {       primary_safety_module: "SWMS Library",  workers: "Workers" },
+  hospitality: {  primary_safety_module: "Food Safety",   workers: "Team Members" },
+  transport: {    primary_safety_module: "Fleet & CoR",   workers: "Drivers & Operators" },
+  healthcare: {   primary_safety_module: "Care Quality",  workers: "Staff & Clinicians" },
+  retail: {       primary_safety_module: "Inductions",    workers: "Team Members" },
+};
+
+// Industry-specific app aliases — chosen by user (option b: industry-specific aliases).
+const APPS_NAV_BY_INDUSTRY = {
+  trades:       { tradeinduct: "TradeInduct", tradecheck: "TradeCheck" },
+  hospitality:  { tradeinduct: "VenueInduct", tradecheck: "VenueCheck" },
+  transport:    { tradeinduct: "FleetInduct", tradecheck: "FleetCheck" },
+  healthcare:   { tradeinduct: "ClinicInduct", tradecheck: "ClinicCheck" },
+  retail:       { tradeinduct: "StoreInduct", tradecheck: "StoreCheck" },
+};
 
 const SAFETY_NAV = [
   { to: "/dashboard/toolbox-talks", label: "Toolbox Talks", icon: ChatCircleText },
@@ -95,6 +115,26 @@ export default function DashboardLayout() {
     window.location.assign("/");
   };
 
+  // Industry-aware nav labels per Part 3 of the multi-industry brief.
+  const industry = user?.industry || "trades";
+  const labelOverrides = NAV_LABELS_BY_INDUSTRY[industry] || NAV_LABELS_BY_INDUSTRY.trades;
+  const appAliases = APPS_NAV_BY_INDUSTRY[industry] || APPS_NAV_BY_INDUSTRY.trades;
+  const renderedNav = NAV.map((it) => it.labelKey && labelOverrides[it.labelKey] ? { ...it, label: labelOverrides[it.labelKey] } : it);
+  const renderedAppsNav = APPS_NAV.map((it) => {
+    if (it.to.endsWith("/tradeinduct")) return { ...it, label: appAliases.tradeinduct };
+    if (it.to.endsWith("/tradecheck")) return { ...it, label: appAliases.tradecheck };
+    return it;
+  });
+
+  // Industry colour accent for active sidebar items per Part 3 of the brief.
+  const industryAccent = {
+    trades: "border-l-4 border-[#FFCC00]",
+    hospitality: "border-l-4 border-[#E87722]",
+    transport: "border-l-4 border-[#0DC4B5]",
+    healthcare: "border-l-4 border-[#2196A6]",
+    retail: "border-l-4 border-[#A855F7]",
+  }[industry] || "border-l-4 border-[#FFCC00]";
+
   return (
     <div className="min-h-screen bg-muted">
       {showOnboarding && <OnboardingWizard onClose={() => { sessionStorage.setItem("onb_dismissed", "1"); setShowOnboarding(false); }} />}
@@ -104,7 +144,7 @@ export default function DashboardLayout() {
           <span className="font-display font-black">SAFEBASE</span>
         </Link>
         <nav className="flex-1 p-3 space-y-1">
-          {NAV.map((item) => {
+          {renderedNav.map((item) => {
             const isActive = navActive(item.to, item.end);
             return (
               <NavLink
@@ -113,7 +153,7 @@ export default function DashboardLayout() {
                 end={item.end}
                 data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
                 className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-                  isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                  isActive ? `bg-warning text-ink font-bold ${industryAccent}` : "text-white/70 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <item.icon size={18} weight="bold" /> {item.label}
@@ -128,7 +168,7 @@ export default function DashboardLayout() {
             <Gear size={18} weight="bold" /> Settings
           </NavLink>
           <div className="mt-5 px-3 label-eyebrow text-warning">Apps &amp; Add-ons</div>
-          {APPS_NAV.map((item) => (
+          {renderedAppsNav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

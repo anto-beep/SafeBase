@@ -15,6 +15,10 @@ import useIndustry from "@/hooks/useIndustry";
 import WorkerDashboard from "./dashboards/WorkerDashboard";
 import SafetyLeadDashboard from "./dashboards/SafetyLeadDashboard";
 import SupervisorDashboard from "./dashboards/SupervisorDashboard";
+import HospitalityOwnerDashboard from "./dashboards/HospitalityOwnerDashboard";
+import TransportOwnerDashboard from "./dashboards/TransportOwnerDashboard";
+import HealthcareOwnerDashboard from "./dashboards/HealthcareOwnerDashboard";
+import RetailOwnerDashboard from "./dashboards/RetailOwnerDashboard";
 
 // Growing Business plan covers 5 active sites — 6+ triggers Enterprise upsell banner.
 const GROWING_SITES_CAP = 5;
@@ -52,10 +56,16 @@ const sevStyle = {
 export default function Dashboard() {
   const { user } = useAuth();
   const variant = user?.role_variant || "owner";
+  const industry = user?.industry || "trades";
   if (variant === "worker") return <WorkerDashboard />;
   if (variant === "safety_lead") return <SafetyLeadDashboard />;
   if (variant === "supervisor") return <SupervisorDashboard />;
-  return <OwnerDashboard />;
+  // Owner variant — route by industry to industry-specific layouts
+  if (industry === "hospitality") return <HospitalityOwnerDashboard />;
+  if (industry === "transport") return <TransportOwnerDashboard />;
+  if (industry === "healthcare") return <HealthcareOwnerDashboard />;
+  if (industry === "retail") return <RetailOwnerDashboard />;
+  return <OwnerDashboard />;  // Trades — preserved unchanged
 }
 
 function OwnerDashboard() {

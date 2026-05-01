@@ -35,11 +35,11 @@ const CRED_TYPES_BY_INDUSTRY = {
 
 // Industry-aware sub-context labels for step 1 / step 6 summary.
 const INDUSTRY_CONTEXT = {
-  trades: { primary_doc: "SWMS", trade_label: "Trade", state_label: "Primary state", focus: "WHS legislation + SWMS templates" },
-  hospitality: { primary_doc: "HACCP plan", trade_label: "Venue type", state_label: "Primary state", focus: "WHS + Food Safety obligations + council inspection prep" },
-  transport: { primary_doc: "CoR plan + fitness for duty form", trade_label: "Operation type", state_label: "Primary state", focus: "WHS + Chain of Responsibility + NHVR fatigue rules" },
-  healthcare: { primary_doc: "AHPRA + worker screening register", trade_label: "Practice type", state_label: "Primary state", focus: "WHS + ACQSC standards + NDIS Practice Standards" },
-  retail: { primary_doc: "Quick induct + lone worker check-in", trade_label: "Retail format", state_label: "Primary state", focus: "WHS + induction + lone worker safety" },
+  trades: { primary_doc: "SWMS", trade_label: "Trade", trade_options: ["Electrician", "Plumber", "Builder", "Carpenter", "Roofer", "Gasfitter", "Other"], state_label: "Primary state", focus: "WHS legislation + SWMS templates", worker_role_default: "Owner", worker_role_label: "Role" },
+  hospitality: { primary_doc: "HACCP plan", trade_label: "Venue type", trade_options: ["Restaurant", "Cafe", "Bar / Pub", "Hotel", "Catering", "Quick service", "Bakery", "Other"], state_label: "Primary state", focus: "WHS + Food Safety obligations + council inspection prep", worker_role_default: "Head Chef", worker_role_label: "Role" },
+  transport: { primary_doc: "CoR plan + fitness for duty form", trade_label: "Operation type", trade_options: ["Heavy haulage", "Couriers", "Linehaul", "Distribution", "Removalist", "Bus / Coach", "Tipper / Plant", "Other"], state_label: "Primary state", focus: "WHS + Chain of Responsibility + NHVR fatigue rules", worker_role_default: "Fleet Manager", worker_role_label: "Role" },
+  healthcare: { primary_doc: "AHPRA + worker screening register", trade_label: "Practice type", trade_options: ["Aged care", "Disability / NDIS", "GP / Medical centre", "Allied health", "Community health", "Dental", "Other"], state_label: "Primary state", focus: "WHS + ACQSC standards + NDIS Practice Standards", worker_role_default: "Practice Manager", worker_role_label: "Role / Title" },
+  retail: { primary_doc: "Quick induct + lone worker check-in", trade_label: "Retail format", trade_options: ["Single store", "Small chain (2-5 stores)", "Multi-store (6+)", "Franchise", "Bottle shop", "Pharmacy", "Other"], state_label: "Primary state", focus: "WHS + induction + lone worker safety", worker_role_default: "Store Manager", worker_role_label: "Role" },
 };
 
 export default function OnboardingWizard({ onClose }) {
@@ -52,7 +52,13 @@ export default function OnboardingWizard({ onClose }) {
   const [loading, setLoading] = useState(false);
 
   // Step 1
-  const [biz, setBiz] = useState({ company_name: user?.company_name || "", abn: "", trade_type: "Electrician", primary_state: "NSW", worker_count_band: "Just me" });
+  const [biz, setBiz] = useState({
+    company_name: user?.company_name || "",
+    abn: "",
+    trade_type: (INDUSTRY_CONTEXT[industrySlug] || INDUSTRY_CONTEXT.trades).trade_options[0],
+    primary_state: "NSW",
+    worker_count_band: "Just me",
+  });
   // Step 2
   const [firstWorker, setFirstWorker] = useState({ name: user?.name || "", role: "Owner", trade: "Electrician", phone: "", email: user?.email || "" });
   const [createdWorkerId, setCreatedWorkerId] = useState(null);
@@ -191,17 +197,17 @@ export default function OnboardingWizard({ onClose }) {
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><Label className="label-eyebrow">Business name</Label><Input data-testid="onb-biz-name" value={biz.company_name} onChange={(e) => setBiz({ ...biz, company_name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
               <div><Label className="label-eyebrow">ABN</Label><Input data-testid="onb-biz-abn" value={biz.abn} onChange={(e) => setBiz({ ...biz, abn: e.target.value })} className="mt-2 h-12 rounded-none border-ink" placeholder="11-digit ABN" /></div>
-              <div><Label className="label-eyebrow">Trade type</Label>
+              <div><Label className="label-eyebrow">{ctx.trade_label}</Label>
                 <Select value={biz.trade_type} onValueChange={(v) => setBiz({ ...biz, trade_type: v })}>
                   <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="onb-biz-trade"><SelectValue /></SelectTrigger>
-                  <SelectContent>{TRADES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent>{(ctx.trade_options || TRADES).map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select></div>
-              <div><Label className="label-eyebrow">Primary state</Label>
+              <div><Label className="label-eyebrow">{ctx.state_label}</Label>
                 <Select value={biz.primary_state} onValueChange={(v) => setBiz({ ...biz, primary_state: v })}>
                   <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="onb-biz-state"><SelectValue /></SelectTrigger>
                   <SelectContent>{STATES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select></div>
-              <div><Label className="label-eyebrow">Workers</Label>
+              <div><Label className="label-eyebrow">{term.worker_plural.replace(/^./, (c) => c.toUpperCase())}</Label>
                 <Select value={biz.worker_count_band} onValueChange={(v) => setBiz({ ...biz, worker_count_band: v })}>
                   <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="onb-biz-workers"><SelectValue /></SelectTrigger>
                   <SelectContent>{WORKER_BANDS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
