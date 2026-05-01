@@ -36,6 +36,17 @@ class GoogleSessionIn(BaseModel):
     session_id: str
 
 
+class IndustriesUpdate(BaseModel):
+    """Owner-level: replace the user's `active_industries` roster + primary.
+
+    Defined at module scope so Pydantic can resolve the Literal annotations
+    (under `from __future__ import annotations`, function-local classes have
+    forward refs that Pydantic v2 can't resolve without a namespace hint).
+    """
+    active_industries: list[Literal["trades", "hospitality", "transport", "healthcare", "retail"]]
+    primary_industry: Optional[Literal["trades", "hospitality", "transport", "healthcare", "retail"]] = None
+
+
 def register_auth_routes(api_router: APIRouter, *, db, User,
                          get_current_user, hash_password, verify_password,
                          make_jwt, trial_length_days: int = 14):
@@ -264,12 +275,8 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
             "active_industries": user_doc.get("active_industries") or [current],
         }
 
-    class _IndustriesUpdate(BaseModel):
-        active_industries: list[Literal["trades", "hospitality", "transport", "healthcare", "retail"]]
-        primary_industry: Optional[Literal["trades", "hospitality", "transport", "healthcare", "retail"]] = None
-
     @api_router.put("/auth/me/industries")
-    async def set_industries(body: _IndustriesUpdate, current_user=Depends(get_current_user)):
+    async def set_industries(body: IndustriesUpdate, current_user=Depends(get_current_user)):
         """Owner-level: update the full active_industries roster + primary."""
         if not body.active_industries:
             raise HTTPException(400, "At least one industry required")

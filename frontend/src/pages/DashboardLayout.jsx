@@ -11,6 +11,13 @@ import IndustrySwitcher from "@/components/IndustrySwitcher";
 const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
   { to: "/dashboard/swms", labelKey: "primary_safety_module", label: "SWMS Library", icon: FileText, feature: "swms_generator" },
+  // Industry-specific primary modules — only one of these will be enabled per
+  // industry by the feature registry, so the user always sees exactly one
+  // "primary" link in their sidebar regardless of which industry they're in.
+  { to: "/dashboard/food-safety", label: "Food Safety", icon: ClipboardText, feature: "food_safety_module" },
+  { to: "/dashboard/cor", label: "Chain of Responsibility", icon: Truck, feature: "cor_module" },
+  { to: "/dashboard/care-quality", label: "Care Quality", icon: FirstAidKit, feature: "care_quality_module" },
+  { to: "/dashboard/inductions", label: "Inductions", icon: QrCode, feature: "inductions_module" },
   { to: "/dashboard/document-library", label: "Document Library", icon: FileText, feature: "document_library" },
   { to: "/dashboard/incidents", label: "Incidents", icon: Warning, feature: "incident_management" },
   { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning, feature: "risk_register" },
@@ -42,12 +49,12 @@ const APPS_NAV_BY_INDUSTRY = {
 };
 
 const SAFETY_NAV = [
-  { to: "/dashboard/toolbox-talks", label: "Toolbox Talks", icon: ChatCircleText },
-  { to: "/dashboard/plant", label: "Plant", icon: Truck },
-  { to: "/dashboard/substances", label: "Substances", icon: Flask },
-  { to: "/dashboard/inspections", label: "Inspections", icon: ClipboardText },
-  { to: "/dashboard/swms-revisions", label: "SWMS Revisions", icon: FileText },
-  { to: "/dashboard/first-aid-ppe", label: "First Aid & PPE", icon: FirstAidKit },
+  { to: "/dashboard/toolbox-talks", label: "Toolbox Talks", icon: ChatCircleText, feature: "toolbox_talks" },
+  { to: "/dashboard/plant", label: "Plant", icon: Truck, feature: "plant_register" },
+  { to: "/dashboard/substances", label: "Substances", icon: Flask, feature: "hazardous_substances" },
+  { to: "/dashboard/inspections", label: "Inspections", icon: ClipboardText, feature: "inspection_checklists" },
+  { to: "/dashboard/swms-revisions", label: "SWMS Revisions", icon: FileText, feature: "swms_generator" },
+  { to: "/dashboard/first-aid-ppe", label: "First Aid & PPE", icon: FirstAidKit, feature: "first_aid_register" },
   { to: "/dashboard/documents", label: "Legacy Documents", icon: FileText },
 ];
 
@@ -193,7 +200,9 @@ export default function DashboardLayout() {
             </NavLink>
           ))}
           <div className="mt-5 px-3 label-eyebrow text-white/40">Safety</div>
-          {SAFETY_NAV.map((item) => (
+          {SAFETY_NAV
+            .filter((item) => !item.feature || !flagsReady || has(item.feature))
+            .map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
