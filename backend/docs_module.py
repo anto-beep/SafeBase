@@ -11,7 +11,7 @@ import asyncio
 import re
 import json as _json
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 
@@ -47,16 +47,25 @@ async def _call_claude(system: str, user_prompt: str, fallback: Any,
 def register_docs_routes(app_db, get_current_user, llm_chat_cls, user_message_cls, llm_key):
 
     @docs_router.get("/docs/types")
-    async def list_doc_types():
-        """Returns lightweight catalog for the hub UI. Field definitions live
-        on each type and are needed by the form renderer."""
+    async def list_doc_types(current_user=Depends(get_current_user)):
+        """Returns lightweight catalog for the hub UI, filtered by the caller's
+        industry. Universal types (no `industries` key) show to everyone.
+        Industry-gated types only show if the user's industry is in the list.
+        """
+        user_doc = await app_db.users.find_one(
+            {"user_id": current_user.user_id}, {"_id": 0, "industry": 1}) or {}
+        user_industry = user_doc.get("industry") or "trades"
         out = []
         for t in DOC_TYPES.values():
+            gate = t.get("industries")
+            if gate and user_industry not in gate:
+                continue
             out.append({k: v for k, v in t.items() if k != "pdf"})
         return {
             "categories": CATEGORIES,
             "types": out,
             "states": list(STATE_REGULATORS.keys()),
+            "user_industry": user_industry,
         }
 
     async def _next_ref(user_id: str, prefix: str) -> str:
@@ -99,22 +108,28 @@ def register_docs_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
 
     @docs_router.get("/docs/stats")
     async def docs_stats(current_user=Depends(get_current_user)):
-        """Aggregated per-category + per-doc-type counts + recent (<=5) docs.
+        """Aggregated per-category + per-doc-type + per-status counts + recent (<=5) docs.
         Single query beats the legacy Hub pattern of fetching the full doc list."""
         pipeline = [
             {"$match": {"user_id": current_user.user_id,
                         "status": {"$ne": "archived"}}},
-            {"$group": {"_id": {"category": "$category", "doc_type": "$doc_type"},
+            {"$group": {"_id": {"category": "$category", "doc_type": "$doc_type",
+                                 "status": "$status"},
                         "count": {"$sum": 1}}},
         ]
-        agg = await app_db.compliance_docs.aggregate(pipeline).to_list(200)
+        agg = await app_db.compliance_docs.aggregate(pipeline).to_list(500)
         by_cat: dict[str, int] = {}
         by_type: dict[str, int] = {}
+        by_status: dict[str, int] = {}
         for row in agg:
-            cat = (row.get("_id") or {}).get("category") or "_unknown"
-            dt = (row.get("_id") or {}).get("doc_type") or "_unknown"
-            by_cat[cat] = by_cat.get(cat, 0) + row.get("count", 0)
-            by_type[dt] = by_type.get(dt, 0) + row.get("count", 0)
+            key = row.get("_id") or {}
+            cat = key.get("category") or "_unknown"
+            dt = key.get("doc_type") or "_unknown"
+            st = key.get("status") or "draft"
+            n = row.get("count", 0)
+            by_cat[cat] = by_cat.get(cat, 0) + n
+            by_type[dt] = by_type.get(dt, 0) + n
+            by_status[st] = by_status.get(st, 0) + n
         recent = await app_db.compliance_docs.find(
             {"user_id": current_user.user_id},
             {"_id": 0, "doc_id": 1, "reference": 1, "doc_type": 1,
@@ -122,7 +137,7 @@ def register_docs_routes(app_db, get_current_user, llm_chat_cls, user_message_cl
         ).sort("updated_at", -1).to_list(5)
         total = sum(by_cat.values())
         return {"total": total, "by_category": by_cat,
-                "by_doc_type": by_type, "recent": recent}
+                "by_doc_type": by_type, "by_status": by_status, "recent": recent}
 
     @docs_router.get("/docs")
     async def list_docs(doc_type: Optional[str] = None,

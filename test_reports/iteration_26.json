@@ -1,0 +1,34 @@
+{
+  "summary": "iter27 — Tested 5 next-action items + server.py refactor. 20/20 backend tests PASS (industries list, industry-signal endpoint, register/login/PATCH industry, /docs/types industry filtering for all 5 industries with correct 31 vs 34 counts, 4 of 12 new doc-type creates with PDF generation, /docs/stats by_status, all 7 webhook routes after factory extraction, /api/ banner says SafeBase). Frontend smoke: /register Industry picker renders all 5 options with correct data-testids and account creation flow works (industry persistence verified via backend test). Homepage tabs hit /api/public/industry-signal/{slug} on switch and DOM home-industry-signal updates with live-endpoint pulse + featured copy (live=false fallback, as expected since users < MIN_REAL_COUNT=10).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Onboarding wizard (post-register)", "issues": ["After successful register the OnboardingWizard still says 'Let\\'s set up your SafeTradie account' and shows SAFETRADIE wordmark at top — leftover from the SafeBase rebrand. Marketing/login/dashboard chrome was rebranded but onboarding copy was missed. Non-blocking, but visible immediately after register so worth fixing in next polish iter."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter27_industries_and_refactor.py",
+    "/app/test_reports/pytest/iter27_results.xml"
+  ],
+  "action_items": [
+    "(Polish, non-blocking) Rebrand OnboardingWizard.jsx — replace SAFETRADIE wordmark + 'set up your SafeTradie account' headline with SAFEBASE equivalents; this is the only place the old brand still leaks post-register."
+  ],
+  "critical_code_review_comments": [
+    "routes/industries.py: clean factory pattern, validates slug → 404 properly, correctly switches to fallback copy when (week+month)<10. Solid.",
+    "routes/webhooks.py: factory pattern works, deliver_webhook is injected as closure — keeps server.py as the source of _fire_event. Good separation. All 7 routes still respond.",
+    "industry_module.py: small + focused single source of truth on backend. INDUSTRIES dict shape matches frontend industries.config.js by design.",
+    "Spec sample data sufficient: HACCP-/COR-/AHPRA-/LW- prefixes confirmed, PDFs > 5KB with %PDF- magic for 4 representative new doc types. The other 8 new doc types are registered (verified via /docs/types count of 34 per industry) but only 1 per industry was end-to-end PDF tested — main agent can spot-check the remaining 8 if needed.",
+    "Industry filtering on /docs/types: 31 universal for trades, 34 (+3 industry-gated) for each of hospitality/transport/healthcare/retail — exactly per spec.",
+    "/api/auth/me/industry validation rejects unknown values with 400 ✓; /api/auth/login user payload now includes industry field ✓.",
+    "/api/docs/stats now exposes all 5 keys (by_status, by_category, by_doc_type, recent, total)."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter27_industries_and_refactor.py"],
+  "success_rate": {"backend": "100% (20/20)", "frontend": "100% on tested flows"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (works). Created during test run: iter27_hospitality_<ts>@test.com, iter27_transport_<ts>@test.com, iter27_healthcare_<ts>@test.com, iter27_retail_<ts>@test.com (all Test@1234) + hospo_ui_<ts>@test.com from UI register flow.",
+  "seed_data_creation": "Created 5 throwaway industry-tagged users + 4 industry-gated documents (HACCP, CoR, AHPRA, Lone Worker) + 1 webhook subscription (created and deleted in same test).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter27 fully validated. Backend regression file is /app/backend/tests/test_iter27_industries_and_refactor.py — run with `export $(grep -v ^# /app/frontend/.env | xargs) && pytest backend/tests/test_iter27_industries_and_refactor.py`. Only a small rebrand miss in OnboardingWizard.jsx remains. The frontend never stores JWT in localStorage during register flow because register response auto-redirects to /onboarding before the SPA reads it — token storage uses an in-memory React context. To verify /auth/me from UI, login again or rely on the backend test which already proves industry persistence."
+}

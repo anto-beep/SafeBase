@@ -22,6 +22,7 @@ class RegisterIn(BaseModel):
     name: str
     company_name: Optional[str] = None
     role: Literal["owner", "worker"] = "owner"
+    industry: Optional[Literal["trades", "hospitality", "transport", "healthcare", "retail"]] = "trades"
 
 
 class LoginIn(BaseModel):
@@ -51,6 +52,7 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
             "name": body.name,
             "role": body.role,
             "company_name": body.company_name,
+            "industry": body.industry or "trades",
             "auth_provider": "email",
             "password_hash": hash_password(body.password),
             "created_at": now.isoformat(),
@@ -68,6 +70,7 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
                 "name": body.name,
                 "role": body.role,
                 "company_name": body.company_name,
+                "industry": body.industry or "trades",
                 "auth_provider": "email",
             },
         }
@@ -88,6 +91,7 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
                 "name": user_doc["name"],
                 "role": user_doc.get("role", "owner"),
                 "company_name": user_doc.get("company_name"),
+                "industry": user_doc.get("industry") or "trades",
                 "auth_provider": user_doc.get("auth_provider", "email"),
             },
         }
@@ -165,7 +169,20 @@ def register_auth_routes(api_router: APIRouter, *, db, User,
             {"user_id": current_user.user_id}, {"_id": 0})
         if user_doc:
             data["onboarding_complete"] = user_doc.get("onboarding_complete", False)
+            data["industry"] = user_doc.get("industry") or "trades"
         return data
+
+    @api_router.patch("/auth/me/industry")
+    async def update_industry(body: dict, current_user=Depends(get_current_user)):
+        industry = body.get("industry")
+        if industry not in ("trades", "hospitality", "transport", "healthcare", "retail"):
+            raise HTTPException(400, "Invalid industry")
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": {"industry": industry,
+                       "industry_updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return {"industry": industry}
 
     @api_router.post("/auth/logout")
     async def logout(response: Response, session_token: Optional[str] = Cookie(None)):

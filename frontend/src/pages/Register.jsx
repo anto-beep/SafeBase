@@ -11,12 +11,20 @@ import { toast } from "sonner";
 const TRADES = ["Electrician", "Plumber", "Builder", "Carpenter", "Roofer", "Gasfitter", "Other"];
 const STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT"];
 const WORKER_BANDS = ["Just me", "2-5", "6-10", "11-20", "20+"];
+const INDUSTRIES = [
+  { slug: "trades", label: "Trades and Construction" },
+  { slug: "hospitality", label: "Hospitality" },
+  { slug: "transport", label: "Transport and Logistics" },
+  { slug: "healthcare", label: "Healthcare and Aged Care" },
+  { slug: "retail", label: "Retail" },
+];
 
 export default function Register() {
   const { registerEmail } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "", email: "", password: "", company_name: "",
+    industry: "trades",
     trade_type: "Electrician", primary_state: "NSW", worker_count_band: "Just me",
     phone: "", role: "owner", agree: false, marketing: true,
   });
@@ -33,6 +41,7 @@ export default function Register() {
         password: form.password,
         company_name: form.company_name,
         role: form.role,
+        industry: form.industry,
       });
       toast.success("Account created — let's get you set up");
       navigate("/dashboard");
@@ -67,6 +76,14 @@ export default function Register() {
           <div className="flex items-center gap-3 my-6"><div className="flex-1 h-px bg-border" /><span className="label-eyebrow">or</span><div className="flex-1 h-px bg-border" /></div>
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="register-form">
+            <div className="md:col-span-2">
+              <Label className="label-eyebrow">Your industry</Label>
+              <Select value={form.industry} onValueChange={(v) => setForm({ ...form, industry: v })}>
+                <SelectTrigger className="mt-2 h-12 rounded-none border-ink" data-testid="reg-industry"><SelectValue /></SelectTrigger>
+                <SelectContent>{INDUSTRIES.map((i) => <SelectItem key={i.slug} value={i.slug} data-testid={`reg-industry-${i.slug}`}>{i.label}</SelectItem>)}</SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1.5">SafeBase tailors your library, documents, and compliance obligations to this choice. You can change it later in Settings.</p>
+            </div>
             <div><Label className="label-eyebrow">First name</Label><Input data-testid="reg-name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
             <div><Label className="label-eyebrow">Business name</Label><Input data-testid="reg-company" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
             <div><Label className="label-eyebrow">Email</Label><Input data-testid="reg-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-2 h-12 rounded-none border-ink" /></div>
@@ -123,7 +140,7 @@ export default function Register() {
       {/* TRUST COLUMN */}
       <div className="lg:col-span-5 bg-ink text-white p-8 md:p-12 flex flex-col justify-center order-first lg:order-last">
         <div className="label-eyebrow text-warning mb-3">/ TRUST SIGNALS</div>
-        <h3 className="font-display text-3xl lg:text-4xl font-black tracking-tighter">50,000+ SWMS<br />generated for<br />Australian tradies.</h3>
+        <h3 className="font-display text-3xl lg:text-4xl font-black tracking-tighter">Compliance<br />for every<br />Australian business.</h3>
         <ul className="mt-8 space-y-3 text-white/80 text-sm">
           <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> 14-day full access trial</li>
           <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> No credit card required</li>
@@ -133,14 +150,14 @@ export default function Register() {
         </ul>
         <div className="mt-10 space-y-6">
           {[
-            { q: "Saved me 4 hours a week on SWMS alone", n: "John, Electrician, Melbourne" },
-            { q: "First time I've felt ready for a WorkSafe visit", n: "Dave, Plumber, Brisbane" },
-            { q: "Set up in 20 minutes, first SWMS done in 10", n: "Mark, Builder, Sydney" },
+            { q: "Saved me 4 hours a week on SWMS alone", n: "Electrician, Melbourne", ind: "Trades" },
+            { q: "Temperature logs that actually get done — council-ready", n: "Cafe owner, Brisbane", ind: "Hospitality" },
+            { q: "Every AHPRA registration tracked. Zero lapses.", n: "Practice manager, Sydney", ind: "Healthcare" },
           ].map((t) => (
             <div key={t.n} className="border-l-4 border-warning pl-4">
               <Quotes size={18} weight="duotone" className="text-warning" />
               <div className="font-mono text-sm mt-1">"{t.q}"</div>
-              <div className="label-eyebrow mt-2 text-white/60">— {t.n}</div>
+              <div className="label-eyebrow mt-2 text-white/60">— {t.n} <span className="text-warning">· {t.ind}</span></div>
             </div>
           ))}
         </div>

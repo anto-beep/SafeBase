@@ -830,5 +830,338 @@ register_doc_type({
 })
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+#  INDUSTRY-GATED DOC TYPES (iter27)
+#  Each spec carries an `industries: [slug, ...]` key. docs_module.list_types
+#  filters /api/docs/types by the caller's user.industry. Universal doc types
+#  (no `industries` key) remain visible to everyone.
+# ═══════════════════════════════════════════════════════════════════════════
+
+from docs_pdf import _render_common, _section, _kv  # noqa: E402
+
+
+def _simple_renderer(title: str, framework: str, sections):
+    """Return render_<doc>(doc) that emits kv-table sections for lightweight docs.
+    sections = [(sec_title, [(label, doc_key), ...]), ...]
+    """
+    def _render(doc):
+        body = ""
+        for sec_title, pairs in sections:
+            body += _section(sec_title, _kv([(lbl, doc.get(key)) for lbl, key in pairs]))
+        return _render_common(doc, title, framework, body, title)
+    return _render
+
+
+# ══ HOSPITALITY ══
+
+register_doc_type({
+    "id": "haccp_plan", "category": "safety", "industries": ["hospitality"],
+    "label": "HACCP Plan", "counter_prefix": "HACCP",
+    "blurb": "Hazard Analysis Critical Control Points — Standard 3.2.1",
+    "fields": [
+        _f("venue_name", "Venue name", required=True),
+        _f("service_type", "Food service type (raw meat / hot food / buffet / catering / cold display)"),
+        _f("prepared_by", "Prepared by"),
+        _f("food_safety_supervisor", "Food Safety Supervisor"),
+        _f("review_date", "Review date", "date"),
+        _f("critical_control_points", "Critical Control Points", "table",
+           columns=[{"key": "step", "label": "Step"}, {"key": "hazard", "label": "Hazard"},
+                    {"key": "limit", "label": "Critical limit"}, {"key": "monitor", "label": "Monitoring"},
+                    {"key": "action", "label": "Corrective action"}]),
+        _f("verification_procedures", "Verification procedures", "textarea"),
+        _f("record_keeping", "Record-keeping procedures", "textarea"),
+    ],
+    "ai_prompt": ("Given a food service type, return JSON: {critical_control_points:[{step,hazard,limit,monitor,action}], "
+                  "verification_procedures, record_keeping}"),
+    "pdf": _simple_renderer("HACCP Plan", "Food Standards Code · Standard 3.2.1", [
+        ("Venue details", [("Venue name", "venue_name"), ("Food service type", "service_type"),
+                           ("Prepared by", "prepared_by"), ("Food Safety Supervisor", "food_safety_supervisor"),
+                           ("Review date", "review_date")]),
+        ("Verification", [("Procedures", "verification_procedures"), ("Record-keeping", "record_keeping")]),
+    ]),
+})
+
+register_doc_type({
+    "id": "temperature_log", "category": "safety", "industries": ["hospitality"],
+    "label": "Temperature Monitoring Log", "counter_prefix": "TEMP",
+    "blurb": "Daily refrigeration temperature records — council inspection ready",
+    "fields": [
+        _f("venue_name", "Venue name", required=True),
+        _f("date_range_start", "Period start", "date"),
+        _f("date_range_end", "Period end", "date"),
+        _f("recorded_by", "Recorded by"),
+        _f("readings", "Temperature readings", "table",
+           columns=[{"key": "unit", "label": "Unit"}, {"key": "time", "label": "Time"},
+                    {"key": "temp", "label": "Temp °C"}, {"key": "result", "label": "Result"},
+                    {"key": "action", "label": "Action"}]),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Temperature Monitoring Log", "Food Standards Code · Standard 3.2.2A", [
+        ("Venue", [("Venue name", "venue_name"), ("Period start", "date_range_start"),
+                   ("Period end", "date_range_end"), ("Recorded by", "recorded_by")]),
+    ]),
+})
+
+register_doc_type({
+    "id": "allergen_register", "category": "safety", "industries": ["hospitality"],
+    "label": "Allergen Register", "counter_prefix": "ALG",
+    "blurb": "Menu allergen register covering all 14 major allergens",
+    "fields": [
+        _f("venue_name", "Venue name", required=True),
+        _f("menu_version", "Menu version"),
+        _f("prepared_by", "Prepared by"),
+        _f("review_date", "Review date", "date"),
+        _f("menu_items", "Menu items with allergens", "table",
+           columns=[{"key": "item", "label": "Menu item"}, {"key": "contains", "label": "Contains"},
+                    {"key": "may_contain", "label": "May contain"}]),
+        _f("staff_trained", "Staff allergen training completed", "chips"),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Allergen Register", "Food Standards Code · allergen labelling", [
+        ("Venue", [("Venue name", "venue_name"), ("Menu version", "menu_version"),
+                   ("Prepared by", "prepared_by"), ("Review date", "review_date")]),
+    ]),
+})
+
+
+# ══ TRANSPORT & LOGISTICS ══
+
+register_doc_type({
+    "id": "cor_mgmt_plan", "category": "safety", "industries": ["transport"],
+    "label": "Chain of Responsibility Management Plan", "counter_prefix": "COR",
+    "blurb": "HVNL CoR Management Plan covering all 6 NHVR elements",
+    "fields": [
+        _f("operator_name", "Operator / business name", required=True),
+        _f("business_state", "Business state", "state"),
+        _f("prepared_by", "Prepared by"),
+        _f("review_date", "Review date", "date"),
+        _f("fatigue_management", "1. Fatigue management", "textarea"),
+        _f("speed_management", "2. Speed management", "textarea"),
+        _f("mass_and_dimension", "3. Mass and dimension", "textarea"),
+        _f("load_restraint", "4. Load restraint", "textarea"),
+        _f("vehicle_standards", "5. Vehicle standards", "textarea"),
+        _f("scheduling_and_dispatch", "6. Scheduling and dispatch", "textarea"),
+    ],
+    "ai_prompt": ("Given an operator and business state, return JSON covering all 6 NHVR elements: "
+                  "{fatigue_management, speed_management, mass_and_dimension, load_restraint, "
+                  "vehicle_standards, scheduling_and_dispatch}"),
+    "pdf": _simple_renderer("Chain of Responsibility Management Plan", "Heavy Vehicle National Law · NHVR guidance", [
+        ("Operator", [("Operator", "operator_name"), ("State", "business_state"),
+                      ("Prepared by", "prepared_by"), ("Review date", "review_date")]),
+    ]),
+})
+
+register_doc_type({
+    "id": "driver_fitness_for_duty", "category": "safety", "industries": ["transport"],
+    "label": "Driver Fitness for Duty Declaration", "counter_prefix": "FFD",
+    "blurb": "Per-trip pre-start declaration — hours of sleep, medications, fitness",
+    "fields": [
+        _f("driver_name", "Driver", required=True),
+        _f("licence_no", "Licence number (HR/HC/MC)"),
+        _f("vehicle_rego", "Vehicle rego"),
+        _f("trip_start", "Trip start", "datetime"),
+        _f("hours_sleep_prev_24", "Hours sleep in previous 24h", "number"),
+        _f("hours_awake", "Hours awake", "number"),
+        _f("medications", "Medications affecting driving", "textarea"),
+        _f("physical_condition", "Physical condition (fit / unfit)"),
+        _f("driver_signature", "Driver signature"),
+        _f("supervisor_sighted", "Supervisor sighted"),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Driver Fitness for Duty Declaration", "HVNL · Fatigue management", [
+        ("Driver", [("Driver", "driver_name"), ("Licence no", "licence_no"), ("Vehicle", "vehicle_rego"),
+                    ("Trip start", "trip_start")]),
+        ("Fitness", [("Hours sleep prev 24h", "hours_sleep_prev_24"), ("Hours awake", "hours_awake"),
+                     ("Physical condition", "physical_condition"),
+                     ("Driver signature", "driver_signature"), ("Supervisor sighted", "supervisor_sighted")]),
+    ]),
+})
+
+register_doc_type({
+    "id": "load_restraint_record", "category": "safety", "industries": ["transport"],
+    "label": "Load Restraint Record", "counter_prefix": "LRR",
+    "blurb": "Per-load restraint record — Load Restraint Guide 3rd Edition",
+    "fields": [
+        _f("loader_name", "Loader", required=True),
+        _f("driver_name", "Driver"),
+        _f("trip_reference", "Trip reference"),
+        _f("vehicle_rego", "Vehicle rego"),
+        _f("cargo_type", "Cargo type"),
+        _f("cargo_mass_kg", "Cargo mass (kg)", "number"),
+        _f("restraint_method", "Restraint method"),
+        _f("restraint_points", "Number of restraint points", "number"),
+        _f("photo_taken", "Photo of secured load (Y/N)"),
+        _f("loader_signature", "Loader signature"),
+        _f("loaded_at", "Loaded at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Load Restraint Record", "Load Restraint Guide 3rd Edition", [
+        ("Load", [("Loader", "loader_name"), ("Driver", "driver_name"), ("Trip ref", "trip_reference"),
+                  ("Vehicle", "vehicle_rego"), ("Cargo type", "cargo_type"), ("Cargo mass (kg)", "cargo_mass_kg"),
+                  ("Restraint method", "restraint_method"), ("Restraint points", "restraint_points"),
+                  ("Photo", "photo_taken"), ("Loaded at", "loaded_at"), ("Loader signature", "loader_signature")]),
+    ]),
+})
+
+
+# ══ HEALTHCARE & AGED CARE ══
+
+register_doc_type({
+    "id": "ahpra_register", "category": "worker", "industries": ["healthcare"],
+    "label": "AHPRA Registration Register", "counter_prefix": "AHPRA",
+    "blurb": "Every AHPRA-registered practitioner — registration, expiry, CPD",
+    "fields": [
+        _f("organisation", "Organisation", required=True),
+        _f("prepared_by", "Prepared by"),
+        _f("review_date", "Review date", "date"),
+        _f("practitioners", "Practitioners", "table",
+           columns=[{"key": "name", "label": "Name"}, {"key": "profession", "label": "Profession"},
+                    {"key": "ahpra_no", "label": "AHPRA no"}, {"key": "expiry", "label": "Expiry"},
+                    {"key": "cpd_hours", "label": "CPD hours"}, {"key": "status", "label": "Status"}]),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("AHPRA Registration Register", "Health Practitioner Regulation National Law", [
+        ("Organisation", [("Organisation", "organisation"), ("Prepared by", "prepared_by"),
+                          ("Review date", "review_date")]),
+    ]),
+})
+
+register_doc_type({
+    "id": "worker_screening_record", "category": "worker", "industries": ["healthcare"],
+    "label": "Worker Screening Record", "counter_prefix": "WSR",
+    "blurb": "Aged Care + NDIS worker screening clearances (post 1 Nov 2025)",
+    "fields": [
+        _f("organisation", "Organisation", required=True),
+        _f("workers", "Workers", "table",
+           columns=[{"key": "name", "label": "Name"}, {"key": "role", "label": "Role"},
+                    {"key": "check_type", "label": "Screen type"}, {"key": "number", "label": "Clearance no"},
+                    {"key": "expiry", "label": "Expiry"}, {"key": "status", "label": "Status"}]),
+        _f("review_date", "Review date", "date"),
+        _f("reviewed_by", "Reviewed by"),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Worker Screening Record", "Aged Care Act 2024 · NDIS Worker Screening", [
+        ("Organisation", [("Organisation", "organisation"), ("Review date", "review_date"),
+                          ("Reviewed by", "reviewed_by")]),
+    ]),
+})
+
+register_doc_type({
+    "id": "clinical_event_report", "category": "incident", "industries": ["healthcare"],
+    "label": "Clinical / Adverse Event Report", "counter_prefix": "CE",
+    "blurb": "Medication errors, falls, pressure injuries, sentinel events — ACSQHC severity",
+    "fields": [
+        _f("event_date", "Event date", "datetime", required=True),
+        _f("client_id", "Client ID / MRN"),
+        _f("event_type", "Event type"),
+        _f("severity", "ACSQHC severity (SAC1 / SAC2 / SAC3 / SAC4)"),
+        _f("description", "Description", "textarea"),
+        _f("immediate_response", "Immediate response", "textarea"),
+        _f("staff_involved", "Staff involved", "chips"),
+        _f("sentinel_notification_required", "Sentinel event notification required (Y/N)"),
+        _f("rca_required", "Root cause analysis required (Y/N)"),
+        _f("corrective_actions", "Corrective actions", "textarea"),
+        _f("closed_out_by", "Closed out by"),
+        _f("closed_out_at", "Closed out at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Clinical / Adverse Event Report", "ACSQHC · NSQHS Standards", [
+        ("Event", [("Event date", "event_date"), ("Client ID", "client_id"),
+                   ("Event type", "event_type"), ("Severity (SAC)", "severity"),
+                   ("Sentinel notification", "sentinel_notification_required"),
+                   ("RCA required", "rca_required")]),
+        ("Close-out", [("Closed out by", "closed_out_by"), ("Closed out at", "closed_out_at")]),
+    ]),
+})
+
+
+# ══ RETAIL ══
+
+register_doc_type({
+    "id": "quick_induct_record", "category": "worker", "industries": ["retail"],
+    "label": "Casual Quick Induct Record", "counter_prefix": "QI",
+    "blurb": "3-minute casual induction via QR — emergency exits, hazards, reporting",
+    "fields": [
+        _f("store_name", "Store / location", required=True),
+        _f("worker_name", "Worker", required=True),
+        _f("start_date", "Start date", "date"),
+        _f("items_covered", "Items covered", "chips"),
+        _f("emergency_exits_shown", "Emergency exits shown (Y/N)"),
+        _f("hazards_briefed", "Hazards briefed (Y/N)"),
+        _f("spill_response_shown", "Spill response shown (Y/N)"),
+        _f("worker_signature", "Worker signature"),
+        _f("inductor_name", "Inducted by"),
+        _f("signed_at", "Signed at", "datetime"),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Casual Quick Induct Record", "WHS Reg 39 · Worker induction", [
+        ("Induction", [("Store / location", "store_name"), ("Worker", "worker_name"),
+                       ("Start date", "start_date"),
+                       ("Emergency exits shown", "emergency_exits_shown"),
+                       ("Hazards briefed", "hazards_briefed"),
+                       ("Spill response shown", "spill_response_shown"),
+                       ("Worker signature", "worker_signature"),
+                       ("Inducted by", "inductor_name"),
+                       ("Signed at", "signed_at")]),
+    ]),
+})
+
+register_doc_type({
+    "id": "lone_worker_log", "category": "safety", "industries": ["retail"],
+    "label": "Lone Worker Check-In Log", "counter_prefix": "LW",
+    "blurb": "Shift-based lone-worker safety check-ins with escalation trail",
+    "fields": [
+        _f("store_name", "Store / location", required=True),
+        _f("shift_date", "Shift date", "date"),
+        _f("worker_name", "Worker"),
+        _f("supervisor_name", "Supervisor"),
+        _f("checkin_interval_mins", "Check-in interval (mins)", "number"),
+        _f("checkins", "Check-ins", "table",
+           columns=[{"key": "time", "label": "Time"}, {"key": "status", "label": "Status"},
+                    {"key": "notes", "label": "Notes"}]),
+        _f("escalations", "Escalations triggered", "chips"),
+        _f("shift_closed_safely", "Shift closed safely (Y/N)"),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Lone Worker Check-In Log", "WHS Reg 48 · Remote or isolated work", [
+        ("Shift", [("Store / location", "store_name"), ("Shift date", "shift_date"),
+                   ("Worker", "worker_name"), ("Supervisor", "supervisor_name"),
+                   ("Check-in interval (mins)", "checkin_interval_mins"),
+                   ("Shift closed safely", "shift_closed_safely")]),
+    ]),
+})
+
+register_doc_type({
+    "id": "customer_incident", "category": "incident", "industries": ["retail"],
+    "label": "Customer Incident Report", "counter_prefix": "CI",
+    "blurb": "On-premises customer injury / near-miss / property damage",
+    "fields": [
+        _f("store_name", "Store / location", required=True),
+        _f("incident_date", "Incident date", "datetime"),
+        _f("customer_name", "Customer name (if known)"),
+        _f("customer_contact", "Customer contact"),
+        _f("incident_type", "Incident type"),
+        _f("description", "Description", "textarea"),
+        _f("first_aid_provided", "First aid provided (Y/N)"),
+        _f("ambulance_called", "Ambulance called (Y/N)"),
+        _f("cctv_reference", "CCTV reference"),
+        _f("witnesses", "Witnesses", "chips"),
+        _f("notifiable_assessed", "Notifiable to regulator assessed (Y/N)"),
+        _f("manager_name", "Manager on shift"),
+        _f("corrective_action", "Corrective action", "textarea"),
+    ],
+    "ai_prompt": None,
+    "pdf": _simple_renderer("Customer Incident Report", "State WHS Act · Notifiable incidents", [
+        ("Incident", [("Store / location", "store_name"), ("Incident date", "incident_date"),
+                      ("Customer name", "customer_name"), ("Customer contact", "customer_contact"),
+                      ("Incident type", "incident_type"), ("First aid provided", "first_aid_provided"),
+                      ("Ambulance called", "ambulance_called"), ("CCTV reference", "cctv_reference"),
+                      ("Notifiable assessed", "notifiable_assessed"),
+                      ("Manager on shift", "manager_name")]),
+    ]),
+})
+
+
+
 
 

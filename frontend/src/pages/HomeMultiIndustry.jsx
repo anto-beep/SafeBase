@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, CheckCircle, Warning, IdentificationBadge, FileText, Brain,
@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { INDUSTRIES, INDUSTRY_LIST } from "@/data/industries.config";
 import { Icon } from "@/components/industry/IndustryPage";
+import axios from "axios";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const PAINS = [
   { icon: FileText, title: "No documentation", body: "The obligation to manage and record risks applies whether you run a cafe, a truck, a clinic, or a construction site. The fine for getting it wrong applies too." },
@@ -47,7 +50,23 @@ const HOMEPAGE_TESTIMONIALS = [
 
 export default function Landing() {
   const [activeIndustry, setActiveIndustry] = useState("trades");
+  const [liveSignals, setLiveSignals] = useState({});
   const ind = INDUSTRIES[activeIndustry];
+
+  // Lazy-fetch live signal when the user switches to a tab for the first time.
+  useEffect(() => {
+    if (liveSignals[activeIndustry]) return;
+    let cancelled = false;
+    axios.get(`${API}/public/industry-signal/${activeIndustry}`)
+      .then((r) => { if (!cancelled) setLiveSignals((p) => ({ ...p, [activeIndustry]: r.data })); })
+      .catch(() => { /* silent — config fallback already renders */ });
+    return () => { cancelled = true; };
+  }, [activeIndustry, liveSignals]);
+
+  // Prefer live data over config fallback when available.
+  const signal = liveSignals[activeIndustry]
+    ? { pulse: liveSignals[activeIndustry].pulse, featured: liveSignals[activeIndustry].featured, live: liveSignals[activeIndustry].live }
+    : (ind.signal ? { ...ind.signal, live: false } : null);
 
   return (
     <>
@@ -96,17 +115,18 @@ export default function Landing() {
               </div>
               <p className="text-white/80 mt-4 text-sm leading-relaxed">{ind.hero.subheadline}</p>
 
-              {ind.signal && (
+              {signal && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/30 border border-white/15 p-4" data-testid="home-industry-signal">
                   <div data-testid={`home-industry-pulse-${ind.slug}`}>
                     <div className={`label-eyebrow ${ind.color.accentText} text-[10px] flex items-center gap-1.5`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Network pulse
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                      {signal.live ? "Network pulse · live" : "Network pulse"}
                     </div>
-                    <div className="text-sm font-mono text-white mt-1.5 leading-snug">{ind.signal.pulse}</div>
+                    <div className="text-sm font-mono text-white mt-1.5 leading-snug">{signal.pulse}</div>
                   </div>
                   <div data-testid={`home-industry-featured-${ind.slug}`}>
                     <div className={`label-eyebrow ${ind.color.accentText} text-[10px]`}>Spotlight</div>
-                    <div className="text-sm text-white/90 mt-1.5 leading-snug">{ind.signal.featured}</div>
+                    <div className="text-sm text-white/90 mt-1.5 leading-snug">{signal.featured}</div>
                   </div>
                 </div>
               )}
