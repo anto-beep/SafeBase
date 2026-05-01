@@ -45,12 +45,23 @@ export function MarketingNav() {
               <DropdownMenuItem asChild><Link to="/resources#ai" data-testid="nav-resources-ai">Ask SafeBase AI</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 outline-none uppercase tracking-widest" data-testid="nav-tools">
+              TOOLS <CaretDown size={10} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-none border-ink w-56">
+              <DropdownMenuItem asChild><Link to="/plan-rightsizer" data-testid="nav-tools-rightsizer" className="font-bold">Plan Right-sizer</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/risk-calculator" data-testid="nav-tools-risk-calc">Industry Risk Calculator</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/fine-calculator" data-testid="nav-tools-fine-calc">WHS Fine Calculator</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/compare" data-testid="nav-tools-compare">Compare SafeBase</Link></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Link to="/compare" data-testid="nav-compare" className="uppercase tracking-widest">COMPARE</Link>
           <a href="mailto:hello@safebase.com.au" data-testid="nav-contact" className="uppercase tracking-widest">CONTACT</a>
         </nav>
         <div className="flex items-center gap-2">
           <Link to="/login"><Button variant="ghost" className="btn-sharp uppercase tracking-widest" data-testid="nav-login-btn">Log in</Button></Link>
-          <Link to="/contact?type=demo"><Button variant="outline" className="btn-sharp border-ink uppercase tracking-widest hidden lg:inline-flex" data-testid="nav-demo-btn">Book a Demo</Button></Link>
+          <Link to="/book-demo"><Button variant="outline" className="btn-sharp border-ink uppercase tracking-widest hidden lg:inline-flex" data-testid="nav-demo-btn">Book a Demo</Button></Link>
           <Link to="/register"><Button className="btn-sharp bg-ink text-white hover:bg-authority uppercase tracking-widest" data-testid="nav-register-btn">Start Free Trial <ArrowRight className="ml-1" /></Button></Link>
         </div>
       </div>
@@ -86,17 +97,26 @@ export function MarketingFooter() {
             <li><Link to="/services/incidents">Incidents</Link></li>
             <li><Link to="/services/people">People & Licences</Link></li>
             <li><Link to="/services/intelligence">Intelligence</Link></li>
-            <li><Link to="/ecosystem">Ecosystem</Link></li>
+            <li><Link to="/services/swms">Ecosystem</Link></li>
+          </ul>
+        </div>
+        <div>
+          <div className="label-eyebrow text-white/60 mb-3">Tools</div>
+          <ul className="space-y-2 text-sm">
+            <li><Link to="/plan-rightsizer">Plan Right-sizer</Link></li>
+            <li><Link to="/risk-calculator">Risk Calculator</Link></li>
+            <li><Link to="/fine-calculator">Fine Calculator</Link></li>
+            <li><Link to="/templates">Free Templates</Link></li>
+            <li><Link to="/compare">Compare</Link></li>
+            <li><Link to="/book-demo">Book a Demo</Link></li>
           </ul>
         </div>
         <div>
           <div className="label-eyebrow text-white/60 mb-3">Resources</div>
           <ul className="space-y-2 text-sm">
             <li><Link to="/blog">Blog</Link></li>
-            <li><Link to="/templates">Free templates</Link></li>
             <li><Link to="/guides">State guides</Link></li>
-            <li><Link to="/tools/fine-calculator">Fine calculator</Link></li>
-            <li><Link to="/compare">Compare</Link></li>
+            <li><Link to="/resources">All resources</Link></li>
             <li><Link to="/integrations">Integrations</Link></li>
           </ul>
         </div>

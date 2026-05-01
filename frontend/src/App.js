@@ -85,7 +85,10 @@ import Franchises from "@/pages/Franchises";
 import Resources from "@/pages/Resources";
 import ResourceArticle from "@/pages/ResourceArticle";
 import About from "@/pages/About";
-import Ecosystem from "@/pages/Ecosystem";
+import Ecosystem from "@/pages/Ecosystem"; // kept as import for redirect only
+import PlanRightsizer from "@/pages/PlanRightsizer";
+import IndustryRiskCalculator from "@/pages/IndustryRiskCalculator";
+import BookDemo from "@/pages/BookDemo";
 import Consulting from "@/pages/Consulting";
 import Academy from "@/pages/products/Academy";
 import TradeInduct from "@/pages/products/TradeInduct";
@@ -112,7 +115,10 @@ function AppRouter() {
       <Route path="/industries/transport" element={<IndustryTransport />} />
       <Route path="/industries/healthcare" element={<IndustryHealthcare />} />
       <Route path="/industries/retail" element={<IndustryRetail />} />
-      <Route path="/ecosystem" element={<Ecosystem />} />
+      <Route path="/ecosystem" element={<Navigate to="/services/swms" replace />} />
+      <Route path="/plan-rightsizer" element={<PlanRightsizer />} />
+      <Route path="/risk-calculator" element={<IndustryRiskCalculator />} />
+      <Route path="/book-demo" element={<BookDemo />} />
       <Route path="/services/swms" element={<ServiceSwms />} />
       <Route path="/services/incidents" element={<ServiceIncidents />} />
       <Route path="/services/people" element={<ServicePeople />} />

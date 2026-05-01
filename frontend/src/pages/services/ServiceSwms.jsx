@@ -117,6 +117,36 @@ export default function ServiceSwms() {
         </div>
       </section>
 
+      {/* ECOSYSTEM — moved from former /ecosystem page (Feb 2026) */}
+      <section className="border-b border-border bg-muted">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+            <div className="lg:col-span-5">
+              <div className="label-eyebrow mb-3">/ The SafeBase ecosystem</div>
+              <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter">Six products. One platform. Every industry.</h2>
+            </div>
+            <p className="lg:col-span-7 text-lg text-muted-foreground self-end">SafeBase is not a single tool — it is a layered compliance ecosystem. Core is the foundation. SafeInduct, SafeCheck and Academy add specialised capability. Franchise and Consulting extend the platform outward. Every product works on every industry.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border">
+            {[
+              { code: "01", t: "SafeBase Core", d: "Compliance documents, incident management, credential tracking, risk register — configured for your industry.", p: "from A$399/mo + GST" },
+              { code: "02", t: "SafeInduct", d: "QR-based inductions for sites, venues, depots, clinics and stores. AI-generated location-specific inductions.", p: "A$199/mo + GST · included Tier 2+" },
+              { code: "03", t: "SafeCheck", d: "Portable compliance credential — verified licences, AHPRA, RSA certificates and insurances in one QR code.", p: "A$249/mo + GST · included Tier 3+" },
+              { code: "04", t: "SafeBase Academy", d: "Industry-specific microlearning and full certification courses. Completion syncs to your compliance dashboard.", p: "from A$349/mo + GST · included Tier 3+" },
+              { code: "05", t: "SafeBase for Franchises", d: "One compliance standard across every franchise location. Master template library, network-wide dashboards.", p: "from A$119/mo per location + GST" },
+              { code: "06", t: "WHS Consulting", d: "Human WHS expert support powered by SafeBase data — setup, retainer, investigation, regulator audit prep.", p: "from A$1,800/mo + GST" },
+            ].map((prod) => (
+              <div key={prod.code} className="bg-background p-8" data-testid={`swms-eco-${prod.code}`}>
+                <div className="font-mono text-xs text-muted-foreground">{prod.code}</div>
+                <h3 className="font-display text-xl font-bold mt-2">{prod.t}</h3>
+                <p className="text-sm text-muted-foreground mt-2">{prod.d}</p>
+                <div className="text-xs font-mono mt-4 border-t border-border pt-3">{prod.p}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="bg-ink text-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8">

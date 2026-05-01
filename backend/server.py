@@ -2337,6 +2337,40 @@ register_integration_routes(
 )
 
 
+@api_router.post("/demo/request")
+async def submit_demo_request(body: dict):
+    """Public endpoint — captures demo requests from /book-demo page.
+    Public (no auth) because the form is pre-signup. Stored in
+    `demo_requests` collection for sales follow-up.
+    """
+    import uuid as _uuid
+    required = ("industry", "first_name", "email")
+    for f in required:
+        if not body.get(f):
+            raise HTTPException(400, f"{f} is required")
+    doc = {
+        "request_id": f"DMO-{_uuid.uuid4().hex[:10]}",
+        "industry": body.get("industry"),
+        "first_name": body.get("first_name"),
+        "last_name": body.get("last_name"),
+        "business_name": body.get("business_name"),
+        "email": body.get("email"),
+        "phone": body.get("phone"),
+        "role": body.get("role"),
+        "staff_count": body.get("staff_count"),
+        "locations": body.get("locations"),
+        "current_approach": body.get("current_approach"),
+        "challenge": body.get("challenge"),
+        "best_time": body.get("best_time"),
+        "status": "new",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.demo_requests.insert_one(doc)
+    doc.pop("_id", None)
+    return {"ok": True, "request_id": doc["request_id"]}
+
+
+
 @api_router.get("/incident-workflow/meta/regulators")
 async def list_regulators():
     """State regulator phone numbers used by the Triage 'Call Now' button."""

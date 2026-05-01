@@ -33,7 +33,7 @@ const COMPARISONS = {
       vs: "WHS Monitor",
       tagline: "Bloated enterprise tool vs lean SMB-focused",
       rows: [
-        { feature: "Sub-$300/mo entry pricing", safebase: "yes", competitor: "no" },
+        { feature: "Entry pricing under A$600/mo for SMBs", safebase: "yes", competitor: "no" },
         { feature: "AI document generation", safebase: "yes", competitor: "no" },
         { feature: "Multi-industry support", safebase: "yes", competitor: "partial" },
         { feature: "Worker mobile PWA included", safebase: "yes", competitor: "no" },
@@ -157,7 +157,7 @@ const COMPARISONS = {
         { feature: "ACQSC 8 standards evidence pack", safebase: "yes", competitor: "yes" },
         { feature: "AHPRA monitoring (live API check)", safebase: "yes", competitor: "no" },
         { feature: "NDIS Practice Standards module", safebase: "yes", competitor: "yes" },
-        { feature: "Sub-$400/mo entry pricing", safebase: "yes", competitor: "no" },
+        { feature: "Entry pricing under A$600/mo for independent operators", safebase: "yes", competitor: "no" },
         { feature: "Setup time < 1 hour", safebase: "yes", competitor: "no" },
       ],
     },

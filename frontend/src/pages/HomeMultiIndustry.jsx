@@ -256,6 +256,10 @@ export default function Landing() {
               ))}
             </div>
             <p className="text-sm text-muted-foreground mt-6">All plans include a 14-day free trial. No credit card required. All prices + GST.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/plan-rightsizer"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="home-rightsizer-cta">Find your right-size plan (3 questions) <ArrowRight className="ml-2" /></Button></Link>
+              <Link to="/risk-calculator"><Button variant="outline" className="btn-sharp h-12 border-ink" data-testid="home-risk-cta">Calculate your risk exposure</Button></Link>
+            </div>
           </div>
         </section>
 
