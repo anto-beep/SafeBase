@@ -101,12 +101,13 @@ export default function SwmsGenerator() {
         ]);
         setRef(refRes.data);
         setWorkersRoster(wRes.data || []);
-        // Auto-fill business from profile
+        // Auto-fill business from profile — /api/auth/me returns
+        // {company_name, name, email}. Fall back to the user's name when the
+        // company isn't set so the preview isn't empty on first visit.
         const p = profRes.data || {};
         setForm((f) => ({
           ...f,
-          company_name: f.company_name || p.company_name || "",
-          business_phone: f.business_phone || p.phone || "",
+          company_name: f.company_name || p.company_name || p.business_name || p.name || "",
           business_email: f.business_email || p.email || "",
         }));
       } catch (e) {

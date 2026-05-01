@@ -128,6 +128,24 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
   - `api.js` 402 interceptor surfaces a sonner toast on trial-expired writes.
 - Tested 8/8 backend + 18/18 iter18 regression + frontend e2e (active banner show/dismiss/persist, expired banner, apps grid, sidebar nav, route navigation, 402 on write) — zero issues (iteration_19.json).
 
+### Iteration 20 — Complete SWMS Generator Phase 1 (Feb 2026)
+- **7-step wizard** (`/dashboard/swms/new`): Business & Job → Trade & Activity → HRCW Categories → Tasks/Hazards/Controls → Compliance & Review → Equipment/PPE/Training → Generate & Sign. Left: stepped form · Right: **live preview pane** mirroring the PDF layout. Always-visible **Legal Notice** banner at top.
+- **Reference data**: 21 trades, 20 HRCW categories (all Safe Work Australia codes), 8 state regulators, 19 standard PPE items (with AS/NZS refs), 18 standard training/licences, 6-level hierarchy of controls with colour codes.
+- **AI endpoints** (Claude Sonnet 4.5):
+  - `POST /api/swms/ai/suggest-hrcw` auto-ticks HRCW from trade+activity (deterministic lookup, no LLM cost).
+  - `POST /api/swms/ai/suggest-rows` drafts 4-7 task rows with hazards + top-down hierarchy controls. Safe fallback rows returned when LLM times out (expected occasionally given K8s 60s ingress vs Claude ~55s latency — structure always valid).
+- **CRUD + workflow**: `POST/GET/PATCH/DELETE /api/swms`, per-user+year reference counter `SWMS-YYYY-####`, version bumping + revisions[] on material changes when non-draft, audit_log on every mutation, soft-archive on first delete (5y retention default, 2y from incident date when `locked_by_incident`), `POST /api/swms/{id}/duplicate`, `POST /api/swms/{id}/status` for transitions (draft → awaiting_signatures → signed → in_use → reviewed → archived), `POST /api/swms/{id}/link-incident` to notifiable-incident-lock.
+- **Worker sign-off** — three paths:
+  - In-person: `POST /api/swms/{id}/sign` with signature text, stamps worker + status auto-progresses to `signed` when all workers stamped.
+  - **SMS/secure-link** (MOCKED delivery): `POST /api/swms/{id}/send-sign-links` creates per-worker tokens in `swms_sign_tokens` (7-day expiry) + logs in-app notification `swms_sign_links_sent`.
+  - Public sign page `/swms/sign/{token}` (no auth) renders trimmed SWMS view + signature input → `POST /api/public/swms/sign/{token}` marks token used + stamps worker. Path `/api/public/` added to trial_gate allowlist.
+- **PDF** (`GET /api/swms/{id}/pdf`): WeasyPrint renders full Safe Work Australia template — cover, legal notice, business table, 20-item HRCW grid, 3-column tasks/hazards/controls with hierarchy-colour pills, PPE + training checklists, emergency procedures with state regulator, worker sign-on table (digital signatures embedded), revision history, footer disclaimer on every page. Attachment download. ~32KB typical.
+- **SWMS Library** `/dashboard/swms`: register with 4 stat cards, filters (search/status/trade), row actions (View/PDF/Duplicate/Send-SMS/Archive), incident-locked icon, review-due banner. Replaces the old Documents page for SWMS; legacy `/api/documents` kept for backward compat.
+- **Navigation**: "SWMS Library" added to sidebar main NAV under Overview, above Documents.
+- Legal disclaimers baked into every generated PDF + all forms.
+- Owner seed backfilled with `company_name="SafeTradie Demo Co"`; generator prefill falls back to user's name when company is null.
+- Tested 19/19 backend + 8/8 iter19 regression + full Playwright wizard walkthrough — zero critical issues (iteration_20.json). One minor UX miss fixed post-test (company auto-fill).
+
 ---
 
 ## Backend endpoints (current summary)
