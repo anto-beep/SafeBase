@@ -55,6 +55,9 @@ import RiskDetail from "@/pages/risk/RiskDetail";
 import ReviewForm from "@/pages/risk/ReviewForm";
 import SwmsRevisionsPage from "@/pages/risk/SwmsRevisionsPage";
 import CompetencyMatrix from "@/pages/CompetencyMatrix";
+import SwmsLibraryPage from "@/pages/swms/SwmsLibraryPage";
+import SwmsGenerator from "@/pages/swms/SwmsGenerator";
+import SwmsSignPublic from "@/pages/swms/SwmsSignPublic";
 import ServiceSwms from "@/pages/services/ServiceSwms";
 import ServiceIncidents from "@/pages/services/ServiceIncidents";
 import ServicePeople from "@/pages/services/ServicePeople";
@@ -113,6 +116,7 @@ function AppRouter() {
       <Route path="/integrations" element={<Integrations />} />
       <Route path="/enterprise" element={<Enterprise />} />
       <Route path="/induct/:code" element={<InductionPublic />} />
+      <Route path="/swms/sign/:token" element={<SwmsSignPublic />} />
       <Route path="/worker" element={<Protected><MobileWorker /></Protected>} />
       <Route path="/dashboard" element={<Protected><DashboardLayout /></Protected>}>
         <Route index element={<Dashboard />} />
@@ -155,6 +159,9 @@ function AppRouter() {
         <Route path="risk-register/:risk_id/edit" element={<RiskForm />} />
         <Route path="swms-revisions" element={<SwmsRevisionsPage />} />
         <Route path="competency-matrix" element={<CompetencyMatrix />} />
+        <Route path="swms" element={<SwmsLibraryPage />} />
+        <Route path="swms/new" element={<SwmsGenerator />} />
+        <Route path="swms/:swms_id" element={<SwmsGenerator />} />
         <Route path="webhooks" element={<Webhooks />} />
         <Route path="automations" element={<Automations />} />
       </Route>
