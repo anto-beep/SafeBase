@@ -60,8 +60,8 @@ export default function DocumentForm() {
       if (navigate) {
         nav(`/dashboard/document-library/${res.data.doc_type}`);
       } else if (isNew && res.data.doc_id) {
-        // Update URL from /new -> /:doc_id so refresh/back keeps the saved doc
-        nav(`/dashboard/document-library/${res.data.doc_type}/${res.data.doc_id}`, { replace: true });
+        // Update URL from /new -> /doc/:doc_id so refresh/back keeps the saved doc
+        nav(`/dashboard/document-library/doc/${res.data.doc_id}`, { replace: true });
       }
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Save failed");

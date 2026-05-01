@@ -170,6 +170,17 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 - **135/135 backend pytest PASS** across iter21+22+23; **100% critical frontend flows** (31-card hub render + welding_procedure end-to-end + spot-check of 5 new widgets) — iteration_23.json.
 - Minor UX fix: DocumentForm now replaces `/new` URL with `/{doc_id}` after first save so refresh/back retains state.
 
+### Iteration 24 — P1 Refactor Batch & Polish (Feb 2026)
+- **`docs_module.py` split**: 2203 → 236 lines (routes + CRUD only). Renderers moved to `docs_pdf.py` (31 functions + CSS helpers); registry + field specs moved to `docs_registry.py` (31 `register_doc_type()` calls + `DOC_TYPES` + `CATEGORIES`).
+- **Generic `table` field type** in `DocumentForm.jsx` — replaces the 18+ duplicate table-type if/else chain with a single branch driven by `field.columns` (or a legacy `TABLE_COLS` lookup for back-compat). New doc types can now declare `{type:"table", columns:[{key,label}]}` directly in the registry with zero frontend code.
+- **shadcn Calendar + Popover** replace native `<input type=date/datetime-local>` across DocumentForm (date + datetime branch → `DateField` component with Popover + time input).
+- **`GET /api/docs/stats`** — single aggregation endpoint returning `{total, by_category, by_doc_type, recent[≤5]}` so the Hub no longer needs to fetch every doc to compute counts.
+- **PATCH `/api/docs/{id}` version bump** — every successful PATCH increments `version` via `$inc` (compliance audit requirement).
+- **Field-key allowlist** on both POST + PATCH — derived from `spec.fields` at registration time, silently strips unknown keys so typos like `lod_weight_kg` can no longer persist.
+- **WeasyPrint timeout** — `write_pdf` wrapped in `asyncio.wait_for(timeout=30)`; returns 504 on timeout instead of hanging.
+- **Auth routes extracted** to `/app/backend/routes/auth.py` via `register_auth_routes(api_router, db=..., User=..., get_current_user=..., hash_password=..., verify_password=..., make_jwt=..., trial_length_days=14)` factory. `server.py` now imports + calls this factory.
+- **100% backend (12/12 new tests)**, **95% critical frontend** (hub 31 cards, Calendar popover, generic tables, create→save→PDF all pass) — iteration_24.json. One minor post-save URL regression identified + fixed (navigation now correctly targets `/dashboard/document-library/doc/{doc_id}`).
+
 ---
 
 ## Backend endpoints (current summary)
@@ -189,17 +200,15 @@ Business owner (primary) · Safety manager · Supervisor · Worker · WHS consul
 
 ## Backlog (Deferred)
 
-### P1 (next session — technical debt + UX polish)
-- **Refactor oversized modules**:
-  - `docs_module.py` is now ~2100 lines → split into `docs_pdf.py` (31 render_* + CSS), `docs_registry.py` (31 register_doc_type calls), `docs_module.py` (routes + CRUD only)
-  - `server.py` still ~2600 lines → split into `/app/backend/routes/{auth,safety,reports,workflows,tradeinduct,tradecheck,academy,partner,worker,billing,webhooks}.py`
-- **Unify table field widget**: replace 18+ duplicate table-type branches in `DocumentForm.jsx` with one generic `table` field type driven by `spec.columns=[{key,label,type}]` in the registry.
-- **Typed Pydantic models per doc type** — build DocCreate / DocUpdate models from `spec['fields']` at registration time so typo'd keys (e.g. `lod_weight_kg` on lift_plan) fail-fast instead of silently persisting.
-- **PATCH version bump** on Document Library — currently only `updated_at` changes; compliance audits want `version` bumped on every successful PATCH (and `revisions[]` on material change when not in draft).
-- **shadcn Calendar** replacing native `<input type=date/datetime-local>` across DocumentForm + SWMS step-1 for UI consistency.
-- **/api/docs/stats aggregation** so `DocumentLibraryHub` doesn't need to fetch every doc to compute per-category counts.
-- **WeasyPrint timeout hardening**: wrap `write_pdf` in `asyncio.wait_for(timeout=30)` for large registers (test_tag_register with many items).
-- **Safety category sub-grouping** in hub: 20 safety docs in one column will scroll — group into Permits / Plans / Assessments for ergonomics.
+### P1 (next session — complete the server.py refactor)
+- **Extract remaining server.py route groups** — auth is already split (iter24). Remaining to split: `/api/billing/*` + `/api/webhook/stripe` + `/api/webhooks/*` + `/api/automations/*` + `/api/documents/*` (legacy) into `/app/backend/routes/{billing,webhooks,automations,legacy_docs}.py`. Pattern already established via `register_auth_routes` factory.
+- **Further docs_pdf / docs_registry split** — both still >700 lines. Group renderers + registrations per-category (`docs_pdf_safety.py`, `docs_pdf_trade.py`, `docs_pdf_plant.py`, `docs_pdf_worker.py`) for surgical edits later.
+- **Per-type Pydantic models** — build `DocCreate_<type>` / `DocUpdate_<type>` BaseModels dynamically from `spec['fields']` at registration time so bad payloads 422 instead of silently-stripping (current allowlist is a weaker defence).
+- **Debug-log dropped keys** on POST/PATCH so silent-strip doesn't mask client-side typos.
+- **Expose test-ids on new UI**: `doc-save-toast`, `doc-row-{doc_id}`, `date-popover-trigger-{field_key}`, `date-popover-day-{iso}` for deterministic QA automation.
+- **`by_status` breakdown** on `/api/docs/stats` so hub can surface draft/in_use/issued/archived pill counts.
+- **Safety-category sub-grouping in Hub**: 20 safety docs in one column scrolls — group into Permits / Plans / Assessments for ergonomics.
+- **Drop empty categories (contractor, incident)** from `/api/docs/types` response OR annotate `count:0` so the hub can grey them out.
 
 ### P2 (out-of-scope for this env)
 - React Native / Capacitor wrapper — Emergent preview env can't build mobile binaries. The existing PWA at `/worker` is installable on iOS/Android and covers ~95% of native UX.
