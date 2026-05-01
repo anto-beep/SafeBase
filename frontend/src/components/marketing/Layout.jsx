@@ -41,6 +41,7 @@ export function MarketingNav() {
               <DropdownMenuItem asChild><Link to="/resources/transport" data-testid="nav-resources-transport">Transport resources</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/resources/healthcare" data-testid="nav-resources-healthcare">Healthcare resources</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/resources/retail" data-testid="nav-resources-retail">Retail resources</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/regulatory-digest" data-testid="nav-resources-digest" className="font-bold">Regulatory Digest — What changed</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/templates" data-testid="nav-resources-templates">Free templates</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/resources#ai" data-testid="nav-resources-ai">Ask SafeBase AI</Link></DropdownMenuItem>
             </DropdownMenuContent>
@@ -52,7 +53,9 @@ export function MarketingNav() {
             <DropdownMenuContent className="rounded-none border-ink w-56">
               <DropdownMenuItem asChild><Link to="/plan-rightsizer" data-testid="nav-tools-rightsizer" className="font-bold">Plan Right-sizer</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/risk-calculator" data-testid="nav-tools-risk-calc">Industry Risk Calculator</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/fine-calculator" data-testid="nav-tools-fine-calc">WHS Fine Calculator</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/credential-expiry-calculator" data-testid="nav-tools-cred-calc">Credential Expiry Calculator</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/insurance-discount-calculator" data-testid="nav-tools-insurance-calc">Insurance Discount Calculator</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/tools/fine-calculator" data-testid="nav-tools-fine-calc">WHS Fine Calculator</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/compare" data-testid="nav-tools-compare">Compare SafeBase</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -105,7 +108,9 @@ export function MarketingFooter() {
           <ul className="space-y-2 text-sm">
             <li><Link to="/plan-rightsizer">Plan Right-sizer</Link></li>
             <li><Link to="/risk-calculator">Risk Calculator</Link></li>
-            <li><Link to="/fine-calculator">Fine Calculator</Link></li>
+            <li><Link to="/credential-expiry-calculator">Credential Expiry Calculator</Link></li>
+            <li><Link to="/insurance-discount-calculator">Insurance Discount Calculator</Link></li>
+            <li><Link to="/tools/fine-calculator">Fine Calculator</Link></li>
             <li><Link to="/templates">Free Templates</Link></li>
             <li><Link to="/compare">Compare</Link></li>
             <li><Link to="/book-demo">Book a Demo</Link></li>
@@ -115,6 +120,7 @@ export function MarketingFooter() {
           <div className="label-eyebrow text-white/60 mb-3">Resources</div>
           <ul className="space-y-2 text-sm">
             <li><Link to="/blog">Blog</Link></li>
+            <li><Link to="/regulatory-digest">Regulatory Digest</Link></li>
             <li><Link to="/guides">State guides</Link></li>
             <li><Link to="/resources">All resources</Link></li>
             <li><Link to="/integrations">Integrations</Link></li>

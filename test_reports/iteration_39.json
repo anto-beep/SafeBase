@@ -1,0 +1,39 @@
+{
+  "summary": "Iter39 mega-batch end-to-end verified. BACKEND 17/17 PASS (test_iter39_aux.py): plan-rightsizer returns correct tier + plan_name + annual for all 4 target scenarios (trades/1/1 → Solo Tradie A$3,990; healthcare/40/4 → Enterprise A$139,990; hospitality/3/2 → Small Group A$14,990; transport/20/3 → Growing Fleet A$27,990), unknown industry → 400, risk_anchor + cta_register_url present. Regulatory-digest returns 11 items sorted by posted desc with severity+regulator+source_url; filter=healthcare → 3, filter=transport → 2. Demo-requests unauth → 401/403, owner GET returns rows + counts{new,contacted,qualified,closed}, PATCH flow works (POST /api/demo/request to seed, PATCH {status:'contacted'} → 200 and persisted, invalid status → 400, unknown id → 404). Regression green: /api/billing/tiers (healthcare_enterprise_annual present), /api/compliance-inbox 200, /api/public/industry-signal/trades 200. FRONTEND verified on preview URL: /regulatory-digest renders digest-hero + digest-filter (Radix select) and filter narrows list from 11 → 3 items on healthcare; /credential-expiry-calculator updates cred-total live when industry buttons are clicked (default A$7,120 → healthcare A$9,040); /insurance-discount-calculator updates ins-discount-pct (12% → 8% on healthcare); /seo/ndis-compliance calls /api/plan-rightsizer/recommend with industry=healthcare on team=10/loc=1, result panel shows 'Small Practice Up to 15 users · Healthcare and Aged Care A$27,990/yr + GST ... save A$5,598 annually' plus risk anchor; /seo/cor-compliance and /seo/haccp-compliance render OK. Plan Right-sizer → Register hand-off works: writing localStorage safebase_rightsizer with savedAt=Date.now() makes signup-rightsizer-hint appear on /register with correct industry/team/locations copy. Owner login → /dashboard renders digest-widget (below compliance inbox) and nav-admin-demos sidebar link; /dashboard/admin/demos renders admin-demos-page with 12 stat-card testids and populated list. Marketing nav: opening TOOLS dropdown (click nav-tools) exposes nav-tools-cred-calc + nav-tools-insurance-calc + nav-tools-fine-calc (→ /tools/fine-calculator, old /fine-calculator link no longer present); RESOURCES dropdown exposes nav-resources-digest.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/regulatory-digest", "issue": "Spec asked for 12 items but code in _digest_items() only has 11 (healthcare=3, transport=2, hospitality=2, retail=2, trades=2). Either add one item or update the PRD to 11."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter39_aux.py",
+    "/app/test_reports/pytest/iter39_results.xml"
+  ],
+  "action_items": [
+    "[Minor] Regulatory digest currently has 11 items; PRD/review request expected 12. Decide: add one more item (e.g. an extra Trades or Retail entry) or correct PRD number to 11.",
+    "[Doc only] Review request said /regulatory-digest uses data-testid='filter-select'; actual testid is 'digest-filter'. Both work functionally but update review request docs for next iteration.",
+    "[Optional] On /credential-expiry-calculator the Radix Slider for 'cred-workers' does not respond to programmatic value-set from Playwright (still responds to user drag / industry-button change, which were the testid-driven assertions in PRD). Not a user-facing bug."
+  ],
+  "critical_code_review_comments": [
+    "routes/iter39_aux.py is clean: proper HTTPException codes, Query validators for team/locations (ge=1/le=500), in-memory digest items documented as intentional, MongoDB _id explicitly excluded via projection {'_id': 0}.",
+    "_owner_only() uses getattr(user, 'role_variant', 'owner') — note that if the attribute is missing it defaults to 'owner', so any future non-User current_user shape could accidentally permit access. Safer default is 'worker' or require explicit variant. Low risk in current setup (User model always has role_variant).",
+    "Register.jsx line 91 requires saved.savedAt within 7-day window for the hint to show. PlanRightsizer.jsx MUST set savedAt when writing localStorage (confirmed it does), so the end-to-end flow works. Future UX: surface the stale-state fallback rather than silently skipping.",
+    "Marketing Layout.jsx uses Radix DropdownMenu so nav-tools-* and nav-resources-* testids are only rendered in DOM when the dropdown is open. Any playwright test must click the trigger first — documented for next testing agent."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter39_aux.py"
+  ],
+  "success_rate": {"backend": "100% (17/17)", "frontend": "100% — all PRD flows green, 0 console errors relevant to iter39 pages"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (login OK, token field is JSON 'token').",
+  "seed_data_creation": "Created two TEST_* demo_requests via public POST /api/demo/request during backend + frontend runs. Safe to leave (visible in admin panel as TEST_Iter39 Tester and TEST_reg).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Re-run: pytest /app/backend/tests/test_iter39_aux.py -v. Digest item count is 11 (intentional in code). Plan-rightsizer tier maths: healthcare idx 3 requires team>30 OR locations>=5; hospitality idx 1 requires team>3 OR locations>=2. Demo-requests PATCH requires owner role_variant. For marketing nav tests use click(nav-tools) then query nav-tools-cred-calc (dropdown is Radix portal).",
+  "rca of the issue": "No blocking issues. Only discrepancy is digest count (11 vs PRD-stated 12) — a data/doc mismatch, not a bug."
+}

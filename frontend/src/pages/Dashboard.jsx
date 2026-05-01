@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
 import ComplianceInboxWidget from "@/components/ComplianceInboxWidget";
+import RegulatoryDigestWidget from "@/components/RegulatoryDigestWidget";
 import useTier from "@/hooks/useTier";
 import useIndustry from "@/hooks/useIndustry";
 import WorkerDashboard from "./dashboards/WorkerDashboard";
@@ -310,6 +311,9 @@ function OwnerDashboard() {
 
       {/* Compliance Inbox widget — cross-industry ranked deadlines */}
       <ComplianceInboxWidget />
+
+      {/* Regulatory Digest widget — top-3 regulatory changes for user's industry */}
+      <RegulatoryDigestWidget />
 
       {/* Apps & Add-ons — discoverability for ecosystem (always visible) */}
       <div className="bg-background border border-border p-5" data-testid="apps-addons-section">

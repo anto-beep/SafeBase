@@ -189,6 +189,11 @@ export default function DashboardLayout() {
           <NavLink to="/dashboard/settings" data-testid="nav-settings" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
             <Gear size={18} weight="bold" /> Settings
           </NavLink>
+          {(user?.role_variant || "owner") === "owner" && (
+            <NavLink to="/dashboard/admin/demos" data-testid="nav-admin-demos" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
+              <Briefcase size={18} weight="bold" /> Demo Requests
+            </NavLink>
+          )}
           <div className="mt-5 px-3 label-eyebrow text-warning">Apps &amp; Add-ons</div>
           {renderedAppsNav.map((item) => (
             <NavLink

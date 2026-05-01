@@ -89,6 +89,13 @@ import Ecosystem from "@/pages/Ecosystem"; // kept as import for redirect only
 import PlanRightsizer from "@/pages/PlanRightsizer";
 import IndustryRiskCalculator from "@/pages/IndustryRiskCalculator";
 import BookDemo from "@/pages/BookDemo";
+import CredentialExpiryCalculator from "@/pages/CredentialExpiryCalculator";
+import InsuranceDiscountCalculator from "@/pages/InsuranceDiscountCalculator";
+import RegulatoryDigest from "@/pages/RegulatoryDigest";
+import AdminDemoRequests from "@/pages/AdminDemoRequests";
+import NdisCompliancePage from "@/pages/seo/NdisCompliancePage";
+import CorCompliancePage from "@/pages/seo/CorCompliancePage";
+import HaccpCompliancePage from "@/pages/seo/HaccpCompliancePage";
 import Consulting from "@/pages/Consulting";
 import Academy from "@/pages/products/Academy";
 import TradeInduct from "@/pages/products/TradeInduct";
@@ -118,6 +125,12 @@ function AppRouter() {
       <Route path="/ecosystem" element={<Navigate to="/services/swms" replace />} />
       <Route path="/plan-rightsizer" element={<PlanRightsizer />} />
       <Route path="/risk-calculator" element={<IndustryRiskCalculator />} />
+      <Route path="/credential-expiry-calculator" element={<CredentialExpiryCalculator />} />
+      <Route path="/insurance-discount-calculator" element={<InsuranceDiscountCalculator />} />
+      <Route path="/regulatory-digest" element={<RegulatoryDigest />} />
+      <Route path="/seo/ndis-compliance" element={<NdisCompliancePage />} />
+      <Route path="/seo/cor-compliance" element={<CorCompliancePage />} />
+      <Route path="/seo/haccp-compliance" element={<HaccpCompliancePage />} />
       <Route path="/book-demo" element={<BookDemo />} />
       <Route path="/services/swms" element={<ServiceSwms />} />
       <Route path="/services/incidents" element={<ServiceIncidents />} />
@@ -208,6 +221,7 @@ function AppRouter() {
         <Route path="care-quality" element={<HealthcareCareQuality />} />
         <Route path="inductions" element={<RetailInductionsLoneWorker />} />
         <Route path="compliance-inbox" element={<ComplianceInboxPage />} />
+        <Route path="admin/demos" element={<AdminDemoRequests />} />
       </Route>
       <Route path="/products/safeinduct" element={<Navigate to="/addon/safeinduct" replace />} />
       <Route path="/products/safecheck" element={<Navigate to="/addon/safecheck" replace />} />
