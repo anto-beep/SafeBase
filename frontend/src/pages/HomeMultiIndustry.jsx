@@ -283,8 +283,8 @@ export default function Landing() {
               {INDUSTRY_ENTRY_PRICES.map((t) => (
                 <Link to={`/industries/${t.slug}`} key={t.slug} className="bg-background border border-border p-6 hover:border-ink transition-colors" data-testid={`home-tier-${t.slug}`}>
                   <div className="label-eyebrow">{t.label}</div>
-                  <div className="font-display text-2xl font-black tracking-tight mt-3">From A${t.annual}/year + GST</div>
-                  <div className="text-xs font-mono text-muted-foreground mt-1">or A${t.monthly}/month + GST</div>
+                  <div className="font-display text-2xl font-black tracking-tight mt-3">From A${t.monthly}/month + GST</div>
+                  <div className="text-xs font-mono text-muted-foreground mt-1">or A${t.annual}/year + GST (save 2 months)</div>
                   <div className="text-xs text-muted-foreground mt-4 leading-relaxed">{t.note}</div>
                 </Link>
               ))}
