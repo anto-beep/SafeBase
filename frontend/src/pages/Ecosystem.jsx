@@ -4,23 +4,23 @@ import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { ArrowRight, FileText, HardHat, IdentificationBadge, Student, Buildings, UserCircleGear, Lightning, CheckCircle } from "@phosphor-icons/react";
 
 const PRODUCTS = [
-  { code: "01", icon: FileText, name: "SafeBase Core", tagline: "The foundation everything else is built on.", to: "/services/swms", price: "from A$599/month + GST",
+  { code: "01", icon: FileText, name: "SafeBase Core", tagline: "The foundation everything else is built on.", to: "/services/swms", price: "from A$799/month + GST",
     what: "Compliance documents, incident management, credential tracking, compliance dashboard, audit preparation — configured for your industry.",
     who: "Any Australian business with WHS obligations. 1–50 staff.",
     ai: ["Voice-to-incident-report", "AI document generation for every industry", "Pattern detection", "Expiry alerts"] },
-  { code: "02", icon: HardHat, name: "SafeInduct", tagline: "Every worker and contractor inducted. Every induction recorded. Zero paperwork.", to: "/products/tradeinduct", price: "A$249/month + GST · included from Tier 2",
+  { code: "02", icon: HardHat, name: "SafeInduct", tagline: "Every worker and contractor inducted. Every induction recorded. Zero paperwork.", to: "/products/tradeinduct", price: "A$299/month + GST · included from Tier 2",
     what: "QR-based induction system for sites, venues, depots, clinics and stores. AI-generated location-specific inductions.",
     who: "Any business that inducts workers, contractors, agency staff or casuals.",
     ai: ["Workers scan QR", "3-minute AI induction", "Auto-added to register with timestamp", "Credential photo capture"] },
-  { code: "03", icon: IdentificationBadge, name: "SafeCheck", tagline: "Your entire compliance record. One QR code. Works across every industry.", to: "/products/tradecheck", price: "A$299/month + GST · included from Tier 3",
+  { code: "03", icon: IdentificationBadge, name: "SafeCheck", tagline: "Your entire compliance record. One QR code. Works across every industry.", to: "/products/tradecheck", price: "A$349/month + GST · included from Tier 3",
     what: "Portable compliance credential — verified licences, AHPRA registrations, RSA certificates, insurances and heavy-vehicle endorsements in one QR code.",
     who: "Contractors who want frictionless work; businesses that need to verify credentials fast.",
     ai: ["AI verifies insurance adequacy", "Authenticity check", "Expiry monitoring and alerts", "One-tap verification requests"] },
-  { code: "04", icon: Student, name: "SafeBase Academy", tagline: "Industry-specific training with compliance evidence.", to: "/products/academy", price: "A$399/month up to 10 workers · included from Tier 3",
+  { code: "04", icon: Student, name: "SafeBase Academy", tagline: "Industry-specific training with compliance evidence.", to: "/products/academy", price: "A$499/month up to 10 workers · included from Tier 3",
     what: "Mobile-first microlearning and full certification courses built specifically for each industry. Completion syncs to your compliance dashboard.",
     who: "Businesses needing auditable worker training records across any industry.",
     ai: ["AI builds modules from your documents", "Adaptive questions vary each attempt", "Completion tracked to compliance score", "Multi-language translation"] },
-  { code: "05", icon: Buildings, name: "SafeBase for Franchises", tagline: "One compliance standard. Every location. Every industry.", to: "/franchises", price: "from A$149–A$199/mo per location · setup from A$25,000 + GST",
+  { code: "05", icon: Buildings, name: "SafeBase for Franchises", tagline: "One compliance standard. Every location. Every industry.", to: "/franchises", price: "from A$169–A$229/mo per location · setup from A$25,000 + GST",
     what: "Network-level compliance dashboard for franchisors; pre-loaded templates for franchisees.",
     who: "Franchise networks across trades, hospitality, retail and healthcare.",
     ai: ["Network compliance score", "Cross-location pattern detection", "Master template version control", "Board-ready reporting"] },
@@ -137,7 +137,7 @@ export default function Ecosystem() {
       <section className="bg-warning border-b border-ink">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8"><h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">Start with Core. Add what you need.<br />The ecosystem grows with you.</h2></div>
-          <div className="lg:col-span-4 lg:text-right"><Link to="/register"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="eco-final-cta">Start from A$599/mo + GST <ArrowRight className="ml-2" /></Button></Link></div>
+          <div className="lg:col-span-4 lg:text-right"><Link to="/register"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="eco-final-cta">Start from A$799/mo + GST <ArrowRight className="ml-2" /></Button></Link></div>
         </div>
       </section>
 

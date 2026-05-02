@@ -30,37 +30,37 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 
 BILLING_TIERS = {
-    # Trades — Iter40 definitive pricing
-    "sole_trader_monthly":      {"amount": 599.00,   "currency": "aud", "tier": "sole_trader",      "cycle": "monthly", "label": "Solo Tradie (monthly)"},
-    "small_business_monthly":   {"amount": 1199.00,  "currency": "aud", "tier": "small_business",   "cycle": "monthly", "label": "Small Team (monthly)"},
-    "growing_business_monthly": {"amount": 1899.00,  "currency": "aud", "tier": "growing_business", "cycle": "monthly", "label": "Growing Business (monthly)"},
-    "enterprise_monthly":       {"amount": 2999.00,  "currency": "aud", "tier": "enterprise",       "cycle": "monthly", "label": "Enterprise (monthly)"},
-    "sole_trader_annual":       {"amount": 5990.00,  "currency": "aud", "tier": "sole_trader",      "cycle": "annual",  "label": "Solo Tradie (annual)"},
-    "small_business_annual":    {"amount": 11990.00, "currency": "aud", "tier": "small_business",   "cycle": "annual",  "label": "Small Team (annual)"},
-    "growing_business_annual":  {"amount": 18990.00, "currency": "aud", "tier": "growing_business", "cycle": "annual",  "label": "Growing Business (annual)"},
-    "enterprise_annual":        {"amount": 29990.00, "currency": "aud", "tier": "enterprise",       "cycle": "annual",  "label": "Enterprise (annual)"},
+    # Trades — Iter41 definitive pricing
+    "sole_trader_monthly":      {"amount": 799.00,   "currency": "aud", "tier": "sole_trader",      "cycle": "monthly", "label": "Solo Tradie (monthly)"},
+    "small_business_monthly":   {"amount": 1599.00,  "currency": "aud", "tier": "small_business",   "cycle": "monthly", "label": "Small Team (monthly)"},
+    "growing_business_monthly": {"amount": 2499.00,  "currency": "aud", "tier": "growing_business", "cycle": "monthly", "label": "Growing Business (monthly)"},
+    "enterprise_monthly":       {"amount": 3999.00,  "currency": "aud", "tier": "enterprise",       "cycle": "monthly", "label": "Enterprise (monthly)"},
+    "sole_trader_annual":       {"amount": 7990.00,  "currency": "aud", "tier": "sole_trader",      "cycle": "annual",  "label": "Solo Tradie (annual)"},
+    "small_business_annual":    {"amount": 15990.00, "currency": "aud", "tier": "small_business",   "cycle": "annual",  "label": "Small Team (annual)"},
+    "growing_business_annual":  {"amount": 24990.00, "currency": "aud", "tier": "growing_business", "cycle": "annual",  "label": "Growing Business (annual)"},
+    "enterprise_annual":        {"amount": 39990.00, "currency": "aud", "tier": "enterprise",       "cycle": "annual",  "label": "Enterprise (annual)"},
 
-    # Retail — Iter40
-    "retail_single_monthly":     {"amount": 799.00,   "currency": "aud", "tier": "retail_single",     "cycle": "monthly", "label": "Retail Single Store (monthly)"},
-    "retail_small_monthly":      {"amount": 1599.00,  "currency": "aud", "tier": "retail_small",      "cycle": "monthly", "label": "Retail Small Chain (monthly)"},
-    "retail_multi_monthly":      {"amount": 2499.00,  "currency": "aud", "tier": "retail_multi",      "cycle": "monthly", "label": "Retail Multi-Store (monthly)"},
-    "retail_enterprise_monthly": {"amount": 3999.00,  "currency": "aud", "tier": "retail_enterprise", "cycle": "monthly", "label": "Retail Enterprise (monthly)"},
-    "retail_single_annual":      {"amount": 7990.00,  "currency": "aud", "tier": "retail_single",     "cycle": "annual",  "label": "Retail Single Store (annual)"},
-    "retail_small_annual":       {"amount": 15990.00, "currency": "aud", "tier": "retail_small",      "cycle": "annual",  "label": "Retail Small Chain (annual)"},
-    "retail_multi_annual":       {"amount": 24990.00, "currency": "aud", "tier": "retail_multi",      "cycle": "annual",  "label": "Retail Multi-Store (annual)"},
-    "retail_enterprise_annual":  {"amount": 39990.00, "currency": "aud", "tier": "retail_enterprise", "cycle": "annual",  "label": "Retail Enterprise (annual)"},
+    # Retail — Iter41
+    "retail_single_monthly":     {"amount": 999.00,   "currency": "aud", "tier": "retail_single",     "cycle": "monthly", "label": "Retail Single Store (monthly)"},
+    "retail_small_monthly":      {"amount": 1999.00,  "currency": "aud", "tier": "retail_small",      "cycle": "monthly", "label": "Retail Small Chain (monthly)"},
+    "retail_multi_monthly":      {"amount": 2999.00,  "currency": "aud", "tier": "retail_multi",      "cycle": "monthly", "label": "Retail Multi-Store (monthly)"},
+    "retail_enterprise_monthly": {"amount": 4999.00,  "currency": "aud", "tier": "retail_enterprise", "cycle": "monthly", "label": "Retail Enterprise (monthly)"},
+    "retail_single_annual":      {"amount": 9990.00,  "currency": "aud", "tier": "retail_single",     "cycle": "annual",  "label": "Retail Single Store (annual)"},
+    "retail_small_annual":       {"amount": 19990.00, "currency": "aud", "tier": "retail_small",      "cycle": "annual",  "label": "Retail Small Chain (annual)"},
+    "retail_multi_annual":       {"amount": 29990.00, "currency": "aud", "tier": "retail_multi",      "cycle": "annual",  "label": "Retail Multi-Store (annual)"},
+    "retail_enterprise_annual":  {"amount": 49990.00, "currency": "aud", "tier": "retail_enterprise", "cycle": "annual",  "label": "Retail Enterprise (annual)"},
 
-    # Hospitality — Iter40
-    "hosp_single_monthly":     {"amount": 1199.00,  "currency": "aud", "tier": "hosp_single",     "cycle": "monthly", "label": "Hospitality Single Venue (monthly)"},
-    "hosp_small_monthly":      {"amount": 2299.00,  "currency": "aud", "tier": "hosp_small",      "cycle": "monthly", "label": "Hospitality Small Group (monthly)"},
-    "hosp_multi_monthly":      {"amount": 3499.00,  "currency": "aud", "tier": "hosp_multi",      "cycle": "monthly", "label": "Hospitality Multi-Venue (monthly)"},
-    "hosp_enterprise_monthly": {"amount": 5499.00,  "currency": "aud", "tier": "hosp_enterprise", "cycle": "monthly", "label": "Hospitality Enterprise (monthly)"},
-    "hosp_single_annual":      {"amount": 11990.00, "currency": "aud", "tier": "hosp_single",     "cycle": "annual",  "label": "Hospitality Single Venue (annual)"},
-    "hosp_small_annual":       {"amount": 22990.00, "currency": "aud", "tier": "hosp_small",      "cycle": "annual",  "label": "Hospitality Small Group (annual)"},
-    "hosp_multi_annual":       {"amount": 34990.00, "currency": "aud", "tier": "hosp_multi",      "cycle": "annual",  "label": "Hospitality Multi-Venue (annual)"},
-    "hosp_enterprise_annual":  {"amount": 54990.00, "currency": "aud", "tier": "hosp_enterprise", "cycle": "annual",  "label": "Hospitality Enterprise (annual)"},
+    # Hospitality — Iter41
+    "hosp_single_monthly":     {"amount": 1499.00,  "currency": "aud", "tier": "hosp_single",     "cycle": "monthly", "label": "Hospitality Single Venue (monthly)"},
+    "hosp_small_monthly":      {"amount": 2999.00,  "currency": "aud", "tier": "hosp_small",      "cycle": "monthly", "label": "Hospitality Small Group (monthly)"},
+    "hosp_multi_monthly":      {"amount": 4499.00,  "currency": "aud", "tier": "hosp_multi",      "cycle": "monthly", "label": "Hospitality Multi-Venue (monthly)"},
+    "hosp_enterprise_monthly": {"amount": 6999.00,  "currency": "aud", "tier": "hosp_enterprise", "cycle": "monthly", "label": "Hospitality Enterprise (monthly)"},
+    "hosp_single_annual":      {"amount": 14990.00, "currency": "aud", "tier": "hosp_single",     "cycle": "annual",  "label": "Hospitality Single Venue (annual)"},
+    "hosp_small_annual":       {"amount": 29990.00, "currency": "aud", "tier": "hosp_small",      "cycle": "annual",  "label": "Hospitality Small Group (annual)"},
+    "hosp_multi_annual":       {"amount": 44990.00, "currency": "aud", "tier": "hosp_multi",      "cycle": "annual",  "label": "Hospitality Multi-Venue (annual)"},
+    "hosp_enterprise_annual":  {"amount": 69990.00, "currency": "aud", "tier": "hosp_enterprise", "cycle": "annual",  "label": "Hospitality Enterprise (annual)"},
 
-    # Transport — Iter40
+    # Transport — Iter41 (unchanged from Iter40)
     "trans_owner_monthly":      {"amount": 1499.00,  "currency": "aud", "tier": "trans_owner",      "cycle": "monthly", "label": "Transport Owner-Operator (monthly)"},
     "trans_small_monthly":      {"amount": 2799.00,  "currency": "aud", "tier": "trans_small",      "cycle": "monthly", "label": "Transport Small Fleet (monthly)"},
     "trans_growing_monthly":    {"amount": 4299.00,  "currency": "aud", "tier": "trans_growing",    "cycle": "monthly", "label": "Transport Growing Fleet (monthly)"},
@@ -70,7 +70,7 @@ BILLING_TIERS = {
     "trans_growing_annual":     {"amount": 42990.00, "currency": "aud", "tier": "trans_growing",    "cycle": "annual",  "label": "Transport Growing Fleet (annual)"},
     "trans_enterprise_annual":  {"amount": 69990.00, "currency": "aud", "tier": "trans_enterprise", "cycle": "annual",  "label": "Transport Enterprise (annual)"},
 
-    # Healthcare — Iter40 (highest tier; reflects ACQSC / NDIS / AHPRA complexity)
+    # Healthcare — Iter41 (unchanged from Iter40)
     "health_solo_monthly":       {"amount": 2499.00,  "currency": "aud", "tier": "health_solo",       "cycle": "monthly", "label": "Healthcare Solo Practice (monthly)"},
     "health_small_monthly":      {"amount": 4999.00,  "currency": "aud", "tier": "health_small",      "cycle": "monthly", "label": "Healthcare Small Practice (monthly)"},
     "health_multi_monthly":      {"amount": 7999.00,  "currency": "aud", "tier": "health_multi",      "cycle": "monthly", "label": "Healthcare Multi-Site (monthly)"},

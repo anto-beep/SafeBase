@@ -25,22 +25,22 @@ PRICING = {
         "label": "Trades and Construction",
         "plan_names": ["Solo Tradie", "Small Team", "Growing Business", "Enterprise"],
         "user_limits": ["1 user", "Up to 5 users", "Up to 20 users", "Up to 50 users"],
-        "annual":  [5990,  11990, 18990, 29990],
-        "monthly": [599,   1199,  1899,  2999],
+        "annual":  [7990,  15990, 24990, 39990],
+        "monthly": [799,   1599,  2499,  3999],
     },
     "retail": {
         "label": "Retail",
         "plan_names": ["Single Store", "Small Chain", "Multi-Store", "Enterprise"],
         "user_limits": ["Up to 5 users", "Up to 15 users", "Up to 30 users", "Up to 50 users"],
-        "annual":  [7990, 15990, 24990, 39990],
-        "monthly": [799,  1599,  2499,  3999],
+        "annual":  [9990, 19990, 29990, 49990],
+        "monthly": [999,  1999,  2999,  4999],
     },
     "hospitality": {
         "label": "Hospitality",
         "plan_names": ["Single Venue", "Small Group", "Multi-Venue", "Enterprise"],
         "user_limits": ["Up to 3 users", "Up to 8 users", "Up to 20 users", "Up to 50 users"],
-        "annual":  [11990, 22990, 34990, 54990],
-        "monthly": [1199,  2299,  3499,  5499],
+        "annual":  [14990, 29990, 44990, 69990],
+        "monthly": [1499,  2999,  4499,  6999],
     },
     "transport": {
         "label": "Transport and Logistics",
@@ -59,9 +59,9 @@ PRICING = {
 }
 
 RISK_ANCHOR = {
-    "trades":      "Average WorkSafe prosecution: A$116,979. SafeBase Solo Tradie is 5.1% of one fine.",
+    "trades":      "Average WorkSafe prosecution: A$116,979. SafeBase Solo Tradie is 6.9% of one fine.",
     "retail":      "One manual-handling claim A$15k-50k; one customer slip-and-fall A$20k-100k.",
-    "hospitality": "Council prosecution A$10k-50k; a single day of venue closure is unrecoverable revenue.",
+    "hospitality": "Combined food-safety + WHS consulting retainer A$2k-4k/month. A single day of venue closure is unrecoverable revenue.",
     "transport":   "CoR criminal defence A$50k-200k in legal fees. NHVR 24h notification deadlines.",
     "healthcare":  "Governance consultant A$3k-8k/month. ACQSC audit prep A$5k-15k. Loss of registration ends operations.",
 }

@@ -96,7 +96,7 @@ export default function IndustryRiskCalculator() {
                 industry="trades"
                 annualSafebase={3990}
                 ctaPath="/plan-rightsizer"
-                anchor={<span>Average WorkSafe prosecution: <strong className="text-warning">A$116,979</strong>. Cat-1 WHS breach: up to A$3.9m + imprisonment. SafeBase Solo Tradie (A$5,990/year + GST) is 5.1% of one average prosecution.</span>}
+                anchor={<span>Average WorkSafe prosecution: <strong className="text-warning">A$116,979</strong>. Cat-1 WHS breach: up to A$3.9m + imprisonment. SafeBase Solo Tradie (A$7,990/year + GST) is 6.9% of one average prosecution.</span>}
                 inputs={[
                   { key: "workers", label: "Active workers", min: 1, max: 50, default: 5 },
                   { key: "sites", label: "Concurrent sites", min: 1, max: 30, default: 3 },
@@ -118,7 +118,7 @@ export default function IndustryRiskCalculator() {
                 industry="retail"
                 annualSafebase={5490}
                 ctaPath="/plan-rightsizer"
-                anchor={<span>One preventable manual-handling claim: <strong className="text-warning">A$15,000 – A$50,000</strong> before legal fees. Customer slip-and-fall public-liability claim: A$20,000 – A$100,000. SafeBase Single Store (A$7,990/year + GST) is less than the excess on most retail public-liability policies.</span>}
+                anchor={<span>One preventable manual-handling claim: <strong className="text-warning">A$15,000 – A$50,000</strong> before legal fees. Customer slip-and-fall public-liability claim: A$20,000 – A$100,000. SafeBase Single Store (A$9,990/year + GST) is less than the minimum excess on most retail public-liability policies — and less than the legal costs of one preventable incident.</span>}
                 inputs={[
                   { key: "stores", label: "Active stores", min: 1, max: 50, default: 3 },
                   { key: "casuals", label: "Casual staff turnover/year per store", min: 1, max: 60, default: 12 },
@@ -139,7 +139,7 @@ export default function IndustryRiskCalculator() {
                 industry="hospitality"
                 annualSafebase={7990}
                 ctaPath="/plan-rightsizer"
-                anchor={<span>Council food-safety prosecution: <strong className="text-warning">A$10,000 – A$50,000</strong>. A single day of venue closure is unrecoverable revenue. Hospitality businesses currently pay A$400 – A$700/month across three fragmented tools. SafeBase Single Venue (A$11,990/year + GST) replaces all of them.</span>}
+                anchor={<span>Combined food-safety + WHS consulting retainer: <strong className="text-warning">A$2,000 – A$4,000/month</strong>. Council food-safety prosecution: A$10,000 – A$50,000. A single day of venue closure is unrecoverable revenue. SafeBase Single Venue (A$14,990/year + GST) is less than five months of a combined consulting retainer.</span>}
                 inputs={[
                   { key: "venues", label: "Number of venues", min: 1, max: 20, default: 2 },
                   { key: "avgDaily", label: "Avg daily revenue per venue (A$)", min: 1000, max: 30000, default: 6500, step: 500, format: (n) => `A$${n.toLocaleString("en-AU")}` },

@@ -44,7 +44,7 @@ export default function Enterprise() {
   const [roiUsers, setRoiUsers] = useState(25);
   const [roiHours, setRoiHours] = useState(4);
   const RATE = 120;
-  const ENT_MO = 2999; // Trades Enterprise entry price; healthcare enterprise is A$17,999/mo
+  const ENT_MO = 3999; // Trades Enterprise entry price; healthcare enterprise is A$17,999/mo
   const monthlySaved = roiUsers * roiHours * RATE;
   const netMonthly = monthlySaved - ENT_MO;
   const annualNet = netMonthly * 12;
@@ -84,8 +84,8 @@ export default function Enterprise() {
           <div className="mt-10 flex flex-wrap gap-6 items-center">
             <div className="border-l-2 border-warning pl-4">
               <div className="label-eyebrow text-warning">Trades Enterprise from</div>
-              <div className="font-display text-4xl font-black">A$2,999<span className="text-lg font-normal">/month + GST</span></div>
-              <div className="text-xs text-white/60 mt-1">A$29,990/year + GST</div>
+              <div className="font-display text-4xl font-black">A$3,999<span className="text-lg font-normal">/month + GST</span></div>
+              <div className="text-xs text-white/60 mt-1">A$39,990/year + GST</div>
             </div>
             <div className="border-l-2 border-warning pl-4">
               <div className="label-eyebrow text-warning">Healthcare Enterprise from</div>
@@ -261,8 +261,8 @@ export default function Enterprise() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
             <div className="border-2 border-[#1B3A5C] bg-[#1B3A5C] text-white p-6" data-testid="roi-enterprise">
               <div className="label-eyebrow text-warning">Trades Enterprise</div>
-              <div className="font-display text-3xl font-black mt-2">A$2,999<span className="text-sm font-normal">/mo + GST</span></div>
-              <div className="text-sm text-white/70 mt-1">A$29,990/yr + GST (annual)</div>
+              <div className="font-display text-3xl font-black mt-2">A$3,999<span className="text-sm font-normal">/mo + GST</span></div>
+              <div className="text-sm text-white/70 mt-1">A$39,990/yr + GST (annual)</div>
               <ul className="mt-4 space-y-1 text-sm">
                 <li>Up to 50 users</li>
                 <li>Unlimited sites</li>
@@ -298,7 +298,7 @@ export default function Enterprise() {
             </div>
           </div>
           <div className="mt-8 bg-warning border-2 border-ink p-5 text-center font-bold">
-            SafeBase Enterprise at A$29,990/year is 25.6% of the average WorkSafe fine. Before the legal costs.
+            SafeBase Enterprise at A$39,990/year is 34.2% of the average WorkSafe fine. Before the legal costs.
           </div>
         </div>
       </section>

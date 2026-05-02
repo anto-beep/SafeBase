@@ -12,6 +12,7 @@ import {
 import EnterpriseUpsellModal from "@/components/EnterpriseUpsellModal";
 import ComplianceInboxWidget from "@/components/ComplianceInboxWidget";
 import RegulatoryDigestWidget from "@/components/RegulatoryDigestWidget";
+import RegulatorPipelineWidget from "@/components/RegulatorPipelineWidget";
 import useTier from "@/hooks/useTier";
 import useIndustry from "@/hooks/useIndustry";
 import WorkerDashboard from "./dashboards/WorkerDashboard";
@@ -309,6 +310,9 @@ function OwnerDashboard() {
         </div>
       </div>
 
+      {/* Regulator pipeline — shows only if cases pending (SIRS/NDIS/NHVR) */}
+      <RegulatorPipelineWidget />
+
       {/* Compliance Inbox widget — cross-industry ranked deadlines */}
       <ComplianceInboxWidget />
 
@@ -498,7 +502,7 @@ function OwnerDashboard() {
             <div>
               <div className="label-eyebrow text-warning">/ Multi-{industryTerm.site_singular} detected</div>
               <div className="font-display font-bold text-lg mt-1 text-white">You're running {uniqueSites.length} active {industryTerm.site_plural}.</div>
-              <div className="text-sm text-white/70">Growing Business caps at 5. Enterprise unlocks unlimited {industryTerm.site_plural} + regional rollups — from A$2,999/mo + GST.</div>
+              <div className="text-sm text-white/70">Growing Business caps at 5. Enterprise unlocks unlimited {industryTerm.site_plural} + regional rollups — from A$3,999/mo + GST.</div>
             </div>
           </div>
           <Button
@@ -515,8 +519,8 @@ function OwnerDashboard() {
       <div className="bg-warning border-2 border-ink p-6 flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="label-eyebrow">/ Plan</div>
-          <div className="font-display font-bold text-lg mt-1">Solo Tradie · A$599/month + GST</div>
-          <div className="text-sm">Unlock contractor compliance, SafeInduct and AI pattern detection. Upgrade to Small Team for A$1,199/month + GST — or jump to Enterprise for A$2,999/mo + GST with a dedicated Account Manager.</div>
+          <div className="font-display font-bold text-lg mt-1">Solo Tradie · A$799/month + GST</div>
+          <div className="text-sm">Unlock contractor compliance, SafeInduct and AI pattern detection. Upgrade to Small Team for A$1,599/month + GST — or jump to Enterprise for A$3,999/mo + GST with a dedicated Account Manager.</div>
         </div>
         <Link to="/pricing"><Button className="btn-sharp bg-ink text-white hover:bg-authority h-11" data-testid="upgrade-plan-btn">Upgrade plan <ArrowRight className="ml-2" /></Button></Link>
       </div>

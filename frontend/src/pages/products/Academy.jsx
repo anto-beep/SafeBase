@@ -19,9 +19,9 @@ const MODULES = [
 ];
 
 const TIERS = [
-  { users: "Up to 10 workers", price: "A$399/mo + GST" },
-  { users: "11 – 30 workers", price: "A$699/mo + GST" },
-  { users: "31 – 60 workers", price: "A$999/mo + GST" },
+  { users: "Up to 10 workers", price: "A$499/mo + GST" },
+  { users: "11 – 30 workers", price: "A$799/mo + GST" },
+  { users: "31 – 60 workers", price: "A$1,099/mo + GST" },
 ];
 
 export default function Academy() {

@@ -14,9 +14,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "@phosphor-icons/react";
 
 const INDUSTRY_DATA = {
-  trades:      { label: "Trades and Construction", credType: "trade licences, white cards, HR licences", lapseCost: 850, downtimeDays: 3, legalRisk: 8000, safebaseCost: 5990 },
-  retail:      { label: "Retail",                    credType: "RSA, bottle-shop licences, forklift", lapseCost: 420, downtimeDays: 1, legalRisk: 3500, safebaseCost: 7990 },
-  hospitality: { label: "Hospitality",               credType: "Food Safety Supervisor, RSA, liquor", lapseCost: 520, downtimeDays: 2, legalRisk: 15000, safebaseCost: 11990 },
+  trades:      { label: "Trades and Construction", credType: "trade licences, white cards, HR licences", lapseCost: 850, downtimeDays: 3, legalRisk: 8000, safebaseCost: 7990 },
+  retail:      { label: "Retail",                    credType: "RSA, bottle-shop licences, forklift", lapseCost: 420, downtimeDays: 1, legalRisk: 3500, safebaseCost: 9990 },
+  hospitality: { label: "Hospitality",               credType: "Food Safety Supervisor, RSA, liquor", lapseCost: 520, downtimeDays: 2, legalRisk: 15000, safebaseCost: 14990 },
   transport:   { label: "Transport and Logistics",   credType: "HR/MC licences, HVA endorsements, fatigue", lapseCost: 720, downtimeDays: 4, legalRisk: 35000, safebaseCost: 14990 },
   healthcare:  { label: "Healthcare and Aged Care",  credType: "AHPRA, NDIS clearance, aged-care screening", lapseCost: 1450, downtimeDays: 0, legalRisk: 28000, safebaseCost: 24990 },
 };

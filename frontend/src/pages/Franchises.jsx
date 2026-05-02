@@ -73,9 +73,9 @@ export default function Franchises() {
           <h2 className="font-display text-4xl font-black tracking-tighter mb-12">Scales with your network.</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border">
             {[
-              { n: "1 – 49 locations", p: "A$199", u: "/location/mo" },
-              { n: "50 – 199 locations", p: "A$179", u: "/location/mo" },
-              { n: "200+ locations", p: "A$149", u: "/location/mo" },
+              { n: "1 – 49 locations", p: "A$229", u: "/location/mo" },
+              { n: "50 – 199 locations", p: "A$199", u: "/location/mo" },
+              { n: "200+ locations", p: "A$169", u: "/location/mo" },
             ].map((t) => (
               <div key={t.n} className="bg-background p-8">
                 <div className="label-eyebrow">{t.n}</div>
@@ -92,13 +92,13 @@ export default function Franchises() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-5">
             <div className="label-eyebrow text-warning mb-3">/ ROI case</div>
-            <h2 className="font-display text-4xl font-black tracking-tighter">A$19,900/mo vs one prosecution.</h2>
+            <h2 className="font-display text-4xl font-black tracking-tighter">A$22,900/mo vs one prosecution.</h2>
           </div>
           <div className="lg:col-span-7 space-y-2 font-mono text-sm">
             <div className="flex justify-between border-b border-white/10 py-3"><span>SafeBase 100-location network (A$199 × 100)</span><span>A$19,900/mo + GST</span></div>
-            <div className="flex justify-between border-b border-white/10 py-3"><span>Annual platform cost</span><span>A$238,800/yr + GST</span></div>
-            <div className="flex justify-between border-b border-white/10 py-3"><span>50-199 locations</span><span>A$179/location + GST</span></div>
-            <div className="flex justify-between border-b border-white/10 py-3"><span>200+ locations</span><span>A$149/location + GST</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>Annual platform cost</span><span>A$274,800/yr + GST</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>50-199 locations</span><span>A$199/location + GST</span></div>
+            <div className="flex justify-between border-b border-white/10 py-3"><span>200+ locations</span><span>A$169/location + GST</span></div>
             <div className="flex justify-between py-3 text-warning font-bold"><span>One regulatory prosecution across your network costs more than a decade of SafeBase for every location you operate.</span><span></span></div>
           </div>
         </div>

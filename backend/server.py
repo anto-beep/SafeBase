@@ -2384,6 +2384,13 @@ register_scheduling_routes(
     account_id_for_fn=account_id_for, stamp_account_fn=stamp_account, logger=logger,
 )
 
+# ----------- ITER41: regulator pipeline automation (SIRS / NDIS / NHVR) -----------
+from routes.regulator_pipeline import register_regulator_pipeline_routes  # noqa: E402
+register_regulator_pipeline_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, stamp_account_fn=stamp_account, logger=logger,
+)
+
 
 
 @api_router.get("/incident-workflow/meta/regulators")

@@ -4,7 +4,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books, Plug } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books, Plug, Shield } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 import IndustrySwitcher from "@/components/IndustrySwitcher";
 import ActivityTicker from "@/components/ActivityTicker";
@@ -192,6 +192,11 @@ export default function DashboardLayout() {
           {(user?.role_variant || "owner") === "owner" && (
             <NavLink to="/dashboard/admin/demos" data-testid="nav-admin-demos" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
               <Briefcase size={18} weight="bold" /> Demo Requests
+            </NavLink>
+          )}
+          {(user?.role_variant || "owner") === "owner" && (
+            <NavLink to="/dashboard/regulator-cases" data-testid="nav-regulator-cases" className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 text-sm ${isActive ? "bg-warning text-ink font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
+              <Shield size={18} weight="bold" /> Regulator Cases
             </NavLink>
           )}
           <div className="mt-5 px-3 label-eyebrow text-warning">Apps &amp; Add-ons</div>

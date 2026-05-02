@@ -28,7 +28,7 @@ const INDUSTRIES = [
 ];
 
 const RISK_ANCHOR = {
-  trades: "Average WorkSafe prosecution: A$116,979. SafeBase Solo Tradie is 5.1% of one fine.",
+  trades: "Average WorkSafe prosecution: A$116,979. SafeBase Solo Tradie is 6.9% of one fine.",
   retail: "One preventable manual-handling claim: A$15,000 – A$50,000. One customer slip-and-fall: A$20,000 – A$100,000.",
   hospitality: "A council food-safety prosecution: A$10,000 – A$50,000. A single day of venue closure: unrecoverable revenue.",
   transport: "One CoR criminal defence: A$50,000 – A$200,000 in legal fees alone. NHVR notifiable occurrence: 24-hour deadline.",

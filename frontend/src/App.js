@@ -93,6 +93,7 @@ import CredentialExpiryCalculator from "@/pages/CredentialExpiryCalculator";
 import InsuranceDiscountCalculator from "@/pages/InsuranceDiscountCalculator";
 import RegulatoryDigest from "@/pages/RegulatoryDigest";
 import AdminDemoRequests from "@/pages/AdminDemoRequests";
+import RegulatorPipelinePage from "@/pages/RegulatorPipelinePage";
 import NdisCompliancePage from "@/pages/seo/NdisCompliancePage";
 import CorCompliancePage from "@/pages/seo/CorCompliancePage";
 import HaccpCompliancePage from "@/pages/seo/HaccpCompliancePage";
@@ -222,6 +223,7 @@ function AppRouter() {
         <Route path="inductions" element={<RetailInductionsLoneWorker />} />
         <Route path="compliance-inbox" element={<ComplianceInboxPage />} />
         <Route path="admin/demos" element={<AdminDemoRequests />} />
+        <Route path="regulator-cases" element={<RegulatorPipelinePage />} />
       </Route>
       <Route path="/products/safeinduct" element={<Navigate to="/addon/safeinduct" replace />} />
       <Route path="/products/safecheck" element={<Navigate to="/addon/safecheck" replace />} />
