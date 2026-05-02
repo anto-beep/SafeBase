@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
+import IndustryDashboardPreview from "./IndustryDashboardPreview";
 
 const ICONS = {
   Warning, Clock, FileText, Lightning, Microphone, ShieldCheck, Clipboard, Handshake, Brain,
@@ -355,6 +356,7 @@ export default function IndustryPage({ industry }) {
       <MarketingNav />
       <main data-testid={`industry-page-${industry.slug}`}>
         <Hero industry={industry} />
+        <IndustryDashboardPreview industry={industry} />
         <Fear industry={industry} />
         <Features industry={industry} />
         <Types industry={industry} />

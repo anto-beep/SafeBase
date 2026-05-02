@@ -259,6 +259,88 @@ export default function Landing() {
         {/* INDUSTRY DASHBOARD PREVIEW — interactive switcher per industry */}
         <IndustryDashboardPreview />
 
+        {/* PRODUCT TOUR — real dashboard screenshots from inside SafeBase */}
+        <section className="py-24 bg-background border-t border-border" data-testid="home-product-tour">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12">
+            <div className="max-w-3xl">
+              <div className="label-eyebrow">/ Product tour · the real thing</div>
+              <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mt-3">
+                Not a marketing mockup.<br />The actual product.
+              </h2>
+              <p className="text-base text-muted-foreground mt-5 max-w-2xl">
+                Every screen below is captured live from SafeBase — the same product every trial and paid account runs. One login, every module, configured for your industry from the first click.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-14">
+              {/* Hero shot — Overview */}
+              <figure className="lg:col-span-8 border border-border overflow-hidden bg-ink" data-testid="tour-overview">
+                <div className="flex items-center gap-2 bg-[#0A0F1A] px-4 py-2.5 border-b border-white/10">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
+                  <span className="ml-4 text-[11px] font-mono text-white/40">safebase.app/dashboard</span>
+                </div>
+                <img src="/product-tour/dashboard-overview.png" alt="SafeBase compliance dashboard — overview with AI-flagged items, compliance score and key metrics" loading="lazy" className="w-full block" />
+                <figcaption className="p-5 text-sm bg-background border-t border-border">
+                  <span className="font-display font-black tracking-tight">Live overview</span>
+                  <span className="text-muted-foreground"> — compliance score, AI-flagged patterns, and the one action that needs attention today.</span>
+                </figcaption>
+              </figure>
+
+              {/* SWMS library */}
+              <figure className="lg:col-span-4 border border-border overflow-hidden bg-ink" data-testid="tour-swms">
+                <div className="flex items-center gap-2 bg-[#0A0F1A] px-4 py-2.5 border-b border-white/10">
+                  <span className="w-2 h-2 rounded-full bg-[#FF5F57]" />
+                  <span className="w-2 h-2 rounded-full bg-[#FEBC2E]" />
+                  <span className="w-2 h-2 rounded-full bg-[#28C840]" />
+                  <span className="ml-3 text-[10px] font-mono text-white/40">dashboard/swms</span>
+                </div>
+                <img src="/product-tour/swms-library.png" alt="SafeBase SWMS library — AI-generated safe work method statements" loading="lazy" className="w-full block" />
+                <figcaption className="p-5 text-sm bg-background border-t border-border">
+                  <span className="font-display font-black tracking-tight">AI SWMS library</span>
+                  <span className="text-muted-foreground"> — generate a compliant statement in 60 seconds.</span>
+                </figcaption>
+              </figure>
+
+              {/* Licences */}
+              <figure className="lg:col-span-4 border border-border overflow-hidden bg-ink" data-testid="tour-licences">
+                <div className="flex items-center gap-2 bg-[#0A0F1A] px-4 py-2.5 border-b border-white/10">
+                  <span className="w-2 h-2 rounded-full bg-[#FF5F57]" />
+                  <span className="w-2 h-2 rounded-full bg-[#FEBC2E]" />
+                  <span className="w-2 h-2 rounded-full bg-[#28C840]" />
+                  <span className="ml-3 text-[10px] font-mono text-white/40">dashboard/licences</span>
+                </div>
+                <img src="/product-tour/licences.png" alt="SafeBase licence and credential tracker — expiry alerts at 60/30/14 days" loading="lazy" className="w-full block" />
+                <figcaption className="p-5 text-sm bg-background border-t border-border">
+                  <span className="font-display font-black tracking-tight">Credential tracker</span>
+                  <span className="text-muted-foreground"> — every licence, every expiry, alerted before it bites.</span>
+                </figcaption>
+              </figure>
+
+              {/* Risk register */}
+              <figure className="lg:col-span-8 border border-border overflow-hidden bg-ink" data-testid="tour-risk">
+                <div className="flex items-center gap-2 bg-[#0A0F1A] px-4 py-2.5 border-b border-white/10">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
+                  <span className="ml-4 text-[11px] font-mono text-white/40">safebase.app/dashboard/risk-register</span>
+                </div>
+                <img src="/product-tour/risk-register.png" alt="SafeBase risk register — 5x5 matrix, hazards, controls, reviews" loading="lazy" className="w-full block" />
+                <figcaption className="p-5 text-sm bg-background border-t border-border">
+                  <span className="font-display font-black tracking-tight">Risk register</span>
+                  <span className="text-muted-foreground"> — every hazard, every control, every review — permanent, auditable, exportable.</span>
+                </figcaption>
+              </figure>
+            </div>
+
+            <div className="mt-12 flex flex-wrap gap-3">
+              <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="home-tour-cta">Start free 14-day trial <ArrowRight className="ml-2" /></Button></Link>
+              <Link to="/pricing"><Button variant="outline" className="btn-sharp h-12 border-ink" data-testid="home-tour-pricing">See pricing</Button></Link>
+            </div>
+          </div>
+        </section>
+
         {/* How it works */}
         <section className="py-24 bg-ink text-white">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">

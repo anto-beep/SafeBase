@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Check, FileText, GraduationCap, Plug, ChartBar, ShieldCheck, Quotes, BookOpen, Sparkle } from "@phosphor-icons/react";
 import { INDUSTRY_PAGE_CONFIG } from "@/data/industry-pages.config";
 import { INDUSTRY_RESOURCES } from "@/data/resources.config";
+import IndustryDashboardPreview from "@/components/industry/IndustryDashboardPreview";
 
 const TESTIMONIALS = {
   trades: [
@@ -65,6 +66,7 @@ export default function IndustryProductPage({ industry }) {
       </section>
 
       {/* 2. PROBLEMS */}
+      <IndustryDashboardPreview slug={industry} accent={cfg.accent} />
       <section className="py-16 px-6 lg:px-12" data-testid={`industry-problems-${industry}`}>
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow text-muted-foreground">/ The problem</div>
