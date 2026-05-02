@@ -13,7 +13,6 @@ export function MarketingNav() {
           <span className="font-display font-black text-lg tracking-tight">SAFEBASE</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 label-eyebrow">
-          <Link to="/" data-testid="nav-home" className="uppercase tracking-widest">HOME</Link>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 outline-none uppercase tracking-widest" data-testid="nav-industries">
               INDUSTRIES <CaretDown size={10} />
@@ -60,11 +59,18 @@ export function MarketingNav() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Link to="/compare" data-testid="nav-compare" className="uppercase tracking-widest">COMPARE</Link>
-          <a href="mailto:hello@safebase.com.au" data-testid="nav-contact" className="uppercase tracking-widest">CONTACT</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/login"><Button variant="ghost" className="btn-sharp uppercase tracking-widest" data-testid="nav-login-btn">Log in</Button></Link>
-          <Link to="/book-demo"><Button variant="outline" className="btn-sharp border-ink uppercase tracking-widest hidden lg:inline-flex" data-testid="nav-demo-btn">Book a Demo</Button></Link>
+          <Link to="/login">
+            <Button
+              variant="outline"
+              className="btn-sharp border-2 border-ink bg-white hover:bg-warning hover:text-ink uppercase tracking-widest font-bold"
+              data-testid="nav-login-btn"
+            >
+              Log in
+            </Button>
+          </Link>
+          <Link to="/book-demo"><Button variant="ghost" className="btn-sharp uppercase tracking-widest hidden lg:inline-flex" data-testid="nav-demo-btn">Book a Demo</Button></Link>
           <Link to="/register"><Button className="btn-sharp bg-ink text-white hover:bg-authority uppercase tracking-widest" data-testid="nav-register-btn">Start Free Trial <ArrowRight className="ml-1" /></Button></Link>
         </div>
       </div>
