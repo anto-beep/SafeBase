@@ -77,7 +77,7 @@ FEATURE_REGISTRY: dict[str, dict] = {
     "settings_users":           {"industries": "ALL", "min_role": "manager",    "label": "User management",          "category": "settings"},
     "settings_billing":         {"industries": "ALL", "min_role": "owner",      "label": "Billing & subscription",   "category": "settings"},
     "settings_industries":      {"industries": "ALL", "min_role": "owner",      "label": "Industry management",      "category": "settings"},
-    "api_access":               {"industries": "ALL", "min_role": "owner",      "label": "API access",               "category": "settings", "plan_min": "enterprise"},
+    "api_access":               {"industries": "ALL", "min_role": "owner",      "label": "API access",               "category": "settings", "plan_min": "starter"},
     "white_label":              {"industries": "ALL", "min_role": "owner",      "label": "White-label config",       "category": "settings", "plan_min": "enterprise"},
 
     # === TRADES =====================================================

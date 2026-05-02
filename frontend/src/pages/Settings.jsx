@@ -31,8 +31,42 @@ export default function Settings() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker", name: "" });
   const [apiUpsellOpen, setApiUpsellOpen] = useState(false);
+  const [apiKeys, setApiKeys] = useState([]);
+  const [apiTargets, setApiTargets] = useState(null);
+  const [newKeyToken, setNewKeyToken] = useState(null);
+  const [newKeyLabel, setNewKeyLabel] = useState("");
   const [industry, setIndustry] = useState(user?.industry || "trades");
   const [roleTitle, setRoleTitle] = useState(user?.role_title || "owner");
+
+  const loadApiKeys = async () => {
+    try {
+      const [k, t] = await Promise.all([
+        api.get("/api-keys"),
+        api.get("/api-keys/integration-targets"),
+      ]);
+      setApiKeys(k.data?.keys || []);
+      setApiTargets(t.data || null);
+    } catch (e) { /* non-blocking */ }
+  };
+
+  const generateApiKey = async () => {
+    try {
+      const r = await api.post("/api-keys", { label: newKeyLabel || "Untitled key", scopes: ["read", "write", "webhook"] });
+      setNewKeyToken(r.data.token);
+      setNewKeyLabel("");
+      await loadApiKeys();
+      toast.success("API key created. Copy it now — it will not be shown again.");
+    } catch (e) { toast.error(e?.response?.data?.detail?.message || e?.response?.data?.detail || "Failed to create key"); }
+  };
+
+  const revokeApiKey = async (id) => {
+    if (!window.confirm("Revoke this key? Any integration using it will stop working immediately.")) return;
+    try {
+      await api.delete(`/api-keys/${id}`);
+      await loadApiKeys();
+      toast.success("Key revoked.");
+    } catch (e) { toast.error("Revoke failed"); }
+  };
 
   const load = async () => {
     const [b, t, p] = await Promise.all([
@@ -42,7 +76,7 @@ export default function Settings() {
     ]);
     setBiz(b.data); setTeam(t.data); setPrefs(p.data);
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { load(); loadApiKeys(); /* eslint-disable-next-line */ }, []);
 
   const saveBiz = async () => {
     try { await api.put("/settings/business", biz); toast.success("Business profile saved"); }
@@ -115,7 +149,6 @@ export default function Settings() {
             value="api"
             className="rounded-none"
             data-testid="settings-tab-api"
-            onClick={() => { if (!isEnterprise) setApiUpsellOpen(true); }}
           ><PlugsConnected className="mr-2" />API</TabsTrigger>
           <TabsTrigger value="data" className="rounded-none" data-testid="settings-tab-data"><Database className="mr-2" />Data & Privacy</TabsTrigger>
           <TabsTrigger value="danger" className="rounded-none text-destructive" data-testid="settings-tab-danger"><Warning className="mr-2" />Danger</TabsTrigger>
@@ -320,31 +353,80 @@ export default function Settings() {
           <BillingPanel />
         </TabsContent>
 
-        {/* API (Enterprise-only) */}
+        {/* API & Integrations — included on every plan (Iter43) */}
         <TabsContent value="api" className="space-y-4">
-          <div className="bg-background border-2 border-ink p-6 space-y-4" data-testid="settings-api-panel">
+          <div className="bg-background border-2 border-ink p-6 space-y-5" data-testid="settings-api-panel">
             <div className="flex items-center gap-2 label-eyebrow text-authority">
-              <PlugsConnected /> / API & Integrations
+              <PlugsConnected /> / API & Integrations · Included on every plan
             </div>
-            {isEnterprise ? (
-              <>
-                <div className="font-display font-bold text-xl">Your API keys</div>
-                <p className="text-sm text-muted-foreground">Generate long-lived tokens below. Full REST docs at <a href="/integrations" className="underline">/integrations</a>.</p>
-                <Button className="btn-sharp bg-ink text-white hover:bg-authority h-11" data-testid="api-generate-key">Generate new key</Button>
-              </>
-            ) : (
-              <>
-                <div className="font-display font-bold text-xl">API access is an Enterprise feature</div>
-                <p className="text-sm text-muted-foreground">Connect SafeBase to your ERP, HRIS or BI stack with our full REST API, webhooks and priority integration support. Available on Enterprise — from A$3,999/mo + GST.</p>
-                <Button
-                  className="btn-sharp bg-ink text-white hover:bg-authority h-11"
-                  onClick={() => setApiUpsellOpen(true)}
-                  data-testid="api-upsell-trigger"
-                >
-                  See Enterprise features
-                </Button>
-              </>
+
+            {/* Generate */}
+            <div>
+              <div className="font-display font-bold text-xl">Your API keys</div>
+              <p className="text-sm text-muted-foreground mt-1">Authenticate any HTTPS request with <code className="bg-muted px-1.5 py-0.5 text-xs">Authorization: Bearer sb_live_…</code>. Tokens inherit your account permissions and can be revoked any time.</p>
+              <div className="flex gap-2 mt-3">
+                <Input placeholder="Label (e.g. Xero sync · prod)" value={newKeyLabel} onChange={e => setNewKeyLabel(e.target.value)} data-testid="api-key-label" className="max-w-xs" />
+                <Button onClick={generateApiKey} className="btn-sharp bg-ink text-white hover:bg-authority h-10" data-testid="api-generate-key">Generate new key</Button>
+              </div>
+              {newKeyToken && (
+                <div className="mt-3 border-2 border-warning bg-warning/20 p-3" data-testid="api-new-token-callout">
+                  <div className="text-xs font-bold uppercase tracking-widest mb-1">One-time token — copy now</div>
+                  <code className="block break-all text-sm bg-white p-2 border border-ink" data-testid="api-new-token">{newKeyToken}</code>
+                  <div className="text-xs text-muted-foreground mt-2">SafeBase only stores a hash. If you lose this token, revoke it and generate a new one.</div>
+                  <Button size="sm" variant="outline" className="mt-2" onClick={() => { navigator.clipboard?.writeText(newKeyToken); toast.success("Copied"); setNewKeyToken(null); }} data-testid="api-token-copy-clear">Copy & dismiss</Button>
+                </div>
+              )}
+            </div>
+
+            {/* List */}
+            <div className="border-t border-border pt-4">
+              <div className="font-semibold mb-2">Active keys ({apiKeys.filter(k => !k.revoked_at).length})</div>
+              {apiKeys.length === 0 && <div className="text-sm text-muted-foreground">No keys yet. Generate your first key above.</div>}
+              <ul className="space-y-2">
+                {apiKeys.map(k => (
+                  <li key={k.id} className="flex items-center justify-between border border-border p-3" data-testid={`api-key-${k.id}`}>
+                    <div>
+                      <div className="font-bold text-sm">{k.label}</div>
+                      <div className="text-xs text-muted-foreground font-mono mt-0.5">{k.masked} · created {(k.created_at || "").slice(0, 10)} {k.last_used_at ? `· last used ${k.last_used_at.slice(0,10)}` : "· never used"}</div>
+                    </div>
+                    {k.revoked_at ? <span className="text-xs text-muted-foreground">Revoked {k.revoked_at.slice(0,10)}</span>
+                      : <Button size="sm" variant="outline" className="border-destructive text-destructive" onClick={() => revokeApiKey(k.id)} data-testid={`api-revoke-${k.id}`}>Revoke</Button>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Integration targets */}
+            {apiTargets && (
+              <div className="border-t border-border pt-4" data-testid="api-integration-targets">
+                <div className="font-semibold mb-2">Integrates with</div>
+                <p className="text-xs text-muted-foreground mb-3">Recommended targets for {apiTargets.industry?.[0]?.toUpperCase() + apiTargets.industry?.slice(1)}. Use the REST API directly or any of the integration platforms below.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {(apiTargets.industry_targets || []).map(t => (
+                    <div key={t.slug} className="flex items-center justify-between border border-border bg-muted/30 px-3 py-2 text-sm" data-testid={`api-target-${t.slug}`}>
+                      <span className="font-semibold">{t.label}</span>
+                      <span className="text-xs text-muted-foreground">{t.category}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {(apiTargets.universal_targets || []).map(t => (
+                    <div key={t.slug} className="flex items-center justify-between border border-warning/40 bg-warning/10 px-3 py-2 text-sm" data-testid={`api-universal-${t.slug}`}>
+                      <span className="font-semibold">{t.label}</span>
+                      <span className="text-xs text-muted-foreground">{t.category}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-muted-foreground mt-3">Rate limits: {apiTargets.rate_limits?.per_minute}/min · {apiTargets.rate_limits?.per_hour}/hr · burst {apiTargets.rate_limits?.burst}. Full reference at <a href="/integrations" className="underline">/integrations</a>.</div>
+              </div>
             )}
+
+            {/* Webhooks shortcut */}
+            <div className="border-t border-border pt-4">
+              <div className="font-semibold">Outbound webhooks</div>
+              <p className="text-sm text-muted-foreground mt-1">Subscribe to real-time events (incident.created, licence.expiring, regulator_case.draft). Manage subscriptions on the Webhooks page.</p>
+              <a href="/dashboard/webhooks" className="inline-block mt-2"><Button variant="outline" className="btn-sharp h-10 border-ink" data-testid="api-webhooks-link">Manage webhooks</Button></a>
+            </div>
           </div>
         </TabsContent>
 

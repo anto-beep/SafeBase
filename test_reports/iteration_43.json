@@ -1,0 +1,39 @@
+{
+  "summary": "Iter43 API-keys CRUD + bearer-auth + integration-targets fully verified. Backend 16/16 pass (1 skipped — generic /api/scheduling/* GET probe, non-blocking; auto-triage regression covered separately). Frontend Settings → API panel renders functional UI per spec: eyebrow 'API & INTEGRATIONS · INCLUDED ON EVERY PLAN', NO Enterprise upsell, generate form + one-time token callout (data-testid api-new-token-callout + api-new-token starting sb_live_), Copy & dismiss button, masked key list with Revoke, all 7 trades industry targets (xero/myob/simpro/servicem8/procore/google_workspace/microsoft_365) + 4 universal (webhooks/zapier/make/rest_api). Pricing.config.js has 'API access + Webhooks' in tier-1 of all 5 industries (5 occurrences total) and standalone 'API access' is NOT present anywhere. Enterprise page contains 'Priority integration' messaging + 'API' standard messaging. Long-lived sb_live_* token authenticates GET /api/workers (returns same 6 workers as JWT), GET /api/auth/me (returns owner@safetradie.demo), invalid token → 401, last_used_at updated within seconds. Revoke lifecycle: POST→DELETE→200, second DELETE→404, unknown id→404, active count decremented, revoked_at populated. Integration-targets industry routing verified for trades/hospitality/transport/healthcare/retail. /api/regulator-pipeline/triage works with API-key bearer (Iter40-42 regression preserved). /api/billing/tiers returns 40 tiers (Iter41 amounts intact). /api/features/me returns api_access in enabled_features (list shape) on plan='starter' for default trades owner — confirms api_access plan_min change from 'enterprise' to 'starter'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/api-keys", "issue": "Response body 'key' object includes 'token_hash' SHA-256 (not stripped). Listing endpoint correctly excludes it via projection — but creation endpoint leaks the hash to the client. Low-risk (one-way hash, only the owner sees it) but unnecessary info exposure. Recommend doc.pop('token_hash', None) before return in routes/api_keys.py:create_key."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter43_api_keys.py",
+    "/app/test_reports/pytest/iter43_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL/MINOR: In routes/api_keys.py create_key(), pop 'token_hash' from the returned doc before responding (currently leaks SHA-256 hash to client at creation). Listing endpoint already strips it correctly via projection."
+  ],
+  "critical_code_review_comments": [
+    "routes/api_keys.py: create_key returns the full doc including 'token_hash'. While the hash is one-way, exposing it is unnecessary and inconsistent with the listing endpoint which strips it. Two-line fix: doc.pop('token_hash', None) before return.",
+    "resolve_api_key() correctly uses SHA-256 hash lookup with revoked_at: None filter — sound auth contract. last_used_at update is awaited (not fire-and-forget despite the comment) — that's fine but the comment is misleading.",
+    "Owner/admin gate is on POST only (line 140); list+revoke allow any authenticated user scoped by account_id_for_fn — matches the spec note 'anyone authenticated can list+revoke their own account keys'. account-level scoping in revoke_key uses {id, account_id, revoked_at:None} so cross-account revoke attempts properly 404.",
+    "Settings.jsx API panel: 'Copy & dismiss' button label and one-time callout work as specced. Toast 'API key created. Copy it now — it will not be shown again.' fires correctly.",
+    "pricing.config.js: clean — 5 occurrences of 'API access + Webhooks' (one per industry tier 1), zero standalone 'API access' — Tier 4 cleanup confirmed.",
+    "Mongo _id leak: list_keys uses {'_id':0,'token_hash':0} projection — correct. create_key writes via insert_one(dict(doc)) which mutates _id back into the same dict object; the subsequent doc.pop('_id', None) handles it — verified clean."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter43_api_keys.py (new — 17 tests, 16 pass + 1 skipped)"
+  ],
+  "success_rate": {"backend": "100% (16/16 pass, 1 skipped probe)", "frontend": "100% (Settings API panel, generate flow, integration targets, enterprise page, pricing copy all per spec)"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (industry=trades, role=owner, plan=starter)",
+  "seed_data_creation": "Several TEST_ITER43-prefixed and 'ServiceM8 sync UI test' API keys created during testing; main 'TEST_ITER43 Xero sync' fixture key revoked in cleanup test. 'smoketest', 'Xero sync', and 'ServiceM8 sync UI test' rows remain active in api_keys collection — recommend cleanup if needed (DELETE /api/api-keys/{id} as owner). They are scoped to the owner account so no cross-account leakage risk.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Re-run: pytest /app/backend/tests/test_iter43_api_keys.py -v. Test is idempotent (creates+revokes its own keys per run). enabled_features in /api/features/me is a LIST of slugs (not a dict) — assert 'api_access' in ef. POST /api/api-keys currently leaks token_hash in response — tests acknowledge this; if the main agent strips it, the existing test still passes (no assertion against presence). For UI: data-testid='settings-api-panel', 'settings-tab-api', 'api-new-token-callout', 'api-new-token' are stable selectors. Industry-targets endpoint accepts ?industry= override or falls back to current_user.industry.",
+  "rca of the issue": "No blocking issues. One minor security-hygiene observation: create_key endpoint echoes token_hash field unnecessarily. Steps to fix: open /app/backend/routes/api_keys.py, in create_key() after `doc.pop('_id', None)` add `doc.pop('token_hash', None)`. That removes hash from POST response while keeping the database row + listing projection unchanged. No retest needed."
+}

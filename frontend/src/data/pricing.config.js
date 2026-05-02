@@ -10,34 +10,34 @@
 
 const FEATURES_BY_INDUSTRY = {
   trades: {
-    1: ["Unlimited AI SWMS generation", "Incident and near-miss register", "Up to 10 worker profiles", "Licence and credential tracking", "Compliance dashboard", "Audit prep PDF export", "Mobile app access", "Email support"],
+    1: ["Unlimited AI SWMS generation", "Incident and near-miss register", "Up to 10 worker profiles", "Licence and credential tracking", "Compliance dashboard", "Audit prep PDF export", "Mobile app access", "API access + Webhooks", "Email support"],
     2: ["Everything in tier 1", "Up to 5 users", "Contractor compliance capture", "AI incident pattern detection", "Up to 5 sites", "SafeInduct QR inductions included", "Toolbox Talks", "Plant register", "Priority chat and email"],
     3: ["Everything in tier 2", "Up to 20 users", "Unlimited sites", "SafeCheck included", "SafeBase Academy (10 workers) included", "Risk register", "Hazardous substances and SDS", "Advanced analytics", "Legislative alerts", "Phone support"],
-    4: ["Everything in tier 3", "Up to 50 users", "Dedicated Account Manager", "Multi-site rollups", "API access", "Custom SSO", "SLA support", "Onboarding workshop"],
+    4: ["Everything in tier 3", "Up to 50 users", "Dedicated Account Manager", "Multi-site rollups", "Custom SSO", "SLA support", "Onboarding workshop"],
   },
   hospitality: {
-    1: ["Unlimited HACCP plans (AI)", "Temperature monitoring with alerts", "Allergen register", "RSA and Food Handler tracking", "Cleaning schedules", "Council inspection pack", "Up to 3 users", "Email support"],
+    1: ["Unlimited HACCP plans (AI)", "Temperature monitoring with alerts", "Allergen register", "RSA and Food Handler tracking", "Cleaning schedules", "Council inspection pack", "Up to 3 users", "API access + Webhooks", "Email support"],
     2: ["Everything in tier 1", "Up to 8 users", "Contractor compliance capture", "AI incident pattern detection", "Up to 5 venues", "SafeInduct included", "Supplier management", "Liquor Approved Manager tracking", "Priority chat and email"],
     3: ["Everything in tier 2", "Up to 20 users", "Unlimited venues", "SafeCheck included", "SafeBase Academy included", "Council Inspection Pack included", "Liquor and RSA Management included", "Advanced analytics", "Legislative alerts", "Phone support"],
-    4: ["Everything in tier 3", "Up to 50 users", "Dedicated Account Manager", "Multi-region rollups", "API access", "Custom SSO", "SLA support", "Onboarding workshop"],
+    4: ["Everything in tier 3", "Up to 50 users", "Dedicated Account Manager", "Multi-region rollups", "Custom SSO", "SLA support", "Onboarding workshop"],
   },
   transport: {
-    1: ["Unlimited AI CoR plans", "Fitness for Duty (daily)", "Pre-trip inspection records", "Load restraint records", "Heavy vehicle licence tracking", "Up to 3 users", "Mobile app", "Email support"],
+    1: ["Unlimited AI CoR plans", "Fitness for Duty (daily)", "Pre-trip inspection records", "Load restraint records", "Heavy vehicle licence tracking", "Up to 3 users", "Mobile app", "API access + Webhooks", "Email support"],
     2: ["Everything in tier 1", "Up to 10 users", "Up to 5 vehicles and drivers", "Fatigue management module", "SafeInduct included", "Driver work diary summary", "Maintenance log", "Priority support"],
     3: ["Everything in tier 2", "Up to 25 users", "Unlimited fleet", "SafeCheck included", "SafeBase Academy included", "CoR Audit Pack included", "Scheduling compliance check", "NHVR notification prompts", "Multi-depot rollups", "Phone support"],
-    4: ["Everything in tier 3", "Up to 50 users", "Dedicated Account Manager", "Custom CoR plan templates", "API access", "Custom SSO", "SLA support", "Onboarding workshop"],
+    4: ["Everything in tier 3", "Up to 50 users", "Dedicated Account Manager", "Custom CoR plan templates", "Custom SSO", "SLA support", "Onboarding workshop"],
   },
   healthcare: {
-    1: ["AHPRA registration tracking", "Worker screening (NDIS and Aged Care)", "Manual handling assessments", "Vaccination register", "Up to 5 users", "Mobile app", "Email support"],
+    1: ["AHPRA registration tracking", "Worker screening (NDIS and Aged Care)", "Manual handling assessments", "Vaccination register", "Up to 5 users", "Mobile app", "API access + Webhooks", "Email support"],
     2: ["Everything in tier 1", "Up to 15 users", "Up to 5 clinics", "SafeInduct included", "Clinical event log", "Patient aggression module", "ACQSC and NDIS evidence pack", "Priority support"],
     3: ["Everything in tier 2", "Up to 30 users", "Unlimited clinics", "SafeCheck included", "SafeBase Academy included", "AHPRA Monitor included", "SIRS and NDIS Engine included", "QI Reporting included", "ACQSC Audit Packs unlimited", "Multi-site rollups", "Phone support"],
-    4: ["Everything in tier 3", "Up to 60 users", "Dedicated Account Manager", "All add-ons included", "Custom care quality templates", "API access", "Custom SSO", "SLA support", "Onboarding workshop"],
+    4: ["Everything in tier 3", "Up to 60 users", "Dedicated Account Manager", "All add-ons included", "Custom care quality templates", "Custom SSO", "SLA support", "Onboarding workshop"],
   },
   retail: {
-    1: ["Unlimited Quick Induct (casuals)", "Lone Worker check-in", "Customer incident log", "Roster compliance", "Hazard register", "Up to 5 users", "Mobile app", "Email support"],
+    1: ["Unlimited Quick Induct (casuals)", "Lone Worker check-in", "Customer incident log", "Roster compliance", "Hazard register", "Up to 5 users", "Mobile app", "API access + Webhooks", "Email support"],
     2: ["Everything in tier 1", "Up to 15 users", "Up to 5 stores", "SafeInduct included", "Bulk QR induction", "RSA tracking (bottle shop)", "Forklift licence tracking", "Priority support"],
     3: ["Everything in tier 2", "Up to 30 users", "Unlimited stores", "SafeCheck included", "SafeBase Academy included", "Multi-store rollups", "Area manager dashboard", "Advanced analytics", "Phone support"],
-    4: ["Everything in tier 3", "Up to 50 users", "Dedicated Account Manager", "Custom franchise templates", "API access", "Custom SSO", "SLA support", "Onboarding workshop"],
+    4: ["Everything in tier 3", "Up to 50 users", "Dedicated Account Manager", "Custom franchise templates", "Custom SSO", "SLA support", "Onboarding workshop"],
   },
 };
 

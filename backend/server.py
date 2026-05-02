@@ -217,6 +217,16 @@ async def get_current_user(
         except jwt.PyJWTError:
             pass
 
+        # Try as long-lived API key (sb_live_*) — Iter43
+        if bearer.startswith("sb_live_"):
+            from routes.api_keys import resolve_api_key  # noqa: WPS433
+            user_doc = await resolve_api_key(bearer, db)
+            if user_doc:
+                # Normalise: users in DB use either `user_id` or `id` as primary
+                if "user_id" not in user_doc and "id" in user_doc:
+                    user_doc["user_id"] = user_doc["id"]
+                return User(**user_doc)
+
     raise HTTPException(status_code=401, detail="Not authenticated")
 
 
@@ -2387,6 +2397,13 @@ register_scheduling_routes(
 # ----------- ITER41: regulator pipeline automation (SIRS / NDIS / NHVR) -----------
 from routes.regulator_pipeline import register_regulator_pipeline_routes  # noqa: E402
 register_regulator_pipeline_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, stamp_account_fn=stamp_account, logger=logger,
+)
+
+# ----------- ITER43: API keys (universal — every plan) -----------
+from routes.api_keys import register_api_keys_routes  # noqa: E402
+register_api_keys_routes(
     api_router, db=db, get_current_user_dep=get_current_user,
     account_id_for_fn=account_id_for, stamp_account_fn=stamp_account, logger=logger,
 )

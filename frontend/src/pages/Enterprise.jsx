@@ -30,7 +30,7 @@ const FEATURES = [
   { title: "Cross-location incident pattern detection", sub: "Benchmark safety performance across every site, venue, depot, clinic or store." },
   { title: "Custom compliance frameworks", sub: "Configure around principal-contractor, insurer, regulator or industry-body requirements." },
   { title: "Custom report builder + scheduled delivery", sub: "Build any report from any data field; schedule weekly/monthly/quarterly delivery." },
-  { title: "SSO · Full API · Webhooks", sub: "Google Workspace / Microsoft 365 SSO, sandbox API, webhook support." },
+  { title: "Priority integration + Custom SSO", sub: "API + outbound webhooks are standard on every SafeBase plan. Enterprise adds Google Workspace / Microsoft 365 SSO, sandbox environment, dedicated integration engineer." },
   { title: "Enhanced immutable audit logging", sub: "Every action by every user, logged immutably." },
   { title: "Dedicated logical tenant", sub: "Your data is logically isolated. Annual security review summary available." },
 ];

@@ -19,7 +19,7 @@ const COPY = {
   api: {
     title: "API access is an Enterprise feature",
     headline: "Build your own integrations.",
-    body: "REST API, webhooks and custom data pipelines are bundled with Enterprise — A$3,999/mo + GST. Connect SafeBase to your ERP, HRIS or BI stack.",
+    body: "API access and outbound webhooks are now standard on every plan. Enterprise adds priority integration support, custom SSO, dedicated Account Manager, and an SLA — A$3,999/mo + GST.",
     perks: [
       "Full REST API + outbound webhooks",
       "Rate-limit increases on request",
