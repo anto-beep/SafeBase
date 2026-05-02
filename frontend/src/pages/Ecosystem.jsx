@@ -20,7 +20,7 @@ const PRODUCTS = [
     what: "Mobile-first microlearning and full certification courses built specifically for each industry. Completion syncs to your compliance dashboard.",
     who: "Businesses needing auditable worker training records across any industry.",
     ai: ["AI builds modules from your documents", "Adaptive questions vary each attempt", "Completion tracked to compliance score", "Multi-language translation"] },
-  { code: "05", icon: Buildings, name: "SafeBase for Franchises", tagline: "One compliance standard. Every location. Every industry.", to: "/franchises", price: "from A$119–A$169/mo per location · setup from A$20,000 + GST",
+  { code: "05", icon: Buildings, name: "SafeBase for Franchises", tagline: "One compliance standard. Every location. Every industry.", to: "/franchises", price: "from A$149–A$199/mo per location · setup from A$25,000 + GST",
     what: "Network-level compliance dashboard for franchisors; pre-loaded templates for franchisees.",
     who: "Franchise networks across trades, hospitality, retail and healthcare.",
     ai: ["Network compliance score", "Cross-location pattern detection", "Master template version control", "Board-ready reporting"] },

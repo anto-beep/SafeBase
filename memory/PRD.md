@@ -3,14 +3,38 @@
 ## Original problem
 WHS compliance SaaS — originally for Australian trade businesses (SafeTradie), now positioned as a **multi-industry** platform (SafeBase) covering Trades & Construction, Hospitality, Transport & Logistics, Healthcare & Aged Care, and Retail.
 
-Core (SWMS, Incidents, People/Licences, Intelligence) + ecosystem (TradeInduct, TradeCheck, Academy, Consulting). Pricing A$249 / 499 / 799 / 1,299 per month + GST.
-
 ## Users
 Business owner (primary) · Safety manager · Supervisor · Worker · WHS consultant · Franchisor
+
+## Definitive Pricing (Iter40 — final, all + GST)
+
+| Industry | Tier 1 | Tier 2 | Tier 3 | Enterprise |
+|---|---|---|---|---|
+| Trades | A$5,990 (1u) | A$11,990 (5u) | A$18,990 (20u) | A$29,990 (50u) |
+| Retail | A$7,990 (5u) | A$15,990 (15u) | A$24,990 (30u) | A$39,990 (50u) |
+| Hospitality | A$11,990 (3u) | A$22,990 (8u) | A$34,990 (20u) | A$54,990 (50u) |
+| Transport | A$14,990 (3u) | A$27,990 (10u) | A$42,990 (25u) | A$69,990 (50u) |
+| Healthcare | A$24,990 (5u) | A$49,990 (15u) | A$79,990 (30u) | A$179,990 (60u) |
+
+Add-ons: SafeInduct A$249/mo · SafeCheck A$299/mo · Academy A$399/A$699/A$999 · White-Label Partner A$2,499/mo · Consulting A$2,500–A$4,000/mo.
+
+Franchise per-location: A$199 (1-49) · A$179 (50-199) · A$149 (200+). Network setup from A$25,000.
 
 ---
 
 ## Implemented
+
+### Iteration 40 — Definitive Pricing Overhaul + Credential-Gated Scheduling (Feb 2026)
+- **Master pricing config rewritten** (`/app/frontend/src/data/pricing.config.js`) with Iter40 numbers across all 5 industries including new ROI statements + value callouts reflecting the new maths (trades 5.1% of one fine · healthcare A$24,990 less than two ACQSC engagements · transport less than one month CoR legal fees · hospitality less than three days of venue closure · retail less than one preventable injury claim).
+- **Backend billing.py** — all 40 Stripe tier slugs updated to new amounts. `sole_trader_annual=5990`, `health_enterprise_annual=179990`, every tier between refreshed. `/api/billing/tiers` verified returns new amounts for all 40.
+- **Backend iter39_aux.py right-sizer** — PRICING dict + RISK_ANCHOR updated. Trades anchor now says "5.1% of one fine" (was 3.4%).
+- **Frontend price ripple** — 20+ files touched: BillingPanel (20 tier price strings), Enterprise (A$2,999/A$17,999), EnterpriseUpsellModal, Dashboard upsell, Ecosystem, ServiceSwms, Settings, Academy, TradeCheck, TradeInduct, IndustryRiskCalculator anchors (5 tabs), CredentialExpiryCalculator + InsuranceDiscountCalculator (safebaseCost per industry), PlanRightsizer risk-anchor, 3 SEO landing pages (plans + roiAnchor), Franchises (A$199/A$179/A$149 per-location, A$25,000 setup, A$19,900/mo ROI card), Partners (A$2,499 fee, A$2,499/mo × 15% × 10 clients = A$3,748.50, A$17,999 Healthcare Enterprise yields A$2,699.85/mo commission).
+- **P0: Credential-driven scheduling block** — new `/app/backend/routes/scheduling.py` module (mounted at `/api/scheduling/*`):
+  - `GET /api/scheduling/mandatory-credentials[?industry=X]` — public reference of required credentials per industry.
+  - `GET /api/scheduling/check-eligibility/{worker_id}` — returns `{can_roster, blockers[], warnings[], industry, worker_name}`. Checks: generic licences (expiry + mandatory kinds — white_card, hr_licence), AHPRA registrations, worker screening, fitness-for-duty (24h window), Quick Induct (90d validity). Cross-account 404, unauth 401.
+  - `POST /api/scheduling/roster-gate` — batch check with `blocked_count` + `clear_count`.
+  - `POST /api/scheduling/shifts` — creates a shift. Returns **409 `scheduling_blocked`** if any assigned worker is ineligible, preventing rostering. Timezone-aware date parsing. Handles legacy `user_id`-scoped licences via `$or {account_id, user_id}`.
+- **Testing** (`iteration_40.json`): backend 35/35 PASS (plan-rightsizer 5 scenarios, billing tiers all 40, scheduling eligibility + batch + shift-create + auth + validation, regression green). Frontend 95% — one stale A$20,000→A$25,000 on Franchises banner fixed post-test. `retest_needed: False` after fix.
 
 ### Iteration 39 — P1/P2 Mega-batch: ROI Calculators + Admin Demos + Regulatory Digest + SEO Landing Pages (Feb 2026)
 - **Backend `/app/backend/routes/iter39_aux.py`** — 4 endpoints mounted via `register_iter39_routes()`:

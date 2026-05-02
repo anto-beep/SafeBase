@@ -84,7 +84,7 @@ export default function Franchises() {
               </div>
             ))}
           </div>
-          <div className="mt-6 bg-warning border-2 border-ink p-4 text-center font-bold">Franchisor network dashboard included. Network setup from A$20,000 + GST (master template library + configuration + onboarding support across every industry).</div>
+          <div className="mt-6 bg-warning border-2 border-ink p-4 text-center font-bold">Franchisor network dashboard included. Network setup from A$25,000 + GST (master template library + configuration + onboarding support across every industry).</div>
         </div>
       </section>
 
