@@ -46,8 +46,13 @@ export default function Login() {
           <div>
             <div className="label-eyebrow text-warning mb-4">/ COMPLIANCE INFRASTRUCTURE</div>
             <h1 className="font-display text-5xl font-black leading-[0.95] mb-4">Welcome Back.<br /><span className="bg-warning text-ink px-2">Your Industry.</span><br />Your Compliance.</h1>
-            <p className="text-white/70 max-w-md mt-8">WHS compliance for every industry. From the kitchen to the clinic. From the depot to the store. AI-powered. Australian-built.</p>
-            <div className="text-xs font-mono text-white/50 mt-6 uppercase tracking-widest">Trades — Hospitality — Transport — Healthcare — Retail</div>
+            <ul className="text-white/75 max-w-md mt-8 space-y-3 text-base" data-testid="login-taglines">
+              <li>WHS compliance for every industry.</li>
+              <li>From the kitchen to the clinic. From the depot to the store.</li>
+              <li>Your industry. Your compliance. Your platform.</li>
+              <li>AI-powered. Australian-built. Every industry.</li>
+            </ul>
+            <div className="text-xs font-mono text-white/50 mt-8 uppercase tracking-widest">Trades — Hospitality — Transport — Healthcare — Retail</div>
           </div>
           <div className="font-mono text-xs text-white/40">Australian data. AWS Sydney. Privacy Act compliant.</div>
         </div>

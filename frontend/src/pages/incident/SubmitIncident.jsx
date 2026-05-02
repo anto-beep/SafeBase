@@ -92,6 +92,28 @@ export default function SubmitIncident() {
       };
       const r = await api.post("/incident-workflow", payload);
       toast.success(`Reported. Reference: ${r.data.reference}`);
+
+      // AUTO-TRIAGE: run the incident against SIRS / NDIS / NHVR matrices.
+      // If any pipeline fires, create a draft regulator case so the 24h clock starts
+      // automatically — no owner needs to remember to run triage manually.
+      try {
+        const industry = user?.industry || "trades";
+        const triageBody = {
+          industry,
+          incident_type: sub.category || "",
+          description: sub.description || "",
+        };
+        const tr = await api.post("/regulator-pipeline/triage", triageBody);
+        if (tr?.data?.match_count > 0) {
+          await api.post("/regulator-pipeline/draft", {
+            ...triageBody,
+            incident_id: r.data.incident_id,
+          });
+          const names = tr.data.matches.map((m) => `${m.pipeline} (${m.priority})`).join(" · ");
+          toast.warning(`Regulator notification required: ${names}. Draft case started — review in Regulator Cases.`, { duration: 8000 });
+        }
+      } catch (e) { /* non-blocking */ }
+
       nav(`/dashboard/incidents/${r.data.incident_id}`);
     } catch (e) { toast.error(e?.response?.data?.detail || "Submission failed"); }
   };

@@ -4,8 +4,8 @@ import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { ArrowRight, Cube, Compass, Heart, Trophy } from "@phosphor-icons/react";
 
 const VALUES = [
-  { icon: Cube, t: "Built for how each industry actually operates", b: "A food safety audit pack for a cafe is not the same as a CoR evidence file for a transport operator. SafeBase is purpose-built for each industry — not adapted from something designed for someone else." },
-  { icon: Compass, t: "Compliance is not paperwork", b: "We measure success in incidents avoided, not documents stored. Our AI removes busywork — not adds another spreadsheet." },
+  { icon: Cube, t: "Built for how each industry actually operates", b: "A food safety audit pack for a cafe is not the same as a CoR evidence file for a transport operator. SafeBase is purpose-built for every industry — trades, hospitality, transport, healthcare, retail — not adapted from something designed for someone else." },
+  { icon: Compass, t: "Compliance is not paperwork", b: "We measure success in incidents avoided, not documents stored. Our AI removes busywork — it does not add another spreadsheet." },
   { icon: Heart, t: "Evidence, not fear", b: "Every claim on this platform is specific. Every regulatory reference is accurate. We tell you what is true — and we make the right thing the easy thing." },
   { icon: Trophy, t: "Independent and Australian", b: "Bootstrapped, founder-owned, headquartered in Sydney. All data hosted in AWS Sydney. Privacy Act compliant." },
 ];

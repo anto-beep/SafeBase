@@ -77,7 +77,7 @@ export default function Landing() {
               <span className="block text-warning">One Platform.</span>
             </h1>
             <p className="text-lg lg:text-xl text-white/80 mt-8 max-w-3xl leading-relaxed">
-              SafeBase is Australia's AI-powered WHS and compliance platform for hospitality, transport, healthcare, retail and trades. Every industry has its own dashboard, its own documents, and its own compliance ecosystem — configured from day one for how your business actually works.
+              SafeBase is Australia's AI-powered WHS and compliance platform for hospitality, transport, healthcare, retail and trades. Every industry operates within its own configured ecosystem — documents, credentials, dashboards, and regulatory references built specifically for how your business operates.
             </p>
 
             {/* Industry tabs */}
@@ -177,7 +177,9 @@ export default function Landing() {
         {/* Industries grid */}
         <section id="industries" className="py-24 bg-muted/40">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">
+            <div className="label-eyebrow mb-3">/ Industries</div>
             <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">Built for Your Industry. Not Adapted for It.</h2>
+            <p className="text-lg text-muted-foreground mt-6 max-w-3xl">Select your industry on signup. SafeBase configures every feature, document, credential type, dashboard, and regulatory reference to match your compliance obligations from day one.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
               {INDUSTRY_LIST.map((i) => (
                 <Link
@@ -201,6 +203,38 @@ export default function Landing() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* STAT BAR — national scale anchor */}
+        <section className="bg-ink text-white border-b border-warning/40" data-testid="home-stat-bar">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12 py-6 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center lg:text-left font-mono">
+            <div><div className="font-display font-black text-3xl text-warning">994,178</div><div className="text-xs text-white/60 uppercase tracking-widest mt-1">Employing businesses · AU</div></div>
+            <div><div className="font-display font-black text-3xl text-warning">Every one</div><div className="text-xs text-white/60 uppercase tracking-widest mt-1">Has WHS obligations</div></div>
+            <div><div className="font-display font-black text-3xl text-warning">A$116,979</div><div className="text-xs text-white/60 uppercase tracking-widest mt-1">Avg WorkSafe prosecution</div></div>
+            <div><div className="font-display font-black text-3xl text-warning">One platform</div><div className="text-xs text-white/60 uppercase tracking-widest mt-1">Five industries</div></div>
+          </div>
+        </section>
+
+        {/* THE RISK — why this matters */}
+        <section className="py-24 bg-background border-b border-border" data-testid="home-the-risk">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12">
+            <div className="label-eyebrow mb-3">/ The WHS Act applies to every business</div>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter max-w-3xl">The WHS Act Applies to Every Business. Every Industry. Every Day.</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+              <div className="border-l-4 border-destructive pl-6 py-2">
+                <div className="font-display font-black text-xl">No documentation</div>
+                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">Whether you run a kitchen, a depot, a clinic, a store, or a construction site — the obligation to identify and record workplace risks applies equally. So does the penalty for failing to demonstrate it.</p>
+              </div>
+              <div className="border-l-4 border-destructive pl-6 py-2">
+                <div className="font-display font-black text-xl">Expired credentials</div>
+                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">An RSA certificate. An AHPRA registration. A heavy vehicle licence. A food safety supervisor certificate. When a credential lapses and an incident occurs, the liability is the employer's.</p>
+              </div>
+              <div className="border-l-4 border-destructive pl-6 py-2">
+                <div className="font-display font-black text-xl">No investigation record</div>
+                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">Every regulator asks three questions: what was done to prevent it, what was done when it occurred, and what changed afterwards. The burden of proof rests with the business.</p>
+              </div>
             </div>
           </div>
         </section>
