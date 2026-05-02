@@ -47,7 +47,7 @@ export default function BlogPost() {
           <div className="mt-12 border-2 border-ink p-6 bg-warning">
             <div className="label-eyebrow text-ink">/ Put it into practice</div>
             <div className="font-display text-2xl font-black tracking-tight mt-1">SafeBase does all of this for you.</div>
-            <p className="text-sm text-ink/80 mt-2">AI-generated SWMS, licence expiry tracking, risk register, toolbox talks and 20+ more modules — from A$150/mo.</p>
+            <p className="text-sm text-ink/80 mt-2">AI-generated SWMS, licence expiry tracking, risk register, toolbox talks and 20+ more modules — from A$799/mo + GST.</p>
             <Link to="/register"><Button className="btn-sharp mt-4 bg-ink text-white hover:bg-authority">Start 14-day free trial <ArrowRight className="ml-1" /></Button></Link>
           </div>
 

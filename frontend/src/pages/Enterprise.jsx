@@ -20,7 +20,7 @@ const PERSONAS = [
 
 const FEATURES = [
   { title: "Up to 50 named users", sub: "Additional users quoted on request. Enterprise+ quotes available beyond 60 users." },
-  { title: "All add-ons included", sub: "SafeInduct (A$249/mo), SafeCheck (A$299/mo), SafeBase Academy 30 workers (A$699/mo) — A$14,964/year in included value." },
+  { title: "All add-ons included", sub: "SafeInduct (A$299/mo + GST), SafeCheck (A$349/mo + GST), SafeBase Academy 30 workers (A$799/mo + GST) — A$17,364/year + GST in included value." },
   { title: "Dedicated Account Manager", sub: "A named SafeBase specialist who knows your business, by phone and email." },
   { title: "Quarterly Business Reviews", sub: "60-minute structured reviews covering score, incidents, credential forecast, and legislation." },
   { title: "Priority phone support · 4h SLA", sub: "Business-hours phone with a 4-hour response SLA." },
@@ -266,7 +266,7 @@ export default function Enterprise() {
               <ul className="mt-4 space-y-1 text-sm">
                 <li>Up to 50 users</li>
                 <li>Unlimited sites</li>
-                <li>All add-ons included (A$797/mo value)</li>
+                <li>All add-ons included (A$1,447/mo + GST value)</li>
                 <li>Dedicated Account Manager</li>
                 <li>Quarterly reviews</li>
                 <li>4-hour support SLA</li>
@@ -298,7 +298,7 @@ export default function Enterprise() {
             </div>
           </div>
           <div className="mt-8 bg-warning border-2 border-ink p-5 text-center font-bold">
-            SafeBase Enterprise at A$39,990/year is 34.2% of the average WorkSafe fine. Before the legal costs.
+            SafeBase Enterprise at A$39,990/year + GST is 34.2% of the average WorkSafe fine. Before the legal costs.
           </div>
         </div>
       </section>

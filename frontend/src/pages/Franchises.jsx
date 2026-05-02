@@ -92,7 +92,7 @@ export default function Franchises() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-5">
             <div className="label-eyebrow text-warning mb-3">/ ROI case</div>
-            <h2 className="font-display text-4xl font-black tracking-tighter">A$22,900/mo vs one prosecution.</h2>
+            <h2 className="font-display text-4xl font-black tracking-tighter">A$19,900/mo + GST vs one prosecution.</h2>
           </div>
           <div className="lg:col-span-7 space-y-2 font-mono text-sm">
             <div className="flex justify-between border-b border-white/10 py-3"><span>SafeBase 100-location network (A$199 × 100)</span><span>A$19,900/mo + GST</span></div>

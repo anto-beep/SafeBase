@@ -92,14 +92,14 @@ export const INDUSTRIES = {
       logos: ["Master Electricians Australia", "Master Plumbers", "HIA", "Master Builders Association", "NECA"],
     },
     pricing: {
-      headline: "Less Than 0.3% Of One Fine. Every Year.",
+      headline: "6.9% Of One Fine. Every Year.",
       tiers: [
-        { name: "Sole Trader", price: "A$249/month + GST" },
-        { name: "Small Business", price: "A$499/month + GST" },
-        { name: "Growing Business", price: "A$799/month + GST" },
+        { name: "Solo Tradie", price: "A$799/month + GST" },
+        { name: "Small Team", price: "A$1,599/month + GST" },
+        { name: "Growing Business", price: "A$2,499/month + GST" },
       ],
       footnote: "All plans include SWMS generation, incident management, and licence tracking. 14-day free trial. No credit card required.",
-      roi: "SafeBase for a sole trader costs A$2,988/year + GST. The average WorkSafe fine is A$116,979. You do the maths.",
+      roi: "SafeBase for a solo tradie costs A$7,990/year + GST. The average WorkSafe fine is A$116,979. You do the maths — that's 6.9% of one fine, with compliance running every single day.",
       cta: "Start Free Trial",
     },
     testimonials: [
@@ -191,7 +191,7 @@ export const INDUSTRIES = {
     pricing: {
       headline: "One System for WHS and Food Safety",
       tiers: [],
-      footnote: "Most venues pay separately for a WHS tool and a food safety tool — if they pay for anything at all. SafeBase includes both. From A$249/month + GST.",
+      footnote: "Most venues pay separately for a WHS tool and a food safety tool — if they pay for anything at all. SafeBase includes both. From A$1,499/month + GST.",
       cta: "Start Free Trial for Hospitality",
     },
     finalCta: {
@@ -285,7 +285,7 @@ export const INDUSTRIES = {
     pricing: {
       headline: "WHS and CoR Compliance. One Subscription.",
       tiers: [],
-      footnote: "Every party in the chain needs to demonstrate compliance. SafeBase gives drivers, schedulers, operators, and managers the tools to do that — without multiple systems, without paperwork, and without hoping nobody checks. From A$249/month + GST.",
+      footnote: "Every party in the chain needs to demonstrate compliance. SafeBase gives drivers, schedulers, operators, and managers the tools to do that — without multiple systems, without paperwork, and without hoping nobody checks. From A$1,499/month + GST.",
       cta: "Start Free Trial for Transport",
     },
     finalCta: {
@@ -374,7 +374,7 @@ export const INDUSTRIES = {
     pricing: {
       headline: "Compliance That Moves As Fast As Your Team Does.",
       tiers: [],
-      footnote: "Healthcare providers cannot afford compliance gaps. The ACQSC has stronger enforcement powers than ever before. SafeBase gives you the documentation infrastructure to demonstrate compliance — continuously, not just at audit time. From A$249/month + GST.",
+      footnote: "Healthcare providers cannot afford compliance gaps. The ACQSC has stronger enforcement powers than ever before. SafeBase gives you the documentation infrastructure to demonstrate compliance — continuously, not just at audit time. From A$2,499/month + GST.",
       cta: "Start Free Trial for Healthcare",
     },
     finalCta: {
@@ -469,7 +469,7 @@ export const INDUSTRIES = {
     pricing: {
       headline: "Simple Enough for Any Shift. Powerful Enough for Any Network.",
       tiers: [],
-      footnote: "From a single store to a 200-location franchise network — SafeBase scales with you. Every team member inducted. Every certificate tracked. Every lone worker safe. From A$249/month + GST.",
+      footnote: "From a single store to a 200-location franchise network — SafeBase scales with you. Every team member inducted. Every certificate tracked. Every lone worker safe. From A$999/month + GST.",
       cta: "Start Free Trial for Retail",
     },
     finalCta: {

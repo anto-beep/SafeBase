@@ -1,0 +1,38 @@
+{
+  "summary": "Iter44 SafeBase pricing-display refresh fully verified. Backend regression 5/5 pass — /api/billing/tiers returns 40 tier slugs (_monthly/_annual naming, unchanged amounts), /api/regulator-pipeline/matrices 200, /api/scheduling/mandatory-credentials 200, /api/api-keys/integration-targets 200. Frontend /pricing: MONTHLY is the default active cycle (pricing-cycle-monthly has industry-accent background on mount, pricing-cycle-annual is unstyled), all 4 tier cards render pricing-save-badge-* in BOTH monthly AND annual states (4/4 each), 16 '+ GST' mentions visible in both toggle states, toggle-segment background colour changes per industry tab to exact spec hex — trades rgb(255,204,0)=#FFCC00, hospitality rgb(15,76,92)=#0F4C5C, transport rgb(13,196,181)=#0DC4B5, healthcare rgb(33,150,166)=#2196A6, retail rgb(168,85,247)=#A855F7 (5 unique colours, matches spec). Unauth CTA click redirects to /register?industry=trades (regression preserved). Code-level verification of every copy change in the 9 referenced files confirms all strings correct: /industries/* landing hero stats ($799/$1,499/$1,499/$2,499/$999 'from /month + GST'), pricing_anchor lines per industry, trades tiers (Solo Tradie A$799 / Small Team A$1,599 / Growing A$2,499 month+GST), trades ROI headline '6.9% Of One Fine. Every Year.' + body 'A$7,990/year + GST' + '6.9% of one fine', hospitality/transport/healthcare/retail footnotes end with correct Tier-1 monthly price, Enterprise add-ons sub-line 'SafeInduct (A$299/mo + GST), SafeCheck (A$349/mo + GST), SafeBase Academy 30 workers (A$799/mo + GST) — A$17,364/year + GST in included value' + ROI A$39,990/year + GST + A$1,447/mo value line, Franchises A$19,900/mo + GST (was A$22,900), TradeCheck final CTA 'A$349/mo + GST standalone. Included free from Tier 3 on every industry plan.', TradeInduct 'A$299/mo + GST standalone. Included free from Tier 2 on every industry plan.', Academy 'Included free from Tier 3 on every industry plan · Custom module development A$500 – A$1,500 + GST per module.', Compare rows 'Entry pricing under A$1,000/mo + GST for SMBs' + 'under A$1,500/mo + GST for independent operators', Landing consulting FAQ 'A$1,800/month + GST', BlogPost 'from A$799/mo + GST'. Zero stray '$249/$299/$349/$399/month' references remain in any of the 5 industry landing pages (code grep clean). Iter41 prices in pricing.config.js unchanged — only display copy updated per spec.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter44_regression.py",
+    "/app/test_reports/pytest/iter44_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Pricing.jsx line 19: useState('monthly') default is correct per Iter44 spec. Toggle-segment active style uses cfg.accent from INDUSTRY_PRICING which matches the hex values in the problem statement exactly (verified via rgb() to hex: #FFCC00/#0F4C5C/#0DC4B5/#2196A6/#A855F7). Prior note from main agent about accent-colour divergence is obsolete — the current accent values ARE the spec values.",
+    "Pricing.jsx lines 158-166: save-badge block is correctly outside the 'cycle === annual' branch, so it renders whenever t.annual_saving is truthy — verified visible in both monthly and annual toggle states (4/4 tiers × 2 states).",
+    "Pricing.jsx lines 146-157: large tier price has '/mo + GST' or '/yr + GST' suffix, billing-alternative line includes '/year + GST' or '/month + GST', save-badge says 'Save A$X + GST per year' — 16 '+ GST' occurrences per view, perfectly consistent.",
+    "industries.config.js trades tiers (lines 97-99) and ROI (lines 95/102) correctly use A$799/A$1,599/A$2,499 month + GST and '6.9% Of One Fine. Every Year.' headline + A$7,990/year + GST body — exact match to spec.",
+    "industry-pages.config.js hero stat values for all 5 industries updated to $799/$1,499/$1,499/$2,499/$999 with 'from /month + GST' label — zero stray legacy $249/$299/$349/$399 strings remain.",
+    "Enterprise.jsx lines 23/88/265/269/301 all carry updated A$1,447/A$17,364/A$39,990 + GST values. Franchises.jsx line 95 A$19,900/mo + GST (was A$22,900).",
+    "TradeCheck/TradeInduct/Academy product pages: final CTAs and pricing notes use exactly the phrasing in the spec including 'Included free from Tier N on every industry plan' and 'A$500 – A$1,500 + GST per module'.",
+    "Compare.jsx (36/160) updated to A$1,000/A$1,500 + GST — Landing.jsx FAQ (45) A$1,800/month + GST — BlogPost.jsx (50) from A$799/mo + GST. All consistent.",
+    "Regression: unauth /pricing CTA click still redirects to /register?industry=<slug> (trades verified). /api/billing/tiers still returns 40 slugs with price fields intact."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter44_regression.py (new — 5 tests, all pass)"
+  ],
+  "success_rate": {"backend": "100% (5/5)", "frontend": "100% (toggle default, save-badges both states, 5 unique industry accents, 16x + GST, CTA redirect, all 9 copy-change files verified)"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter44 is purely copy + display behaviour. Backend unchanged (5-test regression in test_iter44_regression.py). Frontend selectors: pricing-cycle-monthly / pricing-cycle-annual / pricing-save-badge-{name-slug} / pricing-tab-{industry} / pricing-cta-{name-slug}. Accent hex verified as rgb() values on the monthly-button 'background' inline style after clicking each industry tab. /industries/trades uses IndustryProductPage which only renders pricing_anchor (one headline) — the full trades tiers + 6.9% ROI from industries.config.js render on the HOMEPAGE (/) via HomeMultiIndustry, not on /industries/trades. This is by design (industries.config.js drives homepage, industry-pages.config.js drives /industries/* detail pages). If future work needs the full tiers+ROI on /industries/trades it would require a component change.",
+  "rca of the issue": "No issues found."
+}

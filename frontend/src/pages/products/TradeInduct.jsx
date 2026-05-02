@@ -104,7 +104,7 @@ export default function TradeInduct() {
       <section className="bg-warning border-b border-ink">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8">
-            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">A$59/mo standalone. Free in Small Business (A$250/mo) and Growing Business (A$400/mo).</h2>
+            <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter text-ink">A$299/mo + GST standalone. Included free from Tier 2 on every industry plan.</h2>
           </div>
           <div className="lg:col-span-4 lg:text-right"><Link to="/register"><Button className="btn-sharp h-14 px-8 bg-ink text-white hover:bg-authority" data-testid="induct-final-cta">Start free trial <ArrowRight className="ml-2" /></Button></Link></div>
         </div>

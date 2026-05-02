@@ -99,7 +99,7 @@ export default function Academy() {
             <div className="bg-ink text-white p-6">
               <Sparkle size={28} weight="fill" className="text-warning" />
               <div className="font-display font-bold mt-3">Custom Module</div>
-              <div className="text-sm text-white/70 mt-2">Upload your own SWMS or procedure — AI builds the module. From A$500 per module.</div>
+              <div className="text-sm text-white/70 mt-2">Upload your own SWMS or procedure — AI builds the module. From A$500 + GST per module.</div>
             </div>
           </div>
         </div>
@@ -117,7 +117,7 @@ export default function Academy() {
               </div>
             ))}
           </div>
-          <div className="mt-6 bg-warning border-2 border-ink p-4 text-center font-bold">Included free in Growing Business (A$400/month) · Custom module development A$500 – 1,500 per module.</div>
+          <div className="mt-6 bg-warning border-2 border-ink p-4 text-center font-bold">Included free from Tier 3 on every industry plan · Custom module development A$500 – A$1,500 + GST per module.</div>
         </div>
       </section>
 

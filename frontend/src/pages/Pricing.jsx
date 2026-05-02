@@ -16,7 +16,7 @@ export default function Pricing() {
   const initialIndustry = INDUSTRY_LIST.includes(searchParams.get("industry"))
     ? searchParams.get("industry") : "trades";
   const [industry, setIndustry] = useState(initialIndustry);
-  const [cycle, setCycle] = useState("annual"); // annual is the default per Iter37 spec
+  const [cycle, setCycle] = useState("monthly"); // monthly is the default per Iter44 spec (save-badge still visible in both states)
   const [loading, setLoading] = useState(null);
   const cfg = INDUSTRY_PRICING[industry];
 
@@ -105,12 +105,24 @@ export default function Pricing() {
               Every industry has different compliance obligations. Our pricing reflects the depth of what each industry requires. 14-day free trial. No credit card required.
             </p>
 
-            {/* Cycle toggle — annual is default */}
-            <div className="inline-flex bg-muted border-2 border-ink mt-8" data-testid="pricing-cycle-toggle">
-              <button onClick={() => setCycle("annual")} className={`px-6 py-3 font-display font-black tracking-tight transition-colors ${cycle === "annual" ? "bg-ink text-white" : ""}`} data-testid="pricing-cycle-annual">
-                ANNUAL <span className="text-xs opacity-80">(RECOMMENDED)</span>
+            {/* Cycle toggle — monthly is default (Iter44). Active segment adopts the industry accent. */}
+            <div className="inline-flex border-2 border-ink mt-8" data-testid="pricing-cycle-toggle" style={{ background: "var(--muted, #f5f5f5)" }}>
+              <button
+                onClick={() => setCycle("monthly")}
+                className="px-6 py-3 font-display font-black tracking-tight transition-colors"
+                style={cycle === "monthly" ? { background: cfg.accent, color: "#0A0A0A" } : {}}
+                data-testid="pricing-cycle-monthly"
+              >
+                MONTHLY
               </button>
-              <button onClick={() => setCycle("monthly")} className={`px-6 py-3 font-display font-black tracking-tight transition-colors ${cycle === "monthly" ? "bg-ink text-white" : ""}`} data-testid="pricing-cycle-monthly">MONTHLY</button>
+              <button
+                onClick={() => setCycle("annual")}
+                className="px-6 py-3 font-display font-black tracking-tight transition-colors"
+                style={cycle === "annual" ? { background: cfg.accent, color: "#0A0A0A" } : {}}
+                data-testid="pricing-cycle-annual"
+              >
+                ANNUAL <span className="text-xs opacity-80">(SAVE 2 MONTHS)</span>
+              </button>
             </div>
           </div>
 
@@ -138,15 +150,19 @@ export default function Pricing() {
                   <>
                     <div className="text-xs text-muted-foreground mt-1">A${t.monthly_display}/month + GST if billed monthly</div>
                     <div className="text-xs text-muted-foreground mt-0.5">Equivalent to A${t.annual_equivalent_monthly}/month when billed annually</div>
-                    {t.annual_saving && (
-                      <div className="inline-block mt-2 text-[10px] font-bold px-2 py-1" style={{ background: cfg.accent, color: "#0A0A0A" }}>
-                        Save A${t.annual_saving} + GST annually
-                      </div>
-                    )}
                   </>
                 )}
                 {cycle === "monthly" && t.annual_display && (
                   <div className="text-xs text-muted-foreground mt-1">A${t.annual_display}/year + GST if billed annually</div>
+                )}
+                {t.annual_saving && (
+                  <div
+                    className="inline-block mt-2 text-[10px] font-bold px-2 py-1"
+                    style={{ background: cfg.accent, color: "#0A0A0A" }}
+                    data-testid={`pricing-save-badge-${t.name.replace(/\s+/g, "-").toLowerCase()}`}
+                  >
+                    Save A${t.annual_saving} + GST per year
+                  </div>
                 )}
                 <ul className="mt-5 space-y-2 text-sm flex-1">
                   {t.features.map((f) => (

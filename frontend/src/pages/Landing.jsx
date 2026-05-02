@@ -42,7 +42,7 @@ const FAQ = [
   { q: "Is my data stored in Australia?", a: "Yes — hosted in AWS Sydney region." },
   { q: "Does it cover every state?", a: "Built for every Australian WHS jurisdiction, including Victoria's OHS Act 2004." },
   { q: "Do workers need their own login?", a: "Workers use the mobile app for incidents and inductions. Only admins consume user seats." },
-  { q: "What if I need help beyond the software?", a: "Our WHS Consulting services pair qualified human advisors with your SafeBase data — from A$600/month." },
+  { q: "What if I need help beyond the software?", a: "Our WHS Consulting services pair qualified human advisors with your SafeBase data — from A$1,800/month + GST." },
 ];
 
 export default function Landing() {

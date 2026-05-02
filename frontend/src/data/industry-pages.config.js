@@ -27,7 +27,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       stats: [
         { value: "19", label: "HRCW categories" },
         { value: "<60s", label: "AI SWMS generation" },
-        { value: "$249", label: "from /month" },
+        { value: "$799", label: "from /month + GST" },
         { value: "100k+", label: "tradies served" },
       ],
     },
@@ -50,7 +50,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       { regulator: "ASIC / ATO", basis: "ABN active + workers comp" },
       { regulator: "State licensing boards", basis: "Trade licence currency" },
     ],
-    pricing_anchor: "$249/month — no per-user costs, no setup fees.",
+    pricing_anchor: "From A$799/month + GST — no per-user costs, no setup fees.",
     final_cta: "Tradies who try SafeBase rarely go back to paperwork.",
   },
   hospitality: {
@@ -64,7 +64,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       stats: [
         { value: "Std 3.2.1", label: "FSANZ aligned" },
         { value: "90 days", label: "temp log retention" },
-        { value: "$299", label: "from /month" },
+        { value: "$1,499", label: "from /month + GST" },
         { value: "RSA + FSS", label: "tracking built-in" },
       ],
     },
@@ -88,7 +88,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       { regulator: "Liquor & Gaming NSW / Vic / QLD / Liquor SA / RSA WA", basis: "Liquor licence + RSA" },
       { regulator: "SafeWork (state)", basis: "WHS Act for staff safety" },
     ],
-    pricing_anchor: "$299/month — covers WHS AND Food Safety AND RSA tracking.",
+    pricing_anchor: "From A$1,499/month + GST — covers WHS AND Food Safety AND RSA tracking.",
     final_cta: "Stop juggling Food Safety, WHS and RSA across three systems.",
   },
   transport: {
@@ -102,7 +102,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       stats: [
         { value: "HVNL", label: "primary-duty aligned" },
         { value: "3 years", label: "fatigue record retention" },
-        { value: "$349", label: "from /month" },
+        { value: "$1,499", label: "from /month + GST" },
         { value: "Std/BFM/AFM", label: "all options supported" },
       ],
     },
@@ -126,7 +126,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       { regulator: "SafeWork (state)", basis: "WHS Act for driver safety" },
       { regulator: "Comcare", basis: "Federal-jurisdiction operators" },
     ],
-    pricing_anchor: "$349/month — covers CoR, WHS, and fleet.",
+    pricing_anchor: "From A$1,499/month + GST — covers CoR, WHS, and fleet.",
     final_cta: "NHVR audits don't wait for your paperwork to catch up.",
   },
   healthcare: {
@@ -140,7 +140,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       stats: [
         { value: "8 standards", label: "ACQSC aligned" },
         { value: "Daily", label: "AHPRA register checks" },
-        { value: "$399", label: "from /month" },
+        { value: "$2,499", label: "from /month + GST" },
         { value: "<1hr", label: "to onboard" },
       ],
     },
@@ -164,7 +164,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       { regulator: "AHPRA", basis: "Health Practitioner Regulation National Law" },
       { regulator: "SafeWork (state)", basis: "WHS Act for clinician safety" },
     ],
-    pricing_anchor: "$399/month — covers WHS AND Care Quality AND credential monitoring.",
+    pricing_anchor: "From A$2,499/month + GST — covers WHS AND Care Quality AND credential monitoring.",
     final_cta: "ACQSC and NDIS auditors don't accept 'we're working on it'.",
   },
   retail: {
@@ -178,7 +178,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       stats: [
         { value: "3-min", label: "casual induction" },
         { value: "Per-business", label: "pricing (no per-user)" },
-        { value: "$249", label: "from /month" },
+        { value: "$999", label: "from /month + GST" },
         { value: "Bulk QR", label: "induction" },
       ],
     },
@@ -201,7 +201,7 @@ export const INDUSTRY_PAGE_CONFIG = {
       { regulator: "Fair Work Ombudsman", basis: "Casual employment + induction obligations" },
       { regulator: "ACCC / state consumer law", basis: "Customer safety duty of care" },
     ],
-    pricing_anchor: "$249/month — for the whole store, no per-staff costs.",
+    pricing_anchor: "From A$999/month + GST — for the whole store, no per-staff costs.",
     final_cta: "Casual hire to ASIC audit — covered.",
   },
 };
