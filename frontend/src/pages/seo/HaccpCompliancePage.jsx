@@ -13,7 +13,7 @@ export default function HaccpCompliancePage() {
       industry="hospitality"
       accent="#7C1D3F"
       regulators={["FSANZ", "Local Councils", "State Liquor and Gaming"]}
-      roiAnchor="Hospitality businesses currently pay A$400 to A$700 per month across three fragmented tools. SafeBase Single Venue at A$7,990/year + GST replaces all of them and adds full WHS."
+      roiAnchor="Hospitality businesses currently pay A$400 to A$700 per month across three fragmented tools. SafeBase Single Venue at A$11,990/year + GST replaces all of them and adds full WHS."
       painPoints={[
         { title: "Temperature logs missed during rush", body: "Standard 3.2.2A requires documented temperature records. Paper clipboards get missed on Friday night. Council inspectors arrive Monday." },
         { title: "Allergen register out of date", body: "Menu changes every week. Allergen register updates every quarter. The gap is a death-response waiting to happen." },
@@ -31,8 +31,8 @@ export default function HaccpCompliancePage() {
         "IoT temperature sensor webhook (when ready)",
       ]}
       plans={[
-        { name: "Single Venue", annual: "7,990", monthly: "799" },
-        { name: "Multi-Venue", annual: "22,990", monthly: "2,299" },
+        { name: "Single Venue", annual: "11,990", monthly: "1,199" },
+        { name: "Multi-Venue", annual: "34,990", monthly: "3,499" },
       ]}
       faq={[
         { q: "Does SafeBase replace my food-safety program?", a: "SafeBase generates the HACCP program, captures the daily evidence, and produces the council inspection pack. You retain ownership; SafeBase removes the admin." },

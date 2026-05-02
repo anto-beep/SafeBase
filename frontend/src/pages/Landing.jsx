@@ -206,10 +206,10 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-border border border-border">
             {[
-              { n: "Solo Tradie", p: "399", u: "1 user", features: ["Unlimited SWMS", "Incident register", "10 worker profiles", "Licence tracking"] },
-              { n: "Small Team", p: "799", u: "up to 5 users", features: ["Everything in Solo Tradie", "Contractor compliance", "AI pattern detection", "SafeInduct included"] },
-              { n: "Growing Business", p: "1,299", u: "up to 20 users", highlight: true, features: ["Everything in Small Team", "Multi-site", "SafeCheck included", "SafeBase Academy included"] },
-              { n: "Enterprise", p: "2,199", u: "up to 50 users", accent: true, features: ["All add-ons included", "Dedicated Account Manager", "API · SSO · Webhooks", "Quarterly Business Reviews"] },
+              { n: "Solo Tradie", p: "599", u: "1 user", features: ["Unlimited SWMS", "Incident register", "10 worker profiles", "Licence tracking"] },
+              { n: "Small Team", p: "1,199", u: "up to 5 users", features: ["Everything in Solo Tradie", "Contractor compliance", "AI pattern detection", "SafeInduct included"] },
+              { n: "Growing Business", p: "1,899", u: "up to 20 users", highlight: true, features: ["Everything in Small Team", "Multi-site", "SafeCheck included", "SafeBase Academy included"] },
+              { n: "Enterprise", p: "2,999", u: "up to 50 users", accent: true, features: ["All add-ons included", "Dedicated Account Manager", "API · SSO · Webhooks", "Quarterly Business Reviews"] },
             ].map((t) => (
               <div
                 key={t.n}
@@ -231,7 +231,7 @@ export default function Landing() {
               </div>
             ))}
           </div>
-          <p className="mt-8 text-center text-muted-foreground text-sm">All plans include free SWMS generation, incident register, and licence tracking. 14-day free trial. No credit card required.<br />Pay annually and get 2 months free — Sole Trader A$2,490/yr · Small Business A$4,990/yr · Growing Business A$7,990/yr · Enterprise A$12,990/yr (all + GST)</p>
+          <p className="mt-8 text-center text-muted-foreground text-sm">All plans include free SWMS generation, incident register, and licence tracking. 14-day free trial. No credit card required.<br />Pay annually and save — Solo Tradie A$5,990/yr · Small Team A$11,990/yr · Growing Business A$18,990/yr · Enterprise A$29,990/yr (all + GST)</p>
           <div className="mt-8 text-center flex flex-wrap gap-3 justify-center">
             <Link to="/pricing"><Button className="btn-sharp bg-ink text-white hover:bg-authority h-12 px-6" data-testid="cta-pricing">See full pricing <ArrowRight className="ml-2" /></Button></Link>
             <Link to="/enterprise"><Button variant="outline" className="btn-sharp border-[#1B3A5C] text-[#1B3A5C] hover:bg-[#1B3A5C] hover:text-white h-12 px-6" data-testid="cta-enterprise">Enterprise & demo <ArrowRight className="ml-2" /></Button></Link>

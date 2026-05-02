@@ -14,7 +14,7 @@ export default function TradeCheck() {
             <div className="label-eyebrow mb-3">/ SafeCheck</div>
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">Contractor Verification<br />for Every<br /><span className="bg-warning px-2">Industry.</span></h1>
             <p className="mt-8 text-lg text-muted-foreground max-w-2xl">Trade licences. AHPRA registrations. Heavy vehicle endorsements. Food safety certificates. RSA credentials. SafeCheck verifies every credential type for every industry your business operates in.</p>
-            <p className="mt-4 text-sm text-muted-foreground">A$249/month + GST standalone. Included from Tier 3 on every industry plan.</p>
+            <p className="mt-4 text-sm text-muted-foreground">A$299/month + GST standalone. Included from Tier 3 on every industry plan.</p>
             <div className="mt-8 flex gap-3">
               <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="check-cta">Start Free Trial <ArrowRight className="ml-2" /></Button></Link>
             </div>

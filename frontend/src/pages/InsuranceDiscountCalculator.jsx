@@ -14,11 +14,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "@phosphor-icons/react";
 
 const INDUSTRY_OPTS = [
-  { slug: "trades",      label: "Trades and Construction", baseDiscount: 12, safebase: 3990 },
-  { slug: "retail",      label: "Retail",                    baseDiscount: 7,  safebase: 5490 },
-  { slug: "hospitality", label: "Hospitality",               baseDiscount: 10, safebase: 7990 },
-  { slug: "transport",   label: "Transport and Logistics",   baseDiscount: 15, safebase: 9990 },
-  { slug: "healthcare",  label: "Healthcare and Aged Care",  baseDiscount: 8,  safebase: 14990 },
+  { slug: "trades",      label: "Trades and Construction", baseDiscount: 12, safebase: 5990 },
+  { slug: "retail",      label: "Retail",                    baseDiscount: 7,  safebase: 7990 },
+  { slug: "hospitality", label: "Hospitality",               baseDiscount: 10, safebase: 11990 },
+  { slug: "transport",   label: "Transport and Logistics",   baseDiscount: 15, safebase: 14990 },
+  { slug: "healthcare",  label: "Healthcare and Aged Care",  baseDiscount: 8,  safebase: 24990 },
 ];
 
 const MATURITY = [

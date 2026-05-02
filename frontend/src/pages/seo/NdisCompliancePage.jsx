@@ -14,7 +14,7 @@ export default function NdisCompliancePage() {
       industry="healthcare"
       accent="#2196A6"
       regulators={["NDIS Commission", "AHPRA", "NDIS Quality and Safeguards Framework"]}
-      roiAnchor="NDIS Commission audit preparation costs A$5,000 to A$20,000 per cycle. SafeBase Solo Practice at A$14,990/year + GST replaces that engagement and delivers continuous evidence."
+      roiAnchor="NDIS Commission audit preparation costs A$5,000 to A$20,000 per cycle. SafeBase Solo Practice at A$24,990/year + GST replaces that engagement and delivers continuous evidence."
       painPoints={[
         { title: "Reportable incident 24-hour window", body: "Serious incidents require notification to the NDIS Commission within 24 hours. Most providers miss the clock because the category matrix is complex." },
         { title: "Worker screening lapses", body: "A worker whose NDIS clearance lapses exposes the provider to regulatory action and participant safety risk. Manual tracking fails." },
@@ -31,8 +31,8 @@ export default function NdisCompliancePage() {
         "Works alongside your existing CRM, HRIS and financial system",
       ]}
       plans={[
-        { name: "Solo Practice", annual: "14,990", monthly: "1,499" },
-        { name: "Multi-Site", annual: "44,990", monthly: "4,499" },
+        { name: "Solo Practice", annual: "24,990", monthly: "2,499" },
+        { name: "Multi-Site", annual: "79,990", monthly: "7,999" },
       ]}
       faq={[
         { q: "Does SafeBase integrate with the NDIS Commission portal?", a: "SafeBase generates the evidence and fills the forms; the final submission to the NDIS Commission portal is human-confirmed so control over what is submitted stays with you." },

@@ -21,7 +21,7 @@ export default function TradeInduct() {
             <div className="label-eyebrow mb-3">/ SafeInduct</div>
             <h1 className="font-display text-5xl lg:text-7xl font-black tracking-tighter leading-[0.95]">QR-Based Inductions<br />for Every<br /><span className="bg-warning px-2">Industry.</span></h1>
             <p className="mt-8 text-lg text-muted-foreground max-w-2xl">Construction workers on site. Casual staff in a venue. Contractor drivers at a depot. Agency nurses at a clinic. Every induction recorded, every industry served, one platform.</p>
-            <p className="mt-4 text-sm text-muted-foreground">A$199/month + GST standalone. Included from Tier 2 on every industry plan.</p>
+            <p className="mt-4 text-sm text-muted-foreground">A$249/month + GST standalone. Included from Tier 2 on every industry plan.</p>
             <div className="mt-8 flex gap-3">
               <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="induct-cta">Start Free Trial <ArrowRight className="ml-2" /></Button></Link>
             </div>

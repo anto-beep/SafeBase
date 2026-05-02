@@ -129,10 +129,10 @@ export default function ServiceSwms() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border">
             {[
-              { code: "01", t: "SafeBase Core", d: "Compliance documents, incident management, credential tracking, risk register — configured for your industry.", p: "from A$399/mo + GST" },
-              { code: "02", t: "SafeInduct", d: "QR-based inductions for sites, venues, depots, clinics and stores. AI-generated location-specific inductions.", p: "A$199/mo + GST · included Tier 2+" },
-              { code: "03", t: "SafeCheck", d: "Portable compliance credential — verified licences, AHPRA, RSA certificates and insurances in one QR code.", p: "A$249/mo + GST · included Tier 3+" },
-              { code: "04", t: "SafeBase Academy", d: "Industry-specific microlearning and full certification courses. Completion syncs to your compliance dashboard.", p: "from A$349/mo + GST · included Tier 3+" },
+              { code: "01", t: "SafeBase Core", d: "Compliance documents, incident management, credential tracking, risk register — configured for your industry.", p: "from A$599/mo + GST" },
+              { code: "02", t: "SafeInduct", d: "QR-based inductions for sites, venues, depots, clinics and stores. AI-generated location-specific inductions.", p: "A$249/mo + GST · included Tier 2+" },
+              { code: "03", t: "SafeCheck", d: "Portable compliance credential — verified licences, AHPRA, RSA certificates and insurances in one QR code.", p: "A$299/mo + GST · included Tier 3+" },
+              { code: "04", t: "SafeBase Academy", d: "Industry-specific microlearning and full certification courses. Completion syncs to your compliance dashboard.", p: "from A$399/mo + GST · included Tier 3+" },
               { code: "05", t: "SafeBase for Franchises", d: "One compliance standard across every franchise location. Master template library, network-wide dashboards.", p: "from A$119/mo per location + GST" },
               { code: "06", t: "WHS Consulting", d: "Human WHS expert support powered by SafeBase data — setup, retainer, investigation, regulator audit prep.", p: "from A$1,800/mo + GST" },
             ].map((prod) => (

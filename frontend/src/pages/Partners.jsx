@@ -70,13 +70,13 @@ export default function Partners() {
           <div className="bg-ink text-white p-8">
             <div className="label-eyebrow text-warning">/ A typical partner P&L</div>
             <div className="mt-6 space-y-2 font-mono text-sm">
-              <div className="flex justify-between border-b border-white/10 py-2"><span>10 clients × A$1,499/mo × 15%</span><span>+A$2,248.50</span></div>
-              <div className="flex justify-between border-b border-white/10 py-2"><span>25 clients (mixed industries)</span><span>+A$5,621.25</span></div>
-              <div className="flex justify-between border-b border-white/10 py-2"><span>50 clients (franchise roll-out)</span><span>+A$12,742.50</span></div>
-              <div className="flex justify-between border-b border-white/10 py-2"><span>Partner subscription</span><span className="text-destructive">−A$1,999/mo + GST</span></div>
-              <div className="flex justify-between py-2 text-warning font-bold"><span>Single Healthcare Enterprise client</span><span>+A$2,099.85/mo</span></div>
+              <div className="flex justify-between border-b border-white/10 py-2"><span>10 clients × A$2,499/mo × 15%</span><span>+A$3,748.50</span></div>
+              <div className="flex justify-between border-b border-white/10 py-2"><span>25 clients (mixed industries)</span><span>+A$9,371.25</span></div>
+              <div className="flex justify-between border-b border-white/10 py-2"><span>50 clients (mixed industries avg A$2,499/mo)</span><span>+A$18,742.50</span></div>
+              <div className="flex justify-between border-b border-white/10 py-2"><span>Partner subscription</span><span className="text-destructive">−A$2,499/mo + GST</span></div>
+              <div className="flex justify-between py-2 text-warning font-bold"><span>Single Healthcare Enterprise client (A$17,999/mo × 15%)</span><span>+A$2,699.85/mo</span></div>
             </div>
-            <p className="mt-4 text-xs text-white/60">A single Healthcare Enterprise client generates A$25,198.20 + GST in annual commission — one conversation with the right aged care organisation pays for your partner subscription more than 14 times over.</p>
+            <p className="mt-4 text-xs text-white/60">A single Healthcare Enterprise client at A$17,999/mo generates A$2,699.85/mo in commission — exceeding your monthly partner fee outright. One conversation with the right aged care organisation more than covers your program cost for the year.</p>
           </div>
         </div>
       </section>

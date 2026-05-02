@@ -8,7 +8,7 @@ const COPY = {
   users: {
     title: "You've hit the 20-user limit",
     headline: "Scale past 20 workers with Enterprise.",
-    body: "The Growing Business plan covers up to 20 users. Unlimited users, SSO, a dedicated Account Manager and custom onboarding come standard on Enterprise — A$1,299/mo + GST.",
+    body: "The Growing Business plan covers up to 20 users. Unlimited users, SSO, a dedicated Account Manager and custom onboarding come standard on Enterprise — A$2,999/mo + GST.",
     perks: [
       "Unlimited users & SSO (SAML/Okta)",
       "Dedicated Account Manager",
@@ -19,7 +19,7 @@ const COPY = {
   api: {
     title: "API access is an Enterprise feature",
     headline: "Build your own integrations.",
-    body: "REST API, webhooks and custom data pipelines are bundled with Enterprise — A$1,299/mo + GST. Connect SafeBase to your ERP, HRIS or BI stack.",
+    body: "REST API, webhooks and custom data pipelines are bundled with Enterprise — A$2,999/mo + GST. Connect SafeBase to your ERP, HRIS or BI stack.",
     perks: [
       "Full REST API + outbound webhooks",
       "Rate-limit increases on request",
@@ -30,7 +30,7 @@ const COPY = {
   reports: {
     title: "You've generated 5+ reports this month",
     headline: "Unlimited reporting on Enterprise.",
-    body: "You're clearly running a reporting-heavy operation. Enterprise removes the cap and unlocks scheduled report delivery, custom report templates and multi-entity consolidation — A$1,299/mo + GST.",
+    body: "You're clearly running a reporting-heavy operation. Enterprise removes the cap and unlocks scheduled report delivery, custom report templates and multi-entity consolidation — A$2,999/mo + GST.",
     perks: [
       "Unlimited report generations",
       "Scheduled email delivery (daily / weekly / monthly)",
@@ -41,7 +41,7 @@ const COPY = {
   sites: {
     title: "You're managing 6+ active sites",
     headline: "Multi-site dashboards on Enterprise.",
-    body: "Growing Business is sized for up to 5 active sites. Enterprise gives you a consolidated view across every site, region and ABN — A$1,299/mo + GST.",
+    body: "Growing Business is sized for up to 5 active sites. Enterprise gives you a consolidated view across every site, region and ABN — A$2,999/mo + GST.",
     perks: [
       "Unlimited sites & project groups",
       "Regional / branch / franchise rollups",
@@ -84,8 +84,8 @@ export default function EnterpriseUpsellModal({ open, onOpenChange, trigger = "u
           </ul>
           <div className="mt-6 flex items-center justify-between flex-wrap gap-3 border-t border-border pt-6">
             <div>
-              <div className="font-display text-2xl font-black tracking-tighter">A$1,299<span className="text-base font-bold">/mo + GST</span></div>
-              <div className="text-xs text-muted-foreground">Annual: A$12,990 + GST (2 months free)</div>
+              <div className="font-display text-2xl font-black tracking-tighter">A$2,999<span className="text-base font-bold">/mo + GST</span></div>
+              <div className="text-xs text-muted-foreground">Annual: A$29,990 + GST (save A$5,998)</div>
             </div>
             <div className="flex gap-2">
               <Link to="/enterprise">

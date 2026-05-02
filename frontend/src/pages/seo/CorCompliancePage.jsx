@@ -13,7 +13,7 @@ export default function CorCompliancePage() {
       industry="transport"
       accent="#0DC4B5"
       regulators={["NHVR", "HVNL", "State Road Transport Authorities"]}
-      roiAnchor="One CoR criminal defence costs A$50,000 to A$200,000 in legal fees before any finding is made. SafeBase Owner-Operator at A$9,990/year + GST is less than one week of legal fees."
+      roiAnchor="One CoR criminal defence costs A$50,000 to A$200,000 in legal fees before any finding is made. SafeBase Owner-Operator at A$14,990/year + GST is less than one month of legal fees."
       painPoints={[
         { title: "Fatigue records scattered across paper diaries", body: "NHVR expects auditable fatigue records for every driver, every day. Paper-diary backup is increasingly rejected as evidence." },
         { title: "NHVR Notifiable Occurrences 24h deadline", body: "Serious occurrences require notification within 24 hours. Missed deadlines escalate the regulatory response." },
@@ -30,8 +30,8 @@ export default function CorCompliancePage() {
         "Driver credential register (HR/MC, HVA, medical, fatigue)",
       ]}
       plans={[
-        { name: "Owner-Operator", annual: "9,990", monthly: "999" },
-        { name: "Growing Fleet", annual: "27,990", monthly: "2,799" },
+        { name: "Owner-Operator", annual: "14,990", monthly: "1,499" },
+        { name: "Growing Fleet", annual: "42,990", monthly: "4,299" },
       ]}
       faq={[
         { q: "Does SafeBase replace my EWD (Electronic Work Diary)?", a: "No — SafeBase ingests from approved EWD providers via the integration webhook so your fatigue data flows into the compliance record automatically while you retain your approved EWD." },

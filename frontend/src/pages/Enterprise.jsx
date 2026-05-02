@@ -20,7 +20,7 @@ const PERSONAS = [
 
 const FEATURES = [
   { title: "Up to 50 named users", sub: "Additional users quoted on request. Enterprise+ quotes available beyond 60 users." },
-  { title: "All add-ons included", sub: "SafeInduct (A$199/mo), SafeCheck (A$249/mo), SafeBase Academy 30 workers (A$599/mo) — A$12,564/year in included value." },
+  { title: "All add-ons included", sub: "SafeInduct (A$249/mo), SafeCheck (A$299/mo), SafeBase Academy 30 workers (A$699/mo) — A$14,964/year in included value." },
   { title: "Dedicated Account Manager", sub: "A named SafeBase specialist who knows your business, by phone and email." },
   { title: "Quarterly Business Reviews", sub: "60-minute structured reviews covering score, incidents, credential forecast, and legislation." },
   { title: "Priority phone support · 4h SLA", sub: "Business-hours phone with a 4-hour response SLA." },
@@ -44,7 +44,7 @@ export default function Enterprise() {
   const [roiUsers, setRoiUsers] = useState(25);
   const [roiHours, setRoiHours] = useState(4);
   const RATE = 120;
-  const ENT_MO = 2199; // Trades Enterprise entry price; healthcare enterprise is A$13,999/mo
+  const ENT_MO = 2999; // Trades Enterprise entry price; healthcare enterprise is A$17,999/mo
   const monthlySaved = roiUsers * roiHours * RATE;
   const netMonthly = monthlySaved - ENT_MO;
   const annualNet = netMonthly * 12;
@@ -84,13 +84,13 @@ export default function Enterprise() {
           <div className="mt-10 flex flex-wrap gap-6 items-center">
             <div className="border-l-2 border-warning pl-4">
               <div className="label-eyebrow text-warning">Trades Enterprise from</div>
-              <div className="font-display text-4xl font-black">A$2,199<span className="text-lg font-normal">/month + GST</span></div>
-              <div className="text-xs text-white/60 mt-1">A$21,990/year + GST</div>
+              <div className="font-display text-4xl font-black">A$2,999<span className="text-lg font-normal">/month + GST</span></div>
+              <div className="text-xs text-white/60 mt-1">A$29,990/year + GST</div>
             </div>
             <div className="border-l-2 border-warning pl-4">
               <div className="label-eyebrow text-warning">Healthcare Enterprise from</div>
-              <div className="font-display text-4xl font-black">A$13,999<span className="text-lg font-normal">/month + GST</span></div>
-              <div className="text-xs text-white/60 mt-1">A$139,990/year + GST · up to 60 users</div>
+              <div className="font-display text-4xl font-black">A$17,999<span className="text-lg font-normal">/month + GST</span></div>
+              <div className="text-xs text-white/60 mt-1">A$179,990/year + GST · up to 60 users</div>
             </div>
             <div className="text-sm text-white/60 max-w-md">
               All Enterprise plans include all add-ons, Dedicated Account Manager, 4-hour SLA and quarterly business reviews.
@@ -261,8 +261,8 @@ export default function Enterprise() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
             <div className="border-2 border-[#1B3A5C] bg-[#1B3A5C] text-white p-6" data-testid="roi-enterprise">
               <div className="label-eyebrow text-warning">Trades Enterprise</div>
-              <div className="font-display text-3xl font-black mt-2">A$2,199<span className="text-sm font-normal">/mo + GST</span></div>
-              <div className="text-sm text-white/70 mt-1">A$21,990/yr + GST (annual)</div>
+              <div className="font-display text-3xl font-black mt-2">A$2,999<span className="text-sm font-normal">/mo + GST</span></div>
+              <div className="text-sm text-white/70 mt-1">A$29,990/yr + GST (annual)</div>
               <ul className="mt-4 space-y-1 text-sm">
                 <li>Up to 50 users</li>
                 <li>Unlimited sites</li>
@@ -298,7 +298,7 @@ export default function Enterprise() {
             </div>
           </div>
           <div className="mt-8 bg-warning border-2 border-ink p-5 text-center font-bold">
-            SafeBase Enterprise at A$12,990/year is 6.5% of the average WorkSafe fine. Before the legal costs.
+            SafeBase Enterprise at A$29,990/year is 25.6% of the average WorkSafe fine. Before the legal costs.
           </div>
         </div>
       </section>
