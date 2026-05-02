@@ -6,23 +6,35 @@ WHS compliance SaaS — originally for Australian trade businesses (SafeTradie),
 ## Users
 Business owner (primary) · Safety manager · Supervisor · Worker · WHS consultant · Franchisor
 
-## Definitive Pricing (Iter40 — final, all + GST)
+## Definitive Pricing (Iter41 — final, all + GST)
 
 | Industry | Tier 1 | Tier 2 | Tier 3 | Enterprise |
 |---|---|---|---|---|
-| Trades | A$5,990 (1u) | A$11,990 (5u) | A$18,990 (20u) | A$29,990 (50u) |
-| Retail | A$7,990 (5u) | A$15,990 (15u) | A$24,990 (30u) | A$39,990 (50u) |
-| Hospitality | A$11,990 (3u) | A$22,990 (8u) | A$34,990 (20u) | A$54,990 (50u) |
+| Trades | A$7,990 (1u) | A$15,990 (5u) | A$24,990 (20u) | A$39,990 (50u) |
+| Retail | A$9,990 (5u) | A$19,990 (15u) | A$29,990 (30u) | A$49,990 (50u) |
+| Hospitality | A$14,990 (3u) | A$29,990 (8u) | A$44,990 (20u) | A$69,990 (50u) |
 | Transport | A$14,990 (3u) | A$27,990 (10u) | A$42,990 (25u) | A$69,990 (50u) |
 | Healthcare | A$24,990 (5u) | A$49,990 (15u) | A$79,990 (30u) | A$179,990 (60u) |
 
-Add-ons: SafeInduct A$249/mo · SafeCheck A$299/mo · Academy A$399/A$699/A$999 · White-Label Partner A$2,499/mo · Consulting A$2,500–A$4,000/mo.
+Add-ons: SafeInduct A$299/mo · SafeCheck A$349/mo · Academy A$499/A$799/A$1,099 · White-Label Partner A$2,999/mo · Consulting A$2,500–A$4,500/mo.
 
-Franchise per-location: A$199 (1-49) · A$179 (50-199) · A$149 (200+). Network setup from A$25,000.
+Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network setup from A$25,000.
 
 ---
 
 ## Implemented
+
+### Iteration 41 — Definitive Final Pricing + P0 Regulator Pipeline Automation (Feb 2026)
+- **Pricing uplift** — trades (+33%), hospitality (+30%), retail (+25%) all raised; transport + healthcare unchanged. Every ROI statement rewritten with new multipliers (trades 6.9% of one fine; hospitality less than five months of consulting retainer; retail less than minimum excess on public liability). All add-on prices bumped: SafeInduct A$249→A$299, SafeCheck A$299→A$349, Academy A$399/699/999→A$499/799/1099, Partner A$2,499→A$2,999. Franchise per-location A$199/179/149→A$229/199/169.
+- **Files touched** (same ripple as Iter40): `pricing.config.js`, `billing.py` (40 Stripe tiers), `iter39_aux.py` PRICING+RISK_ANCHOR, BillingPanel (20 tier strings), Enterprise (A$3,999/A$39,990 + 34.2% anchor), Dashboard upsell, Ecosystem, ServiceSwms, Settings, Academy/TradeInduct/TradeCheck, IndustryRiskCalculator 5 anchors, CredentialExpiry + InsuranceDiscount calculators, PlanRightsizer, Franchises (A$22,900/mo · A$274,800/yr · A$229/199/169), Partners, SEO HACCP (A$14,990 + new roiAnchor + plans), EnterpriseUpsellModal, Landing homepage. SeoLandingPage also now renders the `plans` prop (Single Venue A$14,990 + Multi-Venue A$44,990 on HACCP etc).
+- **P0: Regulator Pipeline Automation** — new `/app/backend/routes/regulator_pipeline.py`:
+  - `POST /api/regulator-pipeline/triage` — classifies an incident against 3 matrices (SIRS P1/P2, NDIS Immediate/5-day, NHVR Immediate). Returns matches with deadline_at, statutory basis, channel URL, and a per-pipeline pre-submission checklist.
+  - `POST /api/regulator-pipeline/draft` — creates a case document (status='draft') with full match context. Returns 400 if the description doesn't trigger any pipeline.
+  - `GET /api/regulator-pipeline/pending` — lists account cases awaiting submission with `earliest_deadline_at`, `hours_remaining`, `overdue` flag.
+  - `POST /api/regulator-pipeline/mark-submitted/{case_id}` — transitions case to `submitted` with reference number.
+  - `GET /api/regulator-pipeline/matrices` — public reference (19 SIRS P1 triggers, 7 SIRS P2, 14 NDIS Immediate, 5 NDIS 5-day, 9 NHVR Immediate).
+- **Frontend** — new `/dashboard/regulator-cases` page (triage form + pending list with 'mark submitted' flow) + `RegulatorPipelineWidget` on Dashboard (silent when no cases, surfaces deadlines when active). Owner-only sidebar link `nav-regulator-cases`.
+- **Testing** (`iteration_41.json`): backend 27/27 PASS, frontend ~90% — all pricing correct across /pricing (5 tabs × 4 tiers), /enterprise, /franchises, /partners, calculators, homepage, SEO HACCP. End-to-end regulator flow verified (healthcare death → 2 matches, transport rollover → NHVR Immediate, trades minor cut → 0 matches; draft → pending → mark-submitted lifecycle). `retest_needed: False`.
 
 ### Iteration 40 — Definitive Pricing Overhaul + Credential-Gated Scheduling (Feb 2026)
 - **Master pricing config rewritten** (`/app/frontend/src/data/pricing.config.js`) with Iter40 numbers across all 5 industries including new ROI statements + value callouts reflecting the new maths (trades 5.1% of one fine · healthcare A$24,990 less than two ACQSC engagements · transport less than one month CoR legal fees · hospitality less than three days of venue closure · retail less than one preventable injury claim).

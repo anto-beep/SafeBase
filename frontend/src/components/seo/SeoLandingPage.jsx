@@ -141,6 +141,25 @@ export default function SeoLandingPage({
         </div>
       </section>
 
+      {/* PLAN PREVIEW — show entry + enterprise tier for this industry */}
+      {plans && plans.length > 0 && (
+        <section className="py-16 px-6 border-b border-border bg-background" data-testid={`${testid}-plans`}>
+          <div className="max-w-5xl mx-auto">
+            <div className="label-eyebrow mb-3">/ Plans for this industry</div>
+            <h2 className="font-display text-3xl font-black tracking-tighter">Pricing without games.</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+              {plans.map((p) => (
+                <div key={p.name} className="border-2 border-ink bg-white p-6" data-testid={`${testid}-plan-${p.name.toLowerCase().replace(/\s+/g,'-')}`}>
+                  <div className="label-eyebrow">{p.name}</div>
+                  <div className="font-display font-black text-5xl tracking-tighter mt-3" style={{ color: accent }}>A${p.annual}<span className="text-lg text-ink"> /yr + GST</span></div>
+                  <div className="text-xs text-muted-foreground mt-1">or A${p.monthly}/mo + GST</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* FAQ */}
       <section className="py-20 px-6">
         <div className="max-w-3xl mx-auto">
