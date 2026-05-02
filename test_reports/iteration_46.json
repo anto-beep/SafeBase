@@ -1,0 +1,35 @@
+{
+  "summary": "Iter46 — Per-industry product-tour wiring verified end-to-end. Homepage <ProductTour switcher /> renders 5 tabs (trades/hospitality/transport/healthcare/retail). Clicking each tab swaps the 4 figures to the correct /product-tour/{industry}-{overview|swms|licences|risk}.png with naturalWidth=3200 (real screenshots loading). Active tab inline borderColor matches the spec'd accent (FFCC00/7C1D3F/0DC4B5/2196A6/A855F7). CTA text + href update per active industry (e.g. retail → 'Start free trial in Retail' → /register?industry=retail; secondary link → /industries/retail). All 5 /industries/{slug} pages render <FixedTour /> with eyebrow containing the industry uppercase token, heading mentioning the industry label (incl. 'Healthcare & Aged Care'), 4 figures sourcing the matching PNGs, and CTA tour-{industry}-cta → /register?industry={industry}. All 20 PNGs return HTTP 200 on the public domain (167KB–335KB each). Regression: industry-dash-section-{slug} renders for all 5 slugs (review request had a typo 'safe-systems'; actual testid uses {industry-slug}); homepage 'Priced for Your Industry' still shows monthly-primary pricing. Backend login owner@safetradie.demo / Demo@1234 returns 200 with industry='trades' (correctly restored).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor: review request used data-testid='industry-dash-section-safe-systems' but the live code emits data-testid=`industry-dash-section-${slug}` (e.g. industry-dash-section-trades). The IndustryDashboardPreview component is rendering correctly for all 5 industries; only the testid string in the brief was misquoted. No code change needed.",
+    "Legacy unused PNGs still in /app/frontend/public/product-tour/ (dashboard-overview.png, swms-library.png, licences.png, risk-register.png). Harmless but dead-weight — safe to delete in a future cleanup pass."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (login confirmed working; account industry='trades')",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter46 validated per-industry product tour. Homepage tabbed switcher (data-testid='home-product-tour' with home-tour-tab-{industry} buttons and home-tour-{industry}-{overview|swms|licences|risk} figures) and per-industry FixedTour (data-testid='industry-product-tour-{industry}' with tour-{industry}-{shot} figures) both work. All 20 PNGs verified 200 with naturalWidth=3200. Active tab inline borderColor verified per industry. CTA hrefs verified per industry. No bugs found; nothing to retest.",
+  "verification_matrix": {
+    "20_pngs_http_200": true,
+    "homepage_5_tabs_present": true,
+    "homepage_tab_swap_changes_4_figures_per_industry": true,
+    "homepage_active_tab_accent_color_correct": "trades=#FFCC00, hospitality=#7C1D3F, transport=#0DC4B5, healthcare=#2196A6, retail=#A855F7 — all verified via inline style.borderColor",
+    "homepage_cta_text_and_href_per_industry": "verified for all 5",
+    "industry_pages_all_5_render_FixedTour": true,
+    "industry_eyebrow_and_heading_correct": true,
+    "industry_cta_href_correct": true,
+    "regression_industry_dash_preview": "renders for all 5 (testid: industry-dash-section-{slug})",
+    "regression_pricing_monthly_primary": true,
+    "backend_login_owner_demo": "200 OK, industry=trades restored"
+  }
+}

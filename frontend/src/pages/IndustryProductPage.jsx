@@ -5,6 +5,7 @@ import { ArrowRight, Check, FileText, GraduationCap, Plug, ChartBar, ShieldCheck
 import { INDUSTRY_PAGE_CONFIG } from "@/data/industry-pages.config";
 import { INDUSTRY_RESOURCES } from "@/data/resources.config";
 import IndustryDashboardPreview from "@/components/industry/IndustryDashboardPreview";
+import ProductTour from "@/components/marketing/ProductTour";
 
 const TESTIMONIALS = {
   trades: [
@@ -245,6 +246,9 @@ export default function IndustryProductPage({ industry }) {
           </div>
         </div>
       </section>
+
+      {/* 11b. PRODUCT TOUR — real captured screenshots, configured for this industry */}
+      <ProductTour industry={industry} />
 
       {/* 12. FINAL CTA */}
       <section className="bg-ink text-white py-16 px-6" data-testid={`industry-final-cta-${industry}`} style={{ borderTop: `6px solid ${cfg.accent}` }}>
