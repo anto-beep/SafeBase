@@ -24,6 +24,19 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 43 — API Access on Every Plan + Real API-Key CRUD + Industry Integration Targets (Feb 2026)
+- **Feature gate change** — `features_registry.py` `api_access` plan_min lowered from `enterprise` to `starter`. Every plan on every industry now has API access.
+- **Backend `/app/backend/routes/api_keys.py`** (NEW) — full CRUD:
+  - `POST /api/api-keys` (owner-only) — mints a 32-char URL-safe token prefixed `sb_live_`, SHA-256 hashed at rest, masked-form `sb_live_…last4` saved alongside. Plaintext returned exactly once.
+  - `GET /api/api-keys` — lists masked keys with active/total counts.
+  - `DELETE /api/api-keys/{id}` — soft-revoke (sets `revoked_at`).
+  - `GET /api/api-keys/integration-targets[?industry=]` — returns curated targets per industry: trades (Xero, MYOB, simPRO, ServiceM8, Procore, Google/MS SSO), hospitality (Deputy, Tanda, Lightspeed, Kounta, iAuditor), transport (Teletrac Navman, EZY2C, iFleet, TransVirtual, NHVR portal), healthcare (Epi-Connect, Leecare, AHPRA register, NDIS PACE, Humanforce), retail (Deputy, Shopify, Vend/Lightspeed Retail, Square) — plus 4 universal targets (Webhooks, Zapier, Make, REST). Returns rate limits (120/min, 5000/hr, 200 burst) and scope options (read/write/webhook).
+- **`server.py get_current_user`** — extended to recognise `sb_live_*` bearer tokens via `routes.api_keys.resolve_api_key()`. JWT path unchanged. Long-lived API tokens authenticate every existing endpoint with the same scoping (account_id, role, industry).
+- **Frontend Settings → API panel** rewritten functional for everyone: generate-key form, one-time plaintext callout (`api-new-token-callout`) with copy-and-dismiss, masked key list with revoke, industry-aware integration targets section with rate-limit + docs link, deep-link to webhooks page.
+- **`pricing.config.js`** — "API access + Webhooks" added to Tier 1 of every industry (Solo Tradie / Single Store / Single Venue / Owner-Operator / Solo Practice). Removed from Tier 4 lists since universal now.
+- **Enterprise page** — "Priority integration + Custom SSO" card clarifies API+Webhooks are STANDARD on every plan; Enterprise adds priority integration support, dedicated engineer, sandbox.
+- **Testing** (`iteration_43.json`): backend 16/16 PASS (create/list/revoke lifecycle, sb_live_* bearer auth on /api/workers + /api/auth/me, invalid → 401, last_used_at updates, integration-targets industry routing, regression Iter40-42 endpoints + 40 billing tiers + features registry). Frontend 100% (settings panel UI per spec, all 5 industry tier-1 lists carry the new bullet, enterprise page messaging correct). One minor leak fix applied post-test (token_hash removed from POST response). `retest_needed: False`.
+
 ### Iteration 42 — P1 Frontend Copy Polish + Auto-Triage on Incident Form (Feb 2026)
 - **Homepage (`HomeMultiIndustry.jsx`)**: subheadline rewritten to exact Part 2 spec wording ("Every industry operates within its own configured ecosystem — documents, credentials, dashboards, and regulatory references built specifically for how your business operates."). Added two new sections: **STAT BAR** (`data-testid='home-stat-bar'`) with 994,178 · A$116,979 · Five industries anchors, and **THE RISK** (`data-testid='home-the-risk'`) with 3 destructive-bordered columns (No documentation · Expired credentials · No investigation record). Industries section gained eyebrow + subheadline per spec.
 - **Login (`Login.jsx`)**: rotating taglines panel now renders a `data-testid='login-taglines'` list of 4 items per spec — "WHS compliance for every industry.", "From the kitchen to the clinic. From the depot to the store.", "Your industry. Your compliance. Your platform.", "AI-powered. Australian-built. Every industry." Industry strip retained below.

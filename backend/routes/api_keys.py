@@ -164,6 +164,7 @@ def register_api_keys_routes(api_router: APIRouter, *, db, get_current_user_dep,
         stamp_account_fn(doc, current_user)
         await db.api_keys.insert_one(dict(doc))
         doc.pop("_id", None)
+        doc.pop("token_hash", None)  # never echo the hash to the client
 
         # Plaintext token returned ONCE — caller MUST store it.
         return {"ok": True, "key": doc, "token": raw, "warning": "Store this token now — it will not be shown again."}
