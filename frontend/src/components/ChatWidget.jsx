@@ -3,7 +3,7 @@
  * Persists session_id + anon_id in localStorage so the conversation survives reloads.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChatCircleDots, X, PaperPlaneRight, Sparkle } from "@phosphor-icons/react";
+import { ChatCircleDots, X, PaperPlaneRight, Cube } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 const SESSION_KEY = "sb_chat_session_v1";
@@ -73,11 +73,14 @@ export default function ChatWidget() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Open SafeBase concierge chat"
+        aria-label="Open SafeBase concierge — Talk to me"
         data-testid="chat-toggle"
-        className={`fixed bottom-5 right-5 z-[9994] w-14 h-14 rounded-full bg-ink text-warning shadow-2xl flex items-center justify-center hover:scale-105 transition-transform focus:outline-none focus:ring-4 focus:ring-warning ${open ? "hidden" : ""}`}
+        className={`fixed bottom-5 right-5 z-[9994] flex items-center gap-2 px-4 py-3 bg-ink text-white border-2 border-ink shadow-2xl hover:bg-authority hover:translate-y-[-2px] transition-transform focus:outline-none focus:ring-4 focus:ring-warning ${open ? "hidden" : ""}`}
       >
-        <ChatCircleDots size={26} weight="fill" />
+        <span className="w-7 h-7 bg-warning flex items-center justify-center shrink-0">
+          <Cube weight="fill" size={16} className="text-ink" />
+        </span>
+        <span className="font-display font-black tracking-tight text-sm uppercase">Talk to me</span>
       </button>
 
       {open && (
@@ -90,11 +93,11 @@ export default function ChatWidget() {
           {/* Header */}
           <header className="bg-ink text-white px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 bg-warning flex items-center justify-center">
-              <Sparkle size={16} weight="fill" className="text-ink" />
+              <Cube size={16} weight="fill" className="text-ink" />
             </div>
             <div className="flex-1">
               <div className="font-display font-black tracking-tight text-sm">SafeBase concierge</div>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-warning">AI · Claude 4.5</div>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-white/60">Ask me anything</div>
             </div>
             <button onClick={startNew} title="Start new conversation" aria-label="Start new conversation" data-testid="chat-new" className="text-white/60 hover:text-white text-[10px] font-mono uppercase tracking-widest">New</button>
             <button onClick={() => setOpen(false)} aria-label="Close chat" data-testid="chat-close" className="text-white/60 hover:text-white">

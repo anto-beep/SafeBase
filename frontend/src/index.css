@@ -87,24 +87,139 @@
 :root { --a11y-font-scale: 1; }
 html { font-size: calc(16px * var(--a11y-font-scale)); }
 
-/* High contrast — black text on white, no muted/grey */
+/* ─── High Contrast (WCAG AAA, ≥7:1) ─────────────────────────────────────
+   Rule: keep visual hierarchy — light surfaces stay light, dark surfaces
+   stay dark. Force black text on light surfaces, force white text on dark
+   surfaces. Yellow #FFEB3B is reserved as the high-vis accent.
+*/
 html[data-a11y-contrast="high"] {
   background: #ffffff !important;
 }
-html[data-a11y-contrast="high"] body,
-html[data-a11y-contrast="high"] body * {
+html[data-a11y-contrast="high"] body {
   color: #000000 !important;
-  background-color: transparent !important;
+  background-color: #ffffff !important;
+}
+
+/* Default: black-on-white for all elements */
+html[data-a11y-contrast="high"] body *:not(svg):not(svg *):not(img):not(video):not(iframe) {
+  color: #000000;
+  border-color: #000000;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* DARK SURFACES — keep dark bg, force WHITE text. Match Tailwind utility classes
+   used across the app: bg-ink (=#0A0A0A), bg-slate-9XX, bg-black, bg-authority, bg-navy. */
+html[data-a11y-contrast="high"] .bg-ink,
+html[data-a11y-contrast="high"] .bg-black,
+html[data-a11y-contrast="high"] .bg-slate-950,
+html[data-a11y-contrast="high"] .bg-slate-900,
+html[data-a11y-contrast="high"] .bg-slate-800,
+html[data-a11y-contrast="high"] .bg-authority,
+html[data-a11y-contrast="high"] .bg-navy,
+html[data-a11y-contrast="high"] [class*="bg-blue-7"],
+html[data-a11y-contrast="high"] [class*="bg-blue-8"],
+html[data-a11y-contrast="high"] [class*="bg-blue-9"],
+html[data-a11y-contrast="high"] [class*="bg-red-5"] {
+  background-color: #000000 !important;
+}
+html[data-a11y-contrast="high"] .bg-ink,
+html[data-a11y-contrast="high"] .bg-ink *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] .bg-black,
+html[data-a11y-contrast="high"] .bg-black *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] .bg-slate-950,
+html[data-a11y-contrast="high"] .bg-slate-950 *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] .bg-slate-900,
+html[data-a11y-contrast="high"] .bg-slate-900 *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] .bg-slate-800,
+html[data-a11y-contrast="high"] .bg-slate-800 *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] .bg-authority,
+html[data-a11y-contrast="high"] .bg-authority *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] .bg-navy,
+html[data-a11y-contrast="high"] .bg-navy *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-blue-7"],
+html[data-a11y-contrast="high"] [class*="bg-blue-7"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-blue-8"],
+html[data-a11y-contrast="high"] [class*="bg-blue-8"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-blue-9"],
+html[data-a11y-contrast="high"] [class*="bg-blue-9"] *:not(svg):not(svg *) {
+  color: #ffffff !important;
+}
+
+/* Coloured "industry accent" cards on the homepage (Built for Your Industry).
+   These have low-contrast pastel backgrounds — strip them to white with black text
+   in HC mode so copy is always legible. */
+html[data-a11y-contrast="high"] [class*="bg-warning"],
+html[data-a11y-contrast="high"] [class*="bg-amber-"],
+html[data-a11y-contrast="high"] [class*="bg-emerald-"],
+html[data-a11y-contrast="high"] [class*="bg-yellow-"],
+html[data-a11y-contrast="high"] [class*="bg-orange-"],
+html[data-a11y-contrast="high"] [class*="bg-pink-"],
+html[data-a11y-contrast="high"] [class*="bg-rose-"],
+html[data-a11y-contrast="high"] [class*="bg-purple-"],
+html[data-a11y-contrast="high"] [class*="bg-violet-"],
+html[data-a11y-contrast="high"] [class*="bg-fuchsia-"],
+html[data-a11y-contrast="high"] [class*="bg-teal-"],
+html[data-a11y-contrast="high"] [class*="bg-cyan-"],
+html[data-a11y-contrast="high"] [class*="bg-green-"],
+html[data-a11y-contrast="high"] [class*="bg-lime-"],
+html[data-a11y-contrast="high"] [class*="bg-indigo-"],
+html[data-a11y-contrast="high"] [class*="bg-sky-"] {
+  background-color: #FFEB3B !important;  /* high-vis yellow */
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+html[data-a11y-contrast="high"] [class*="bg-warning"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-amber-"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-emerald-"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-yellow-"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-green-"] *:not(svg):not(svg *) {
+  color: #000000 !important;
+}
+
+/* Industry config-driven inline backgrounds (style={{background: cfg.accent}})
+   — these use Tailwind-arbitrary or inline styles. Bump contrast via outline. */
+html[data-a11y-contrast="high"] [style*="background"] {
+  outline: 2px solid #000000;
+}
+
+/* Links — distinct from body text, no underline removal allowed */
+html[data-a11y-contrast="high"] a {
+  color: #0033CC !important;
+  text-decoration: underline !important;
+}
+html[data-a11y-contrast="high"] .bg-ink a,
+html[data-a11y-contrast="high"] .bg-black a,
+html[data-a11y-contrast="high"] .bg-slate-950 a,
+html[data-a11y-contrast="high"] .bg-slate-900 a,
+html[data-a11y-contrast="high"] [class*="bg-blue-7"] a,
+html[data-a11y-contrast="high"] [class*="bg-blue-8"] a,
+html[data-a11y-contrast="high"] [class*="bg-blue-9"] a {
+  color: #FFEB3B !important;
+}
+
+/* Buttons — always have a hard border and visible focus */
+html[data-a11y-contrast="high"] button,
+html[data-a11y-contrast="high"] [role="button"] {
+  border: 2px solid currentColor !important;
+}
+html[data-a11y-contrast="high"] *:focus,
+html[data-a11y-contrast="high"] *:focus-visible {
+  outline: 3px solid #0033CC !important;
+  outline-offset: 2px !important;
+}
+
+/* The chatbox specifically — header is .bg-ink (dark) so text becomes white;
+   the body is .bg-slate-50 (very light) so body text stays black. Both meet AAA. */
+html[data-a11y-contrast="high"] [data-testid="chat-panel"] {
   border-color: #000000 !important;
 }
-html[data-a11y-contrast="high"] a,
-html[data-a11y-contrast="high"] button[type="submit"] {
-  color: #0000EE !important; text-decoration: underline !important;
+html[data-a11y-contrast="high"] [data-testid="chat-panel"] input,
+html[data-a11y-contrast="high"] [data-testid="chat-panel"] textarea {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
 }
-html[data-a11y-contrast="high"] body { background-color: #ffffff !important; }
-html[data-a11y-contrast="high"] header,
-html[data-a11y-contrast="high"] section,
-html[data-a11y-contrast="high"] main { background-color: #ffffff !important; }
 
 /* Dyslexia-friendly font — use system "OpenDyslexic" if installed, else legible sans */
 html[data-a11y-dyslexia="on"] body,
