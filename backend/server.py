@@ -213,7 +213,26 @@ async def get_current_user(
             payload = jwt.decode(bearer, JWT_SECRET, algorithms=[JWT_ALGO])
             user_doc = await db.users.find_one({"user_id": payload["user_id"]}, {"_id": 0})
             if user_doc:
+                # Iter47: reject JWTs issued before the user's last password change
+                pwd_changed = user_doc.get("password_changed_at")
+                if pwd_changed and "iat" in payload:
+                    try:
+                        if isinstance(pwd_changed, str):
+                            pwd_changed_dt = datetime.fromisoformat(pwd_changed)
+                            if pwd_changed_dt.tzinfo is None:
+                                pwd_changed_dt = pwd_changed_dt.replace(tzinfo=timezone.utc)
+                        else:
+                            pwd_changed_dt = pwd_changed
+                        iat_dt = datetime.fromtimestamp(payload["iat"], tz=timezone.utc)
+                        if iat_dt < pwd_changed_dt:
+                            raise HTTPException(status_code=401, detail="Session expired — please log in again")
+                    except HTTPException:
+                        raise
+                    except Exception:
+                        pass
                 return User(**user_doc)
+        except HTTPException:
+            raise
         except jwt.PyJWTError:
             pass
 

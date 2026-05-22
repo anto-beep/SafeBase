@@ -45,16 +45,17 @@ function AuthMenu() {
 
   return (
     <div className="flex items-center gap-2">
-      <Link to="/dashboard">
-        <Button
-          variant="ghost"
-          className="btn-sharp uppercase tracking-widest font-bold inline-flex items-center"
-          data-testid="nav-dashboard-btn"
-        >
+      <Button
+        asChild
+        variant="ghost"
+        className="btn-sharp uppercase tracking-widest font-bold"
+        data-testid="nav-dashboard-btn"
+      >
+        <Link to="/dashboard">
           <SquaresFour size={16} weight="duotone" className="mr-1.5" />
           Dashboard
-        </Button>
-      </Link>
+        </Link>
+      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger
           className="outline-none focus:outline-none"

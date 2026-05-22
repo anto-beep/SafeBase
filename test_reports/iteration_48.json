@@ -1,0 +1,24 @@
+{
+  "summary": "Iter48 RETEST of the two iter47 fixes. Backend: All 7 pytest tests pass (6 original password-reset cases + the NEW JWT-invalidation case). After password reset, the OLD JWT for the user now returns 401 on /api/auth/me — JWT iat is correctly compared to user.password_changed_at in get_current_user. Demo password is restored to Demo@1234 at the end of the test run (verified via curl login → 200). Frontend: nav-dashboard-btn now renders as <a href='/dashboard'> (tagName='A', href='/dashboard') — asChild pattern works. Avatar dropdown opens correctly showing name 'Demo Owner', email 'owner@safetradie.demo', OWNER yellow role pill, Dashboard / My profile / Billing / red Log out items. Logout clicks navigate to /, show 'You have been signed out' toast, and public navbar (LOG IN / BOOK A DEMO / START FREE TRIAL) is restored.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_password_reset.py",
+    "/app/backend/tests/test_iter47_session_invalidation.py",
+    "/app/test_reports/pytest/iter48_retest.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "get_current_user JWT branch now correctly enforces session invalidation via iat < password_changed_at — good defensive design while keeping JWT stateless.",
+    "Layout.jsx AuthMenu uses <Button asChild><Link to='/dashboard'>...</Link></Button> — Radix asChild correctly forwards the data-testid onto the rendered <a> element, enabling middle-click/right-click/new-tab navigation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter47_session_invalidation.py (made REACT_APP_BACKEND_URL pickup robust by loading /app/frontend/.env — previous run failed because env var was empty at pytest startup)"
+  ],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100%"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 — verified still valid via curl after full test run",
+  "seed_data_creation": "password_resets collection purged before each backend test; password restored to Demo@1234 inside the session-invalidation test",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter47 issues both resolved. Backend tests in /app/backend/tests/test_password_reset.py (6 tests) and /app/backend/tests/test_iter47_session_invalidation.py (1 test) all green. Demo account password is Demo@1234. EXPOSE_RESET_TOKEN=true. nav-dashboard-btn is an anchor with href='/dashboard'."
+}

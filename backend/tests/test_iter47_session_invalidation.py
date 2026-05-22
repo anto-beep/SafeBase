@@ -6,7 +6,12 @@ import os
 import httpx
 import pytest
 
-API = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+def _load_api():
+    from dotenv import load_dotenv as _ld
+    _ld("/app/frontend/.env")
+    return (os.environ.get("REACT_APP_BACKEND_URL") or "").rstrip("/")
+
+API = _load_api()
 EMAIL = "owner@safetradie.demo"
 ORIG_PASSWORD = "Demo@1234"
 
