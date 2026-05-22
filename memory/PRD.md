@@ -24,6 +24,17 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 51 — High Contrast WCAG-AAA Fix + Chat Widget Trigger Redesign (Feb 2026)
+- **High Contrast rewrite** (`index.css`) — the previous HC implementation flatly forced `color: #000` on every element, which made white-on-dark hero/chatbox/industry copy unreadable. New implementation honours visual hierarchy:
+  - Light surfaces → black text on white (default rule).
+  - Dark surfaces (`.bg-ink`, `.bg-slate-800/900/950`, `.bg-black`, `.bg-authority`, `.bg-navy`, `[class*="bg-blue-700/800/900/950"]`, and the heuristic `[class~="text-white"]` to catch arbitrary gradients like `from-[#0A1F44]`) → white text retained, background-color forced to black where defined (gradients are preserved when they're already dark enough, e.g. the homepage hero).
+  - Low-contrast pastel cards (`bg-amber-50/100/200`, `bg-emerald-50/100`, `bg-red-50/100`, etc.) → converted to high-vis yellow `#FFEB3B` with black text + 2px black border.
+  - Bug fix: removed the over-broad `[class*="bg-red-5"]` selector that previously caught `bg-red-50/40` and flattened the "No documentation / Expired credentials / No investigation record" cards to solid black.
+  - Links remain distinct (`#0033CC` on light, `#FFEB3B` on dark) with mandatory underline.
+  - Chat panel inputs forced to white-on-black with 2px black border.
+- **Chat Widget toggle redesign** (`ChatWidget.jsx`) — replaced the previous circular floating button with a sharp-edged rectangle: yellow SafeBase logo tile (Cube icon on `bg-warning`) + "Talk to me" wordmark in `font-display` uppercase white on `bg-ink`. Hover lifts 2px. Subtitle in the chat header changed from "AI · Claude 4.5" to **"Ask me anything"** (LLM branding stripped, matches the user-facing tone of the rest of the marketing copy).
+- **Verification** — visual smoke-test screenshots in HC mode confirmed hero (white-on-navy), industry gradient cards (white-on-dark), pain-cards (black-on-yellow), and chat panel (proper layered contrast). Normal mode rendering unchanged.
+
 ### Iteration 50 — Accessibility Widget + Concierge Chat (Claude 4.5) + UX Cleanup (Feb 2026)
 - **Removed "Made with Emergent" badge** — deleted the entire `<a id="emergent-badge">` block from `public/index.html`. Bottom-right is now reserved for the SafeBase Concierge chat.
 - **Accessibility Widget** (`AccessibilityWidget.jsx`, bottom-left blue floating button) — UserWay-style 8-control menu: 4-step font scale, high-contrast mode, OpenDyslexic-friendly font, pause animations, highlight links, bigger custom-SVG cursor, reading guide bar that follows the mouse, reset all. CSS hooks in `index.css` apply via `html[data-a11y-*]` selectors. Per-user preferences persist server-side via `PUT /api/accessibility/preferences` (logged-in) AND `localStorage` (anonymous). Trial-gate allowlist updated so expired-trial users keep their settings.

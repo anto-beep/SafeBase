@@ -109,7 +109,12 @@ html[data-a11y-contrast="high"] body *:not(svg):not(svg *):not(img):not(video):n
 }
 
 /* DARK SURFACES — keep dark bg, force WHITE text. Match Tailwind utility classes
-   used across the app: bg-ink (=#0A0A0A), bg-slate-9XX, bg-black, bg-authority, bg-navy. */
+   used across the app: bg-ink (=#0A0A0A), bg-slate-9XX, bg-black, bg-authority, bg-navy.
+   We also use [class~="text-white"] as a heuristic: any element explicitly declaring
+   text-white was authored for a dark surface (e.g. the homepage hero uses arbitrary
+   gradient colors that don't match named bg-* classes).
+   NOTE: We intentionally use specific 700/800/900/950 patterns rather than [class*="bg-red-5"]
+   etc., which would also catch light pastels like bg-red-50/40. */
 html[data-a11y-contrast="high"] .bg-ink,
 html[data-a11y-contrast="high"] .bg-black,
 html[data-a11y-contrast="high"] .bg-slate-950,
@@ -117,10 +122,11 @@ html[data-a11y-contrast="high"] .bg-slate-900,
 html[data-a11y-contrast="high"] .bg-slate-800,
 html[data-a11y-contrast="high"] .bg-authority,
 html[data-a11y-contrast="high"] .bg-navy,
-html[data-a11y-contrast="high"] [class*="bg-blue-7"],
-html[data-a11y-contrast="high"] [class*="bg-blue-8"],
-html[data-a11y-contrast="high"] [class*="bg-blue-9"],
-html[data-a11y-contrast="high"] [class*="bg-red-5"] {
+html[data-a11y-contrast="high"] [class*="bg-blue-700"],
+html[data-a11y-contrast="high"] [class*="bg-blue-800"],
+html[data-a11y-contrast="high"] [class*="bg-blue-900"],
+html[data-a11y-contrast="high"] [class*="bg-blue-950"],
+html[data-a11y-contrast="high"] [class~="text-white"] {
   background-color: #000000 !important;
 }
 html[data-a11y-contrast="high"] .bg-ink,
@@ -137,43 +143,74 @@ html[data-a11y-contrast="high"] .bg-authority,
 html[data-a11y-contrast="high"] .bg-authority *:not(svg):not(svg *),
 html[data-a11y-contrast="high"] .bg-navy,
 html[data-a11y-contrast="high"] .bg-navy *:not(svg):not(svg *),
-html[data-a11y-contrast="high"] [class*="bg-blue-7"],
-html[data-a11y-contrast="high"] [class*="bg-blue-7"] *:not(svg):not(svg *),
-html[data-a11y-contrast="high"] [class*="bg-blue-8"],
-html[data-a11y-contrast="high"] [class*="bg-blue-8"] *:not(svg):not(svg *),
-html[data-a11y-contrast="high"] [class*="bg-blue-9"],
-html[data-a11y-contrast="high"] [class*="bg-blue-9"] *:not(svg):not(svg *) {
+html[data-a11y-contrast="high"] [class*="bg-blue-700"],
+html[data-a11y-contrast="high"] [class*="bg-blue-700"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-blue-800"],
+html[data-a11y-contrast="high"] [class*="bg-blue-800"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-blue-900"],
+html[data-a11y-contrast="high"] [class*="bg-blue-900"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-blue-950"],
+html[data-a11y-contrast="high"] [class*="bg-blue-950"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class~="text-white"],
+html[data-a11y-contrast="high"] [class~="text-white"] *:not(svg):not(svg *) {
   color: #ffffff !important;
 }
 
 /* Coloured "industry accent" cards on the homepage (Built for Your Industry).
-   These have low-contrast pastel backgrounds — strip them to white with black text
-   in HC mode so copy is always legible. */
-html[data-a11y-contrast="high"] [class*="bg-warning"],
-html[data-a11y-contrast="high"] [class*="bg-amber-"],
-html[data-a11y-contrast="high"] [class*="bg-emerald-"],
-html[data-a11y-contrast="high"] [class*="bg-yellow-"],
-html[data-a11y-contrast="high"] [class*="bg-orange-"],
-html[data-a11y-contrast="high"] [class*="bg-pink-"],
-html[data-a11y-contrast="high"] [class*="bg-rose-"],
-html[data-a11y-contrast="high"] [class*="bg-purple-"],
-html[data-a11y-contrast="high"] [class*="bg-violet-"],
-html[data-a11y-contrast="high"] [class*="bg-fuchsia-"],
-html[data-a11y-contrast="high"] [class*="bg-teal-"],
-html[data-a11y-contrast="high"] [class*="bg-cyan-"],
-html[data-a11y-contrast="high"] [class*="bg-green-"],
-html[data-a11y-contrast="high"] [class*="bg-lime-"],
-html[data-a11y-contrast="high"] [class*="bg-indigo-"],
-html[data-a11y-contrast="high"] [class*="bg-sky-"] {
+   These have low-contrast pastel backgrounds — strip them to high-vis yellow with
+   black text in HC mode so copy is always legible. We deliberately only target
+   LIGHT shades (50/100/200) so we don't override dark variants like bg-amber-900. */
+html[data-a11y-contrast="high"] .bg-warning,
+html[data-a11y-contrast="high"] [class*="bg-amber-50"],
+html[data-a11y-contrast="high"] [class*="bg-amber-100"],
+html[data-a11y-contrast="high"] [class*="bg-amber-200"],
+html[data-a11y-contrast="high"] [class*="bg-emerald-50"],
+html[data-a11y-contrast="high"] [class*="bg-emerald-100"],
+html[data-a11y-contrast="high"] [class*="bg-emerald-200"],
+html[data-a11y-contrast="high"] [class*="bg-yellow-50"],
+html[data-a11y-contrast="high"] [class*="bg-yellow-100"],
+html[data-a11y-contrast="high"] [class*="bg-yellow-200"],
+html[data-a11y-contrast="high"] [class*="bg-orange-50"],
+html[data-a11y-contrast="high"] [class*="bg-orange-100"],
+html[data-a11y-contrast="high"] [class*="bg-pink-50"],
+html[data-a11y-contrast="high"] [class*="bg-pink-100"],
+html[data-a11y-contrast="high"] [class*="bg-rose-50"],
+html[data-a11y-contrast="high"] [class*="bg-rose-100"],
+html[data-a11y-contrast="high"] [class*="bg-purple-50"],
+html[data-a11y-contrast="high"] [class*="bg-purple-100"],
+html[data-a11y-contrast="high"] [class*="bg-violet-50"],
+html[data-a11y-contrast="high"] [class*="bg-violet-100"],
+html[data-a11y-contrast="high"] [class*="bg-fuchsia-50"],
+html[data-a11y-contrast="high"] [class*="bg-fuchsia-100"],
+html[data-a11y-contrast="high"] [class*="bg-teal-50"],
+html[data-a11y-contrast="high"] [class*="bg-teal-100"],
+html[data-a11y-contrast="high"] [class*="bg-cyan-50"],
+html[data-a11y-contrast="high"] [class*="bg-cyan-100"],
+html[data-a11y-contrast="high"] [class*="bg-green-50"],
+html[data-a11y-contrast="high"] [class*="bg-green-100"],
+html[data-a11y-contrast="high"] [class*="bg-lime-50"],
+html[data-a11y-contrast="high"] [class*="bg-lime-100"],
+html[data-a11y-contrast="high"] [class*="bg-indigo-50"],
+html[data-a11y-contrast="high"] [class*="bg-indigo-100"],
+html[data-a11y-contrast="high"] [class*="bg-sky-50"],
+html[data-a11y-contrast="high"] [class*="bg-sky-100"],
+html[data-a11y-contrast="high"] [class*="bg-red-50"],
+html[data-a11y-contrast="high"] [class*="bg-red-100"] {
   background-color: #FFEB3B !important;  /* high-vis yellow */
   color: #000000 !important;
   border: 2px solid #000000 !important;
 }
-html[data-a11y-contrast="high"] [class*="bg-warning"] *:not(svg):not(svg *),
-html[data-a11y-contrast="high"] [class*="bg-amber-"] *:not(svg):not(svg *),
-html[data-a11y-contrast="high"] [class*="bg-emerald-"] *:not(svg):not(svg *),
-html[data-a11y-contrast="high"] [class*="bg-yellow-"] *:not(svg):not(svg *),
-html[data-a11y-contrast="high"] [class*="bg-green-"] *:not(svg):not(svg *) {
+html[data-a11y-contrast="high"] .bg-warning *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-amber-50"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-amber-100"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-emerald-50"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-emerald-100"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-yellow-50"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-yellow-100"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-green-50"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-green-100"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-red-50"] *:not(svg):not(svg *),
+html[data-a11y-contrast="high"] [class*="bg-red-100"] *:not(svg):not(svg *) {
   color: #000000 !important;
 }
 
@@ -192,9 +229,9 @@ html[data-a11y-contrast="high"] .bg-ink a,
 html[data-a11y-contrast="high"] .bg-black a,
 html[data-a11y-contrast="high"] .bg-slate-950 a,
 html[data-a11y-contrast="high"] .bg-slate-900 a,
-html[data-a11y-contrast="high"] [class*="bg-blue-7"] a,
-html[data-a11y-contrast="high"] [class*="bg-blue-8"] a,
-html[data-a11y-contrast="high"] [class*="bg-blue-9"] a {
+html[data-a11y-contrast="high"] [class*="bg-blue-700"] a,
+html[data-a11y-contrast="high"] [class*="bg-blue-800"] a,
+html[data-a11y-contrast="high"] [class*="bg-blue-900"] a {
   color: #FFEB3B !important;
 }
 
