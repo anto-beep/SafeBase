@@ -65,6 +65,12 @@ export default function AdminAccountDetail() {
     await loadAll();
   };
 
+  const forceLogout = async (userId, email) => {
+    if (!window.confirm(`Force-logout ${email}? They'll be kicked from all sessions and JWTs invalidated.`)) return;
+    await adminApi.post(`/internal-admin/users/${userId}/force-logout`);
+    await loadAll();
+  };
+
   if (error) return <div className="text-red-600 text-sm" data-testid="admin-detail-error">{error}</div>;
   if (!account) return <div className="text-sm text-slate-500" data-testid="admin-detail-loading">Loading…</div>;
 
@@ -149,7 +155,7 @@ export default function AdminAccountDetail() {
         <section className="bg-white border border-slate-200 overflow-x-auto" data-testid="admin-tab-users">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200 text-left text-[10px] font-mono uppercase tracking-widest text-slate-500">
-              <tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Last login</th><th className="px-4 py-3">Status</th></tr>
+              <tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Last login</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {users.map(u => (
@@ -159,6 +165,15 @@ export default function AdminAccountDetail() {
                   <td className="px-4 py-3">{u.role}</td>
                   <td className="px-4 py-3 text-xs text-slate-500">{fmtDate(u.last_login_at)}</td>
                   <td className="px-4 py-3">{u.is_active ? "Active" : <span className="text-slate-400">Disabled</span>}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => forceLogout(u.user_id, u.email)}
+                      data-testid={`admin-force-logout-${u.user_id}`}
+                      className="text-xs font-mono uppercase tracking-widest text-red-600 hover:text-red-700"
+                    >
+                      Force logout
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

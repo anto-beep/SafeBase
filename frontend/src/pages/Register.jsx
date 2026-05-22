@@ -337,7 +337,7 @@ export default function Register() {
           <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> No credit card required</li>
           <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> Data hosted in AWS Sydney</li>
           <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> Cancel anytime</li>
-          <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> 30-day money-back guarantee after trial</li>
+          <li className="flex gap-2"><CheckCircle weight="fill" className="text-warning shrink-0" /> Cancel anytime — self-serve, no phone calls</li>
         </ul>
         <div className="mt-10 space-y-6">
           {[

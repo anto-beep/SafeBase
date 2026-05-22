@@ -75,7 +75,7 @@ export default function About() {
       <section className="bg-background border-b border-border">
         <div className="max-w-5xl mx-auto px-6 lg:px-12 py-20">
           <div className="label-eyebrow mb-3">/ Commitment</div>
-          <p className="text-xl leading-relaxed">Australian owned. Australian operated. All data hosted in AWS Sydney. Privacy Act compliant. No data sold to third parties. 30-day money-back guarantee on every plan.</p>
+          <p className="text-xl leading-relaxed">Australian owned. Australian operated. All data hosted in AWS Sydney. Privacy Act compliant. No data sold to third parties.</p>
         </div>
       </section>
 

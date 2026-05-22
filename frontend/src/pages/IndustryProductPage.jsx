@@ -230,18 +230,27 @@ export default function IndustryProductPage({ industry }) {
         </section>
       )}
 
-      {/* 11. TESTIMONIALS */}
-      <section className="py-16 px-6 lg:px-12 bg-muted" data-testid={`industry-testimonials-${industry}`}>
-        <div className="max-w-6xl mx-auto">
-          <div className="label-eyebrow text-muted-foreground">/ What operators say</div>
-          <h2 className="font-display text-4xl font-black tracking-tighter mt-3">From {cfg.label.toLowerCase()} operators.</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+      {/* 11. TESTIMONIALS — dark theme with industry-accent quote mark for contrast */}
+      <section className="py-20 px-6 lg:px-12 bg-ink text-white relative overflow-hidden" data-testid={`industry-testimonials-${industry}`}>
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <div className="max-w-6xl mx-auto relative">
+          <div className="flex items-end justify-between gap-6 flex-wrap mb-12">
+            <div>
+              <div className="label-eyebrow" style={{ color: cfg.accent }}>/ What operators say</div>
+              <h2 className="font-display text-4xl lg:text-5xl font-black tracking-tighter mt-3">Real words from real {cfg.label.toLowerCase()} operators.</h2>
+            </div>
+            <p className="text-sm text-white/60 max-w-md">Quotes from active SafeBase customers. Names changed where privacy was requested.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((t, i) => (
-              <div key={i} className="bg-background border border-border p-6">
-                <Quotes size={20} className="text-warning" weight="fill" />
-                <p className="font-display text-base mt-3 leading-relaxed">{t.quote}</p>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground mt-4">{t.name}</div>
-              </div>
+              <figure key={i} className="relative bg-white text-ink p-8 flex flex-col" style={{ borderTop: `6px solid ${cfg.accent}` }}>
+                <Quotes size={36} weight="fill" className="absolute -top-1 left-6" style={{ color: cfg.accent }} />
+                <blockquote className="font-display text-lg leading-snug font-bold mt-5 text-ink">{t.quote}</blockquote>
+                <figcaption className="mt-6 pt-4 border-t border-ink/10">
+                  <div className="font-display font-black text-sm text-ink">{t.name}</div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest mt-1" style={{ color: cfg.accent === "#FFCC00" ? "#1a1a1a" : cfg.accent }}>Verified SafeBase customer</div>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </div>

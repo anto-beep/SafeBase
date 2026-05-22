@@ -82,3 +82,69 @@
     border-top-color: inherit; border-bottom-color: inherit;
   }
 }
+
+/* ───────────────────────── Accessibility widget ───────────────────────── */
+:root { --a11y-font-scale: 1; }
+html { font-size: calc(16px * var(--a11y-font-scale)); }
+
+/* High contrast — black text on white, no muted/grey */
+html[data-a11y-contrast="high"] {
+  background: #ffffff !important;
+}
+html[data-a11y-contrast="high"] body,
+html[data-a11y-contrast="high"] body * {
+  color: #000000 !important;
+  background-color: transparent !important;
+  border-color: #000000 !important;
+}
+html[data-a11y-contrast="high"] a,
+html[data-a11y-contrast="high"] button[type="submit"] {
+  color: #0000EE !important; text-decoration: underline !important;
+}
+html[data-a11y-contrast="high"] body { background-color: #ffffff !important; }
+html[data-a11y-contrast="high"] header,
+html[data-a11y-contrast="high"] section,
+html[data-a11y-contrast="high"] main { background-color: #ffffff !important; }
+
+/* Dyslexia-friendly font — use system "OpenDyslexic" if installed, else legible sans */
+html[data-a11y-dyslexia="on"] body,
+html[data-a11y-dyslexia="on"] body * {
+  font-family: "OpenDyslexic", "Comic Sans MS", "Trebuchet MS", Verdana, system-ui, sans-serif !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Pause all animations + transitions */
+html[data-a11y-pause-anim="on"] *,
+html[data-a11y-pause-anim="on"] *::before,
+html[data-a11y-pause-anim="on"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Highlight all links with bright underline + box */
+html[data-a11y-highlight-links="on"] a:not([data-no-a11y]) {
+  outline: 2px solid #2563EB !important;
+  outline-offset: 2px !important;
+  text-decoration: underline !important;
+  background-color: rgba(254, 240, 138, 0.5) !important;
+}
+
+/* Big cursor */
+html[data-a11y-big-cursor="on"],
+html[data-a11y-big-cursor="on"] * {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'><path d='M2 2 L18 38 L23 22 L40 17 Z' fill='%23000000' stroke='%23ffffff' stroke-width='2.5'/></svg>") 2 2, auto !important;
+}
+html[data-a11y-big-cursor="on"] a,
+html[data-a11y-big-cursor="on"] button,
+html[data-a11y-big-cursor="on"] [role="button"] {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'><circle cx='22' cy='22' r='14' fill='%232563EB' stroke='%23ffffff' stroke-width='3'/></svg>") 22 22, pointer !important;
+}
+
+/* Custom thin scrollbar for the dashboard sidebar */
+.custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 3px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
+

@@ -200,9 +200,8 @@ export default function Pricing() {
           </div>
 
           {/* TRUST FOOTER */}
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-border pt-12">
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-border pt-12">
             <div className="flex items-start gap-3"><ShieldCheck size={28} weight="duotone" className="shrink-0" /><div><div className="font-display font-bold">14-day free trial</div><div className="text-sm text-muted-foreground">Full access. No credit card required.</div></div></div>
-            <div className="flex items-start gap-3"><Star size={28} weight="duotone" className="shrink-0" /><div><div className="font-display font-bold">30-day money-back guarantee</div><div className="text-sm text-muted-foreground">If SafeBase does not demonstrably reduce your compliance administration burden in the first month, we will refund you in full. No conditions. No questions.</div></div></div>
             <div className="flex items-start gap-3"><CheckCircle size={28} weight="duotone" className="shrink-0" /><div><div className="font-display font-bold">Cancel anytime</div><div className="text-sm text-muted-foreground">Self-serve. No phone calls.</div></div></div>
           </div>
 

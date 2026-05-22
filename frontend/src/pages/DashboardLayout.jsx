@@ -165,7 +165,7 @@ export default function DashboardLayout() {
           <span className="font-display font-black">SAFEBASE</span>
         </Link>
         <IndustrySwitcher />
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar" data-testid="dashboard-sidebar-nav">
           {renderedNav.map((item) => {
             const isActive = navActive(item.to, item.end);
             return (

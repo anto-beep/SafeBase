@@ -3,6 +3,8 @@ import "@/App.css";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import InternalAdminApp from "@/internal-admin/InternalAdminApp";
+import AccessibilityWidget from "@/components/AccessibilityWidget";
+import ChatWidget from "@/components/ChatWidget";
 import Landing from "@/pages/HomeMultiIndustry";
 import IndustriesOverview from "@/pages/industries/IndustriesOverview";
 import IndustryTrades from "@/pages/industries/IndustryTrades";
@@ -254,6 +256,8 @@ export default function App() {
           <Route path="/*" element={
             <AuthProvider>
               <AppRouter />
+              <AccessibilityWidget />
+              <ChatWidget />
             </AuthProvider>
           } />
         </Routes>

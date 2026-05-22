@@ -416,6 +416,32 @@ def register_internal_admin_routes(api_router: APIRouter, *, db, deps):
                          details={"note_id": note_id, "tags": body.tags or []})
         return {"note_id": note_id}
 
+    @api_router.post("/internal-admin/users/{user_id}/force-logout")
+    async def force_logout_user(
+        user_id: str,
+        request: Request,
+        admin: dict = Depends(require_rank("support_agent")),
+    ):
+        """Kicks the customer out of ALL sessions:
+        - deletes user_sessions records
+        - stamps password_changed_at so outstanding customer JWTs are invalidated
+          (the customer get_current_user checks JWT iat < password_changed_at).
+        """
+        user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "email": 1})
+        if not user:
+            raise HTTPException(404, "User not found")
+        sess_deleted = await db.user_sessions.delete_many({"user_id": user_id})
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$set": {"password_changed_at": _iso(_now())}},
+        )
+        await log_action(
+            admin=admin, action="force_logout", request=request,
+            target_type="user", target_id=user_id,
+            details={"email": user.get("email"), "sessions_killed": sess_deleted.deleted_count},
+        )
+        return {"success": True, "sessions_killed": sess_deleted.deleted_count}
+
     # ─────────────── TRIALS + DEMOS + USERS ───────────────
     @api_router.get("/internal-admin/trials")
     async def list_trials(admin: dict = Depends(get_current_admin)):

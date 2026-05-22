@@ -2427,6 +2427,13 @@ register_api_keys_routes(
     account_id_for_fn=account_id_for, stamp_account_fn=stamp_account, logger=logger,
 )
 
+# ─────── Concierge chatbot + Accessibility prefs (Iter50) ───────
+from routes.concierge import register_concierge_routes  # noqa: E402
+register_concierge_routes(
+    api_router, db=db,
+    get_optional_user_dep=lambda req: get_current_user(req, req.headers.get("authorization"), req.cookies.get("session_token")),
+)
+
 # ─────── Internal Admin (Iter49) — completely separate from customer auth ───
 from internal_admin import mount_internal_admin  # noqa: E402
 from internal_admin.seed import seed_super_admin  # noqa: E402
@@ -2465,6 +2472,8 @@ _TRIAL_ALLOWLIST_PREFIXES = (
     "/api/webhook/stripe",
     "/api/notifications",  # mark-read etc.
     "/api/public/",  # public sign flows (no auth, used by SMS sign links)
+    "/api/accessibility/",  # a11y prefs must always work (Iter50)
+    "/api/concierge/",  # support chatbot must always be reachable (Iter50)
 )
 
 
