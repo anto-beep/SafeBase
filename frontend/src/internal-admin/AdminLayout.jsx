@@ -20,10 +20,10 @@ const NAV_GROUPS = [
     { to: "/internal-admin/trials", icon: Briefcase, label: "Trial Accounts", testid: "admin-nav-trials" },
   ]},
   { label: "Billing", items: [
-    { to: "/internal-admin/subscriptions", icon: Receipt, label: "Subscriptions", testid: "admin-nav-subscriptions", phase2: true },
+    { to: "/internal-admin/subscriptions", icon: Receipt, label: "Subscriptions", testid: "admin-nav-subscriptions" },
   ]},
   { label: "Platform", items: [
-    { to: "/internal-admin/feature-flags", icon: Flag, label: "Feature Flags", testid: "admin-nav-flags", phase2: true },
+    { to: "/internal-admin/feature-flags", icon: Flag, label: "Feature Flags", testid: "admin-nav-flags" },
   ]},
   { label: "System", items: [
     { to: "/internal-admin/audit-logs", icon: FileText, label: "Audit Logs", testid: "admin-nav-audit" },

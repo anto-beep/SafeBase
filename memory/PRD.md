@@ -24,6 +24,20 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 53 — Phase 2 Internal Admin · Article pre-warming · PlanRightsizer dynamic ROI (Feb 2026)
+- **Internal Admin Phase 2 / Subscriptions page** (`/internal-admin/subscriptions`) — full subscription billing list across every owner account. Filterable by status (active/trial/past_due/canceled), billing cycle (monthly/annual), industry; free-text search across business + email. Summary tiles for active paid, active trials, MRR sum. Mocked-Stripe data flag visible. Backend: `GET /api/internal-admin/subscriptions` (joins `users` + `_mock_billing_for_user`).
+- **Internal Admin Phase 2 / Feature Flags page** (`/internal-admin/feature-flags`) — 8 registered platform flags (ai_swms_v2, regulator_pipeline, concierge_lead_capture, iot_temperature_v1, ewd_v1, academy_v2, ahpra_live_poll, stripe_native_oauth) with global on/off toggles. Per-account override count displayed per flag. Toggle action requires ops_lead+ rank, logged to `internal_admin_audit_log`. UI shows EDITOR vs READ-ONLY pill based on caller's role.
+  - Backend: `GET /internal-admin/feature-flags`, `PATCH /internal-admin/feature-flags/{key}`, `GET /internal-admin/feature-flags/{key}/overrides`, `PATCH /internal-admin/feature-flags/{key}/overrides/{account_id}`.
+  - DB collection: `feature_flags` with `scope: global|account` discriminator.
+  - "Phase 2" placeholder badges removed from the sidebar.
+- **Article pre-warming script** (`/app/backend/seed_articles.py`) — pre-generates all 40 article bodies via Claude so the first reader gets instant-load pages instead of waiting for streaming. Safe to re-run (skips warmed slugs unless `--force`). Supports `--industry`/`--max` flags for partial runs. 38/40 articles successfully warmed; 2 remaining will lazy-generate on first view or can be retried (`python -m seed_articles`).
+- **PlanRightsizer "Why this plan" now dynamic** (`pages/PlanRightsizer.jsx`) — replaced the static `RISK_ANCHOR` map (which always referenced the cheapest tier's price) with a `whyThisPlan(industry, annualNumeric)` function that:
+  1. Substitutes the actually-recommended annual price into the headline (e.g. for the Enterprise tier: "A$39,990/year + GST", previously stuck on "A$7,990/year").
+  2. Recomputes the percentage against an industry-specific risk benchmark (trades → A$116,979 average WorkSafe prosecution → 34% for Enterprise, 6.8% for Solo Tradie).
+  3. Renders an updated supporting line interpolated with both numbers.
+- **Also removed** the residual "30-DAY MONEY-BACK" line from PlanRightsizer trial footer (caught during the rewrite — per earlier guarantee-cleanup).
+- **Verified** via curl + 5 playwright screenshots: subscriptions table renders 110 rows in trial state, flag toggle persists + emits success toast + audit log row, PlanRightsizer correctly displays 34% / A$39,990 for Enterprise and 6.8% / A$7,990 for Solo Tradie, pre-warmed hospitality/HACCP article body renders instantly.
+
 ### Iteration 52 — Templates per-industry · Articles populated · Sitewide UX polish (Feb 2026)
 - **Templates page rebuilt** (`/templates`) — split from a flat trades-only list into a **5-industry tab layout** with 8 templates per industry (40 total). Industries: Trades, Hospitality, Transport, Healthcare, Retail. Each industry tab has its own category sub-filter and free-text search.
 - **Word document downloads** (`/app/frontend/src/lib/downloadAsWord.js`) — every template downloads as a Microsoft-Word-compatible `.doc` file (dependency-free HTML+Office namespace wrapper). Opens in Word, LibreOffice, Pages, Google Docs.

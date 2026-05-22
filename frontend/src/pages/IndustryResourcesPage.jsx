@@ -15,7 +15,7 @@ export default function IndustryResourcesPage() {
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow text-warning">/ Resources · {data.label}</div>
           <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-3">
-            <span className="mr-3">{data.icon}</span>{data.label} compliance.
+            {data.label} compliance.
           </h1>
           <p className="text-white/70 mt-6 max-w-2xl">Articles, templates, calculators, and regulator links — every resource you need to run a compliant {data.label.toLowerCase()} business in Australia.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 text-xs uppercase tracking-widest">

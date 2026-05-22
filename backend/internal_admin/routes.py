@@ -572,3 +572,187 @@ def register_internal_admin_routes(api_router: APIRouter, *, db, deps):
             .skip((page - 1) * page_size).limit(page_size)
         rows = [r async for r in cursor]
         return {"total": total, "page": page, "page_size": page_size, "rows": rows}
+
+    # ─────────────── SUBSCRIPTIONS (Phase 2) ───────────────
+    @api_router.get("/internal-admin/subscriptions")
+    async def list_subscriptions(
+        status: Optional[str] = None,
+        cycle: Optional[str] = None,
+        industry: Optional[str] = None,
+        q: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 25,
+        admin: dict = Depends(get_current_admin),
+    ):
+        """Subscriptions across all owner accounts (mocked Stripe data, deterministic)."""
+        page_size = max(1, min(page_size, 100))
+        page = max(1, page)
+        filt: dict = {"role": "owner"}
+        if status:
+            filt["subscription_status"] = status
+        if industry:
+            filt["industry"] = industry
+        if cycle:
+            filt["billing_cycle"] = cycle
+        if q:
+            qs = q.strip()
+            filt["$or"] = [
+                {"email": {"$regex": qs, "$options": "i"}},
+                {"company_name": {"$regex": qs, "$options": "i"}},
+            ]
+        total = await db.users.count_documents(filt)
+        cursor = db.users.find(filt, {"_id": 0, "password_hash": 0}) \
+            .sort("created_at", -1) \
+            .skip((page - 1) * page_size).limit(page_size)
+        total_mrr = 0.0
+        active_paid = 0
+        trial_total = 0
+        rows = []
+        async for u in cursor:
+            b = _mock_billing_for_user(u)
+            row = {
+                "account_id": u.get("user_id"),
+                "business_name": u.get("company_name") or u.get("name") or u.get("email"),
+                "owner_email": u.get("email"),
+                "industry": u.get("industry") or "trades",
+                "plan": b["tier_name"],
+                "cycle": b["cycle"],
+                "status": u.get("subscription_status") or "trial",
+                "mrr_aud": b["mrr_aud"],
+                "annual_aud": b["annual_aud"],
+                "current_period_end": b["current_period_end"],
+                "payment_method": b["payment_method"],
+                "failed_payments_30d": b["failed_payments_30d"],
+                "stripe_customer_id": b["stripe_customer_id"],
+                "subscription_id": b["subscription_id"],
+                "mocked": True,
+            }
+            rows.append(row)
+            if row["status"] in ("active",):
+                total_mrr += row["mrr_aud"]
+                active_paid += 1
+            if row["status"] in ("trial", "trialing"):
+                trial_total += 1
+        return {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "rows": rows,
+            "summary": {
+                "active_paid": active_paid,
+                "trial_total": trial_total,
+                "mrr_aud_displayed_page": round(total_mrr, 2),
+                "mocked": True,
+            },
+        }
+
+    # ─────────────── FEATURE FLAGS (Phase 2) ───────────────
+    # Two-layer flags:
+    #   - Global flags ({"scope": "global", "key": ..., "enabled": bool}).
+    #   - Per-account flag overrides ({"scope": "account", "account_id": ...,
+    #     "key": ..., "enabled": bool}). Account overrides take precedence.
+    # The frontend customer app can read its effective flag set via the
+    # existing /api/feature-flags (unrelated). This admin surface only writes.
+    DEFAULT_FLAGS = [
+        {"key": "ai_swms_v2",          "label": "AI SWMS generator v2",     "description": "Claude 4.5-powered SWMS generation with richer hazard detection."},
+        {"key": "regulator_pipeline",  "label": "Regulator Pipeline",       "description": "Automated regulator-case intake + audit pack workflow."},
+        {"key": "concierge_lead_capture", "label": "Concierge lead capture", "description": "Capture leads from the SafeBase concierge widget on chat replies."},
+        {"key": "iot_temperature_v1", "label": "IoT temperature sensors",   "description": "Hospitality / healthcare: live temperature sensor integration."},
+        {"key": "ewd_v1",              "label": "Electronic Work Diary",    "description": "Transport: EWD (electronic work diary) tier."},
+        {"key": "academy_v2",          "label": "SafeBase Academy v2",      "description": "New course-builder UI for the SafeBase Academy LMS."},
+        {"key": "ahpra_live_poll",     "label": "AHPRA live registration polling", "description": "Healthcare: hourly polling of AHPRA registration status."},
+        {"key": "stripe_native_oauth", "label": "Stripe native OAuth",      "description": "Native Stripe OAuth (Stripe Connect) integration."},
+    ]
+
+    @api_router.get("/internal-admin/feature-flags")
+    async def list_flags(admin: dict = Depends(get_current_admin)):
+        """Return all known flags with their current GLOBAL state + per-account override count."""
+        existing = {f["key"]: f async for f in db.feature_flags.find({"scope": "global"}, {"_id": 0})}
+        # ensure docs exist for every default
+        for f in DEFAULT_FLAGS:
+            if f["key"] not in existing:
+                doc = {"scope": "global", "key": f["key"], "label": f["label"],
+                       "description": f["description"], "enabled": False,
+                       "created_at": _iso(_now()), "updated_at": _iso(_now())}
+                await db.feature_flags.insert_one(dict(doc))
+                doc.pop("_id", None)
+                existing[f["key"]] = doc
+        out = []
+        for f in DEFAULT_FLAGS:
+            row = existing[f["key"]]
+            override_count = await db.feature_flags.count_documents({"scope": "account", "key": f["key"]})
+            out.append({
+                "key": f["key"],
+                "label": f["label"],
+                "description": f["description"],
+                "enabled": bool(row.get("enabled", False)),
+                "updated_at": row.get("updated_at"),
+                "account_overrides": override_count,
+            })
+        return {"rows": out}
+
+    @api_router.patch("/internal-admin/feature-flags/{key}")
+    async def toggle_global_flag(
+        key: str,
+        body: dict,
+        request: Request,
+        admin: dict = Depends(require_rank("ops_lead")),
+    ):
+        """Flip the GLOBAL switch for a flag. ops_lead+ only."""
+        enabled = bool(body.get("enabled", False))
+        await db.feature_flags.update_one(
+            {"scope": "global", "key": key},
+            {"$set": {"enabled": enabled, "updated_at": _iso(_now())}},
+            upsert=True,
+        )
+        await log_action(
+            admin=admin,
+            action="feature_flag_toggle_global",
+            target_type="feature_flag",
+            target_id=key,
+            details={"enabled": enabled},
+            request=request,
+        )
+        return {"ok": True, "key": key, "enabled": enabled}
+
+    @api_router.get("/internal-admin/feature-flags/{key}/overrides")
+    async def list_overrides(key: str, admin: dict = Depends(get_current_admin)):
+        cursor = db.feature_flags.find({"scope": "account", "key": key}, {"_id": 0})
+        rows = [r async for r in cursor]
+        # join business name
+        for r in rows:
+            u = await db.users.find_one({"user_id": r.get("account_id")}, {"_id": 0, "company_name": 1, "email": 1, "name": 1})
+            if u:
+                r["business_name"] = u.get("company_name") or u.get("name") or u.get("email")
+                r["owner_email"] = u.get("email")
+        return {"key": key, "rows": rows}
+
+    @api_router.patch("/internal-admin/feature-flags/{key}/overrides/{account_id}")
+    async def set_account_override(
+        key: str,
+        account_id: str,
+        body: dict,
+        request: Request,
+        admin: dict = Depends(require_rank("ops_lead")),
+    ):
+        """Set a per-account override. enabled=null removes the override."""
+        if body.get("enabled") is None:
+            await db.feature_flags.delete_one({"scope": "account", "account_id": account_id, "key": key})
+            await log_action(
+                admin=admin, action="feature_flag_override_clear",
+                target_type="feature_flag", target_id=key,
+                details={"account_id": account_id}, request=request)
+            return {"ok": True, "cleared": True}
+        enabled = bool(body["enabled"])
+        await db.feature_flags.update_one(
+            {"scope": "account", "account_id": account_id, "key": key},
+            {"$set": {"enabled": enabled, "updated_at": _iso(_now())}},
+            upsert=True,
+        )
+        await log_action(
+            admin=admin, action="feature_flag_override_set",
+            target_type="feature_flag", target_id=key,
+            details={"account_id": account_id, "enabled": enabled},
+            request=request,
+        )
+        return {"ok": True, "key": key, "account_id": account_id, "enabled": enabled}

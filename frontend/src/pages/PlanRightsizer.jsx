@@ -27,13 +27,37 @@ const INDUSTRIES = [
   { slug: "healthcare",   label: "Healthcare and Aged Care",  blurb: "Allied health, aged care, NDIS, medical." },
 ];
 
-const RISK_ANCHOR = {
-  trades: "Average WorkSafe prosecution: A$116,979. SafeBase Solo Tradie is 6.9% of one fine.",
-  retail: "One preventable manual-handling claim: A$15,000 – A$50,000. One customer slip-and-fall: A$20,000 – A$100,000.",
-  hospitality: "A council food-safety prosecution: A$10,000 – A$50,000. A single day of venue closure: unrecoverable revenue.",
-  transport: "One CoR criminal defence: A$50,000 – A$200,000 in legal fees alone. NHVR notifiable occurrence: 24-hour deadline.",
-  healthcare: "One ACQSC audit preparation engagement: A$5,000 – A$15,000. AHPRA investigation legal fees: A$5,000 – A$50,000. Loss of registration ends operations.",
+/**
+ * Risk anchor benchmark $ per industry, used to compute the "X% of one
+ * [regulator event]" line dynamically against the actually-recommended tier
+ * price. Numbers source: SafeWork avg prosecution, council FS prosecution
+ * mid-range, NHVR CoR legal-defence mid-range, ACQSC/AHPRA legal mid-range,
+ * retail PL claim mid-range — all kept in sync with the pricing-config ROI
+ * copy (cfg.roi.body).
+ */
+const RISK_BENCHMARK = {
+  trades:      { amount: 116979, label: "average WorkSafe prosecution" },
+  retail:      { amount: 60000,  label: "typical customer slip-and-fall claim" },
+  hospitality: { amount: 30000,  label: "council food-safety prosecution" },
+  transport:   { amount: 125000, label: "CoR criminal defence" },
+  healthcare:  { amount: 27500,  label: "AHPRA / ACQSC legal engagement" },
 };
+
+/** Compose the per-tier headline + supporting line for the "Why this plan"
+ *  card. Replaces the static cfg.roi.headline (which always referenced the
+ *  tier-0 price) with the *actually recommended* annual price + a fresh
+ *  percentage of the industry risk benchmark. */
+function whyThisPlan(industrySlug, annualNumeric) {
+  const b = RISK_BENCHMARK[industrySlug];
+  if (!b || !annualNumeric) return null;
+  const pct = (annualNumeric / b.amount) * 100;
+  const pctDisplay = pct < 1 ? pct.toFixed(2) : pct < 10 ? pct.toFixed(1) : Math.round(pct).toString();
+  const annualStr = annualNumeric.toLocaleString("en-AU");
+  return {
+    headline: `A$${annualStr}/year + GST. ${pctDisplay}% of one ${b.label}.`,
+    detail: `One ${b.label} on average costs A$${b.amount.toLocaleString("en-AU")}. SafeBase at A$${annualStr}/year + GST runs continuously — not when you call a consultant. Every day in compliance is risk eliminated.`,
+  };
+}
 
 /**
  * Pick the right tier index (0-3) for the given industry based on team size
@@ -109,7 +133,9 @@ export default function PlanRightsizer() {
     const name = cfg.plan_names[tierIdx];
     const userLimit = cfg.user_limits[tierIdx];
     const features = cfg.features[tierIdx + 1] || [];
-    const anchor = RISK_ANCHOR[industry];
+    // Strip thousands separators so we can do real math
+    const annualNumeric = Number(String(annual).replace(/[, ]/g, ""));
+    const why = whyThisPlan(industry, annualNumeric);
 
     const ctaToRegister = () => navigate(`/register?industry=${industry}&tier=${tierIdx}`);
 
@@ -137,15 +163,15 @@ export default function PlanRightsizer() {
                 </div>
                 <div className="mt-6">
                   <Button onClick={ctaToRegister} className="btn-sharp h-12 w-full bg-warning text-ink hover:bg-white" data-testid="rightsizer-cta-trial">Start Free Trial <ArrowRight className="ml-2" /></Button>
-                  <div className="text-[11px] text-white/50 font-mono mt-2 text-center">14-DAY TRIAL · NO CREDIT CARD · 30-DAY MONEY-BACK</div>
+                  <div className="text-[11px] text-white/50 font-mono mt-2 text-center">14-DAY TRIAL · NO CREDIT CARD</div>
                 </div>
               </div>
 
               {/* Risk anchor + features */}
               <div className="border-2 border-ink p-8 bg-background">
                 <div className="label-eyebrow mb-3">/ Why this plan</div>
-                <h2 className="font-display font-black text-2xl tracking-tighter">{cfg.roi.headline}</h2>
-                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{anchor}</p>
+                <h2 className="font-display font-black text-2xl tracking-tighter" data-testid="rightsizer-why-headline">{why?.headline || cfg.roi.headline}</h2>
+                <p className="text-sm text-muted-foreground mt-3 leading-relaxed" data-testid="rightsizer-why-detail">{why?.detail || cfg.roi.body}</p>
                 <div className="mt-6 border-t border-border pt-6">
                   <div className="label-eyebrow mb-3">/ Included</div>
                   <ul className="space-y-2 text-sm">

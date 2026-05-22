@@ -113,10 +113,7 @@ export default function Landing() {
               <p className="text-white/80 mt-4 text-sm leading-relaxed">{ind.hero.subheadline}</p>
 
               {signal && (
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/30 border border-white/15 p-4" data-testid="home-industry-signal">
-                  <div data-testid={`home-industry-pulse-${ind.slug}`}>
-                    <div className="text-sm font-mono text-white leading-snug">{signal.pulse}</div>
-                  </div>
+                <div className="mt-6 bg-black/30 border border-white/15 p-4" data-testid="home-industry-signal">
                   <div data-testid={`home-industry-featured-${ind.slug}`}>
                     <div className={`label-eyebrow ${ind.color.accentText} text-[10px]`}>Spotlight</div>
                     <div className="text-sm text-white/90 mt-1.5 leading-snug">{signal.featured}</div>

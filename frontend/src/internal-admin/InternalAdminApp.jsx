@@ -11,6 +11,8 @@ import AdminLayout from "./AdminLayout";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminAccounts from "./pages/AdminAccounts";
 import AdminAccountDetail from "./pages/AdminAccountDetail";
+import AdminSubscriptions from "./pages/AdminSubscriptions";
+import AdminFeatureFlags from "./pages/AdminFeatureFlags";
 import { AdminTrials, AdminDemos, AdminUsers, AdminAuditLogs } from "./pages/AdminLists";
 
 function AdminProtected({ children }) {
@@ -29,6 +31,8 @@ export default function InternalAdminApp() {
           <Route index element={<AdminDashboard />} />
           <Route path="accounts" element={<AdminAccounts />} />
           <Route path="accounts/:id" element={<AdminAccountDetail />} />
+          <Route path="subscriptions" element={<AdminSubscriptions />} />
+          <Route path="feature-flags" element={<AdminFeatureFlags />} />
           <Route path="trials" element={<AdminTrials />} />
           <Route path="demos" element={<AdminDemos />} />
           <Route path="users" element={<AdminUsers />} />
