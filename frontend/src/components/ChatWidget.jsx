@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatCircleDots, X, PaperPlaneRight, Cube } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import useScrollHide from "@/hooks/useScrollHide";
 
 const SESSION_KEY = "sb_chat_session_v1";
 const ANON_KEY = "sb_chat_anon_v1";
@@ -26,6 +27,7 @@ export default function ChatWidget() {
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
   const anonId = useMemo(ensureAnonId, []);
+  const scrollHidden = useScrollHide();
 
   // Load history when opening
   useEffect(() => {
@@ -75,7 +77,7 @@ export default function ChatWidget() {
         onClick={() => setOpen(true)}
         aria-label="Open SafeBase concierge — Talk to me"
         data-testid="chat-toggle"
-        className={`fixed bottom-5 right-5 z-[9994] flex items-center gap-2 px-4 py-3 bg-ink text-white border-2 border-ink shadow-2xl hover:bg-authority hover:translate-y-[-2px] transition-transform focus:outline-none focus:ring-4 focus:ring-warning ${open ? "hidden" : ""}`}
+        className={`fixed bottom-5 right-5 z-[9994] flex items-center gap-2 px-4 py-3 bg-ink text-white border-2 border-ink shadow-2xl hover:bg-authority hover:translate-y-[-2px] transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-warning ${open ? "hidden" : ""} ${scrollHidden && !open ? "translate-y-24 opacity-0 pointer-events-none" : ""}`}
       >
         <span className="w-7 h-7 bg-warning flex items-center justify-center shrink-0">
           <Cube weight="fill" size={16} className="text-ink" />

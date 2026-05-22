@@ -48,7 +48,7 @@ export default function IndustryProductPage({ industry }) {
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow" style={{ color: cfg.accent }}>/ {cfg.hero.tagline}</div>
           <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-4">
-            <span className="mr-3">{cfg.icon}</span>{cfg.hero.headline}
+            {cfg.hero.headline}
           </h1>
           <p className="text-lg text-white/70 mt-6 max-w-3xl">{cfg.hero.sub}</p>
           <div className="flex gap-3 mt-8">

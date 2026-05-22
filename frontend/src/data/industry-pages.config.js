@@ -55,7 +55,7 @@ export const INDUSTRY_PAGE_CONFIG = {
   },
   hospitality: {
     label: "Hospitality",
-    accent: "#7C1D3F",
+    accent: "#F59E0B",
     icon: "🍽️",
     hero: {
       tagline: "Built for Australian venues.",

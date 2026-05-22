@@ -24,6 +24,20 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 52 — Templates per-industry · Articles populated · Sitewide UX polish (Feb 2026)
+- **Templates page rebuilt** (`/templates`) — split from a flat trades-only list into a **5-industry tab layout** with 8 templates per industry (40 total). Industries: Trades, Hospitality, Transport, Healthcare, Retail. Each industry tab has its own category sub-filter and free-text search.
+- **Word document downloads** (`/app/frontend/src/lib/downloadAsWord.js`) — every template downloads as a Microsoft-Word-compatible `.doc` file (dependency-free HTML+Office namespace wrapper). Opens in Word, LibreOffice, Pages, Google Docs.
+- **Industry-specific content** — every template body authored to real Australian compliance: hospitality includes HACCP plan, temperature log, allergen matrix, RSA register, FSS checklist; transport includes CoR Mgmt Plan, pre-trip checklist, work-diary fatigue log, load restraint record, drug/alcohol policy; healthcare includes AHPRA register, NDIS Worker Screening register, manual handling RA, IPC policy, Strengthened Standards self-assessment; retail includes quick induction, lone-worker check-in log, cleaning + spill record, customer aggression procedure.
+- **Articles populated** — `ARTICLE_STUBS` (backend `routes/resources.py`) extended from 3-tuple to 5-tuple including `excerpt` (1-2 sentence preview) and `read_mins`. `GET /api/resources/articles` now returns excerpt + read_mins. Resources.jsx article list rebuilt to show title, multi-line excerpt, tags, read time, and industry-coloured "Read article →" CTA.
+- **ScrollToTop on route change** (`components/ScrollToTop.jsx`) — every navigation resets `window.scrollY` to 0 unless a `#hash` target exists.
+- **Auto-hide on scroll** (`hooks/useScrollHide.js`) — both the "Talk to me" chat trigger and the "Accessibility" trigger fade and translate-down when the user scrolls down >12px (with >60px threshold to avoid jitter), reappear on scroll-up. 200ms easing.
+- **Removed homepage industry signal "This week" eyebrow** — pulse text now reads inline without the eyebrow label.
+- **Removed "Powered by Claude" mentions** — Resources page no longer reads "Powered by Claude" under the AI assistant heading; loading state replaced "Asking Claude" with "Thinking".
+- **Emojis stripped from industry headings** — `IndustryProductPage.jsx` no longer renders `cfg.icon` (🔨 🍽️ 🚛 🏥 🛍️) before the `<h1>`. All 5 industry hero headings now read clean text.
+- **Hospitality contrast fix** — `INDUSTRY_PAGE_CONFIG.hospitality.accent` changed from `#7C1D3F` (dark maroon, ~3.5:1 vs `bg-ink`) to `#F59E0B` (amber, ~9.5:1) so the hero eyebrow, accent stats and section divider are readable. Sitewide contrast audit confirmed no `text-white` on `bg-warning`/yellow combinations exist.
+- **Verified** via 5 playwright screenshots: hospitality industry page, templates trades + hospitality tabs, resources articles list, and homepage hero — all rendering correctly.
+- **Phase 2 partial** — sidebar nav re-labelling per industry (Workers→Drivers/Clinicians/Team Members; SWMS Library→Food Safety/Fleet & CoR/Care Quality/Inductions) is **already implemented** (`NAV_LABELS_BY_INDUSTRY` + `APPS_NAV_BY_INDUSTRY` in `DashboardLayout.jsx`). The remaining Phase 2 items (Internal Admin Subscriptions page, Feature Flags page, per-industry dashboard widgets, per-industry notification templates) are tracked in backlog.
+
 ### Iteration 51 — High Contrast WCAG-AAA Fix + Chat Widget Trigger Redesign (Feb 2026)
 - **High Contrast rewrite** (`index.css`) — the previous HC implementation flatly forced `color: #000` on every element, which made white-on-dark hero/chatbox/industry copy unreadable. New implementation honours visual hierarchy:
   - Light surfaces → black text on white (default rule).

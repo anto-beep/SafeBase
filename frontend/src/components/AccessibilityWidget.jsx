@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { PersonSimple, X, TextAa, Eye, Cursor, Pause, Link as LinkIcon, BookOpen, ArrowCounterClockwise } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import useScrollHide from "@/hooks/useScrollHide";
 
 const STORAGE_KEY = "sb_a11y_prefs_v1";
 const DEFAULTS = {
@@ -49,6 +50,7 @@ export default function AccessibilityWidget() {
   const [synced, setSynced] = useState(false);
   const guideRef = useRef(null);
   const { pathname } = useLocation();
+  const scrollHidden = useScrollHide();
   // On dashboard routes the sidebar (w-64 = 256px) occupies the bottom-left;
   // shift the floating widget right of it so it doesn't sit on top of the
   // logout button. On marketing/auth pages there's no sidebar, so default left.
@@ -115,7 +117,7 @@ export default function AccessibilityWidget() {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         data-testid="a11y-toggle"
-        className={`fixed ${btnPosition} z-[9995] flex items-center gap-2 px-4 py-3 bg-blue-700 text-white border-2 border-blue-700 shadow-2xl hover:bg-blue-600 hover:translate-y-[-2px] transition-transform focus:outline-none focus:ring-4 focus:ring-blue-300`}
+        className={`fixed ${btnPosition} z-[9995] flex items-center gap-2 px-4 py-3 bg-blue-700 text-white border-2 border-blue-700 shadow-2xl hover:bg-blue-600 hover:translate-y-[-2px] transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 ${scrollHidden && !open ? "translate-y-24 opacity-0 pointer-events-none" : ""}`}
       >
         <span className="w-7 h-7 bg-white flex items-center justify-center shrink-0">
           <PersonSimple size={18} weight="duotone" className="text-blue-700" />

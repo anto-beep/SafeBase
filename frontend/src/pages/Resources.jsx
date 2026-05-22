@@ -138,7 +138,7 @@ export default function Resources() {
               Get instant answers — {ind.label.toLowerCase()}.
             </h2>
             <p className="text-white/70 mt-3">
-              Powered by Claude. Trained on Australian {ind.label.toLowerCase()} compliance obligations, regulators, and legislation.
+              Trained on Australian {ind.label.toLowerCase()} compliance obligations, regulators, and legislation.
             </p>
 
             <form onSubmit={(e) => { e.preventDefault(); ask(); }} className="mt-6 flex flex-col sm:flex-row gap-2">
@@ -181,7 +181,7 @@ export default function Resources() {
 
             {asking && (
               <div className="mt-5 text-white/60 text-sm flex items-center gap-2" data-testid="resources-ai-loading">
-                <Sparkle className="animate-pulse" weight="fill" /> Asking Claude · should be a few seconds…
+                <Sparkle className="animate-pulse" weight="fill" /> Thinking · should be a few seconds…
               </div>
             )}
 
@@ -206,14 +206,23 @@ export default function Resources() {
             <div className="font-display font-black text-3xl tracking-tighter mt-1">Compliance reading</div>
             <ul className="mt-5 divide-y divide-border" data-testid="resources-articles-list">
               {articles.map((a) => (
-                <li key={a.slug} className="py-4">
+                <li key={a.slug} className="py-5">
                   <Link
                     to={`/resources/${industry}/${a.slug}`}
                     className="group block"
                     data-testid={`resources-article-${a.slug}`}
                   >
-                    <div className="font-display font-black text-lg group-hover:underline">{a.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{a.tags}</div>
+                    <div className="font-display font-black text-lg leading-tight group-hover:underline">{a.title}</div>
+                    {a.excerpt && (
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{a.excerpt}</p>
+                    )}
+                    <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mt-2 flex items-center gap-3">
+                      <span>{a.tags}</span>
+                      {a.read_mins && <span aria-hidden>·</span>}
+                      {a.read_mins && <span>{a.read_mins} min read</span>}
+                      <span aria-hidden>·</span>
+                      <span className="font-bold group-hover:text-ink" style={{ color: ind.accent }}>Read article →</span>
+                    </div>
                   </Link>
                 </li>
               ))}

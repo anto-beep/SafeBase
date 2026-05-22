@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import InternalAdminApp from "@/internal-admin/InternalAdminApp";
 import AccessibilityWidget from "@/components/AccessibilityWidget";
 import ChatWidget from "@/components/ChatWidget";
+import ScrollToTop from "@/components/ScrollToTop";
 import Landing from "@/pages/HomeMultiIndustry";
 import IndustriesOverview from "@/pages/industries/IndustriesOverview";
 import IndustryTrades from "@/pages/industries/IndustryTrades";
@@ -255,6 +256,7 @@ export default function App() {
           {/* Everything else uses the customer AuthProvider */}
           <Route path="/*" element={
             <AuthProvider>
+              <ScrollToTop />
               <AppRouter />
               <AccessibilityWidget />
               <ChatWidget />
