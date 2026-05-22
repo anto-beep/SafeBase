@@ -216,6 +216,10 @@ def register_internal_admin_auth(api_router: APIRouter, *, db):
         email = body.email.lower()
         client_ip = request.client.host if request.client else None
         admin = await db.internal_admins.find_one({"email": email})
+        # Lockout check runs BEFORE password verification so locked accounts
+        # return 423 regardless of password correctness (better UX/observability).
+        if admin and admin.get("locked"):
+            raise HTTPException(423, "Account locked after too many failed attempts. Contact a super admin.")
         if not admin or not _verify_password(body.password, admin["password_hash"]):
             # Track failed attempts — but never reveal whether admin exists
             if admin:
@@ -232,8 +236,7 @@ def register_internal_admin_auth(api_router: APIRouter, *, db):
                     )
             raise HTTPException(401, "Invalid email or password")
 
-        if admin.get("locked"):
-            raise HTTPException(423, "Account locked after too many failed attempts. Contact a super admin.")
+        # Lockout check already happened above (pre-password). Just keep is_active check here.
         if not admin.get("is_active", True):
             raise HTTPException(403, "Account disabled")
 

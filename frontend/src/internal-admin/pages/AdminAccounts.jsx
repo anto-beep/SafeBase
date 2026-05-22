@@ -96,10 +96,15 @@ export default function AdminAccounts() {
             {loading && <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500" data-testid="admin-accounts-loading">Loading…</td></tr>}
             {!loading && data.rows.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500">No accounts match.</td></tr>}
             {!loading && data.rows.map((r) => (
-              <tr key={r.account_id} className="hover:bg-slate-50" data-testid={`admin-account-row-${r.account_id}`}>
+              <tr key={r.account_id} className="hover:bg-slate-50 cursor-pointer" data-testid={`admin-account-row-${r.account_id}`} onClick={(e) => {
+                if (e.target.closest('a')) return; // let inner <Link> handle its own click
+                window.location.assign(`/internal-admin/accounts/${r.account_id}`);
+              }}>
                 <td className="px-4 py-3">
-                  <div className="font-bold">{r.business_name}</div>
-                  <div className="text-[11px] text-slate-500">{r.owner_email}</div>
+                  <Link to={`/internal-admin/accounts/${r.account_id}`} className="block">
+                    <div className="font-bold">{r.business_name}</div>
+                    <div className="text-[11px] text-slate-500">{r.owner_email}</div>
+                  </Link>
                 </td>
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center gap-1.5 text-xs">
