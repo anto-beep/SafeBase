@@ -2427,6 +2427,18 @@ register_api_keys_routes(
     account_id_for_fn=account_id_for, stamp_account_fn=stamp_account, logger=logger,
 )
 
+# ─────── Internal Admin (Iter49) — completely separate from customer auth ───
+from internal_admin import mount_internal_admin  # noqa: E402
+from internal_admin.seed import seed_super_admin  # noqa: E402
+mount_internal_admin(api_router, db=db)
+
+@app.on_event("startup")
+async def _seed_internal_admin():
+    try:
+        await seed_super_admin(db)
+    except Exception as exc:
+        logger.warning("seed_super_admin failed: %s", exc)
+
 
 
 @api_router.get("/incident-workflow/meta/regulators")

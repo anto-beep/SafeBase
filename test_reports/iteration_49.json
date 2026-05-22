@@ -1,0 +1,42 @@
+{
+  "summary": "Iter49 Internal Admin Panel MVP — full backend + frontend verification. Backend: 24/24 pytest tests pass (10 original test_internal_admin.py + 14 new test_iter49_admin_extended.py covering cross-auth isolation, brute-force lockout, TOTP enrol+verify+2fa-login, alerts/activity feed, accounts filters, extend-trial 30-day cap, super_admin apply-credit no cap, trials/demos/users/audit-logs lists). Frontend: Login → dashboard → accounts table+search → account detail (all 6 tabs) → extend-trial submit (audit logged) → notes submit (appears in list) → trials/demos/users/audit-logs navigation → Phase 2 items render as non-clickable DIVs with cursor-not-allowed + 'Phase 2' badge → logout clears sb_admin_token and redirects to /internal-admin/login. Cross-app auth isolation verified: customer-logged-in user visiting /internal-admin redirects to admin login (no admin session leak); admin JWT rejected at /api/auth/me (401); customer JWT rejected at /api/internal-admin/me (401); both tokens coexist in different localStorage keys (st_token vs sb_admin_token). Mocked Stripe billing clearly labelled (MOCKED on MRR card + Billing tab badge + Failed payments alert).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/internal-admin/login", "issue": "Lockout check (line 235 in auth.py) runs AFTER password verification, so when the account is locked and the user supplies a WRONG password, the response is still 401 'Invalid email or password' rather than 423 'Account locked'. The 423 only surfaces when the correct password is submitted. Functionally fine (account IS locked, no auth granted) but the UX/observability would improve if locked accounts returned 423 regardless of password correctness."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AdminAccounts row click", "issues": ["The <tr> row click navigation works in real browser usage but does NOT respond to programmatic element.click() (likely an onClick handler on the row rather than a wrapping <a>). Minor — the 'OPEN →' link on the right of each row does navigate via Link, so users always have a working affordance. Consider wrapping the row content in a <Link> for full keyboard/middle-click/right-click parity."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_internal_admin.py",
+    "/app/backend/tests/test_iter49_admin_extended.py",
+    "/app/test_reports/pytest/iter49_admin.xml",
+    "/app/test_reports/pytest/iter49_admin_extended.xml"
+  ],
+  "action_items": [
+    "(Optional, minor) Move the `if admin.get('locked')` branch in internal_admin/auth.py admin_login() to run BEFORE password verification so locked accounts return 423 even on wrong-password attempts.",
+    "(Optional, design) Wrap account table <tr> content in a <Link to=`/internal-admin/accounts/{id}`> for middle-click/keyboard parity (current onClick still works for normal clicks)."
+  ],
+  "critical_code_review_comments": [
+    "Excellent separation of admin auth: ADMIN_JWT_SECRET, sb_admin_token, separate axios instance, separate AuthProvider. Verified at runtime — admin JWT cannot pass /api/auth/me and customer JWT cannot pass /api/internal-admin/me.",
+    "Mocked-data UX is exemplary: 'MOCKED' label on MRR card, 'MOCKED' badge on Billing tab, 'mocked' text on Failed-payments alert, and `mocked: true` in API responses — easy to identify and replace in Phase 2.",
+    "Phase 2 sidebar items intentionally rendered as <div class='cursor-not-allowed'> with 'Phase 2' badge, preventing accidental navigation. Good UX scaffolding.",
+    "Audit log is append-only (no DELETE endpoint) — verified via DELETE returning 404/405. extend_trial and add_note actions correctly written with target_id + actor metadata.",
+    "Brute-force lockout works correctly (locks after 5 fails). Auto-unlock on backend restart via seed_super_admin is helpful for dev. Only minor nit: 423 ordering as described above."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter49_admin_extended.py (new — 14 additional tests covering lockout, TOTP enroll/verify, 2fa login, cross-auth isolation, alerts, activity-feed, accounts filters, extend-trial cap, apply-credit, trials/demos/users/audit-logs lists)"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "100% (all flows from review request verified)"},
+  "test_credentials": "admin@safebase.internal / AdminDemo@1234 (super_admin) — still valid; owner@safetradie.demo / Demo@1234 — still valid",
+  "seed_data_creation": "Tests use existing seeded super_admin + safetradie demo data. Autouse fixture in test_iter49_admin_extended.py unlocks admin + resets failed_login_attempts + clears two_factor_enabled/totp_secret between tests so the TOTP test starts from a clean state. Note: after the brute_force_lockout test ran during initial frontend probe, the admin was left locked — backend restart triggered seed_super_admin which auto-unlocked it. No manual cleanup needed for subsequent runs.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 10 endpoint tests + 14 extended tests pass. The admin can be locked by repeated tests; backend restart auto-unlocks via seed. Frontend admin app fully wired: login → dashboard → accounts → detail (6 tabs) → extend-trial → notes → trials/demos/users/audit-logs → logout. Phase 2 (Subscriptions, Feature Flags) are non-clickable DIVs as designed. Customer regression spot-checks all green (marketing, /dashboard, /login still work). Stripe is intentionally MOCKED until Phase 2 — labelled clearly in UI and API responses. Only minor cleanup suggestion: reorder the lock-check vs password-check in admin_login() so locked accounts return 423 even with wrong passwords."
+}

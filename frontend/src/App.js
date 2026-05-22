@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import "@/App.css";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+import InternalAdminApp from "@/internal-admin/InternalAdminApp";
 import Landing from "@/pages/HomeMultiIndustry";
 import IndustriesOverview from "@/pages/industries/IndustriesOverview";
 import IndustryTrades from "@/pages/industries/IndustryTrades";
@@ -245,12 +246,19 @@ function AppRouter() {
 export default function App() {
   return (
     <div className="App">
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRouter />
-          <Toaster position="top-right" richColors />
-        </BrowserRouter>
-      </AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Internal admin lives in its OWN auth context — isolated from customer auth */}
+          <Route path="/internal-admin/*" element={<InternalAdminApp />} />
+          {/* Everything else uses the customer AuthProvider */}
+          <Route path="/*" element={
+            <AuthProvider>
+              <AppRouter />
+            </AuthProvider>
+          } />
+        </Routes>
+        <Toaster position="top-right" richColors />
+      </BrowserRouter>
     </div>
   );
 }
