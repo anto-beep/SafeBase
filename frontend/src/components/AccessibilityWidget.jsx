@@ -4,6 +4,7 @@
  * Persists to backend (when logged in) AND localStorage (always).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { PersonSimple, X, TextAa, Eye, Cursor, Pause, Link as LinkIcon, BookOpen, ArrowCounterClockwise } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
@@ -47,6 +48,17 @@ export default function AccessibilityWidget() {
   const [prefs, setPrefs] = useState(loadLocal);
   const [synced, setSynced] = useState(false);
   const guideRef = useRef(null);
+  const { pathname } = useLocation();
+  // On dashboard routes the sidebar (w-64 = 256px) occupies the bottom-left;
+  // shift the floating widget right of it so it doesn't sit on top of the
+  // logout button. On marketing/auth pages there's no sidebar, so default left.
+  const isDashboard = pathname.startsWith("/dashboard");
+  const btnPosition = isDashboard
+    ? "bottom-5 lg:left-[17.5rem] left-5"   // 17.5rem ≈ 280px, clears the 256px sidebar
+    : "bottom-5 left-5";
+  const panelPosition = isDashboard
+    ? "bottom-24 lg:left-[17.5rem] left-5"
+    : "bottom-24 left-5";
 
   // Apply on every change
   useEffect(() => { applyToDOM(prefs); saveLocal(prefs); }, [prefs]);
@@ -103,9 +115,12 @@ export default function AccessibilityWidget() {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         data-testid="a11y-toggle"
-        className="fixed bottom-5 left-5 z-[9995] w-12 h-12 rounded-full bg-blue-700 hover:bg-blue-600 text-white shadow-2xl flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-blue-300"
+        className={`fixed ${btnPosition} z-[9995] flex items-center gap-2 px-4 py-3 bg-blue-700 text-white border-2 border-blue-700 shadow-2xl hover:bg-blue-600 hover:translate-y-[-2px] transition-transform focus:outline-none focus:ring-4 focus:ring-blue-300`}
       >
-        <PersonSimple size={26} weight="duotone" />
+        <span className="w-7 h-7 bg-white flex items-center justify-center shrink-0">
+          <PersonSimple size={18} weight="duotone" className="text-blue-700" />
+        </span>
+        <span className="font-display font-black tracking-tight text-sm uppercase">Accessibility</span>
       </button>
 
       {open && (
@@ -113,7 +128,7 @@ export default function AccessibilityWidget() {
           role="dialog"
           aria-label="Accessibility settings"
           data-testid="a11y-panel"
-          className="fixed bottom-20 left-5 z-[9995] w-72 bg-white border-2 border-blue-700 shadow-2xl rounded-lg p-4"
+          className={`fixed ${panelPosition} z-[9995] w-72 bg-white border-2 border-blue-700 shadow-2xl rounded-lg p-4`}
         >
           <div className="flex items-center justify-between mb-3">
             <div className="font-display font-black tracking-tight text-sm">Accessibility</div>
