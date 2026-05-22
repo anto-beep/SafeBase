@@ -10,6 +10,8 @@ import IndustryTransport from "@/pages/industries/IndustryTransport";
 import IndustryHealthcare from "@/pages/industries/IndustryHealthcare";
 import IndustryRetail from "@/pages/industries/IndustryRetail";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Register from "@/pages/Register";
 import AuthCallback from "@/pages/AuthCallback";
 import DashboardLayout from "@/pages/DashboardLayout";
@@ -149,6 +151,8 @@ function AppRouter() {
       <Route path="/resources/:industry/:slug" element={<ResourceArticle />} />
       <Route path="/about" element={<About />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/tradecheck" element={<TradecheckMarketplace />} />

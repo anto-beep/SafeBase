@@ -79,6 +79,11 @@ export default function Login() {
             <div>
               <Label htmlFor="password" className="label-eyebrow">Password</Label>
               <Input id="password" data-testid="login-password-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-2 h-12 rounded-none border-ink" />
+              <div className="mt-2 text-right">
+                <Link to="/forgot-password" className="text-xs text-ink hover:underline font-mono uppercase tracking-widest" data-testid="forgot-password-link">
+                  Forgot your password?
+                </Link>
+              </div>
             </div>
             <Button type="submit" disabled={loading} className="w-full btn-sharp h-12 bg-ink text-white hover:bg-authority" data-testid="login-submit-btn">
               {loading ? "Signing in..." : "Sign in"}

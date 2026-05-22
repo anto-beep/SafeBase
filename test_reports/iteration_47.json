@@ -1,0 +1,53 @@
+{
+  "summary": "Iter47 password-reset + auth-aware navbar. Backend: 6/6 pytest tests pass (forgot-password 200, identical message for nonexistent, no dev_url leak, rate-limit at 4th request, verify-token valid/invalid, weak pw 422, reset 200, token reuse 400). Frontend: /forgot-password and /reset-password flows fully working, dev_reset_url visible in dev, masked email hint correct, real-time rule checklist enables submit only when all rules + match, success state shown, expired state for bad token. Login page has forgot-password-link. Auth navbar correctly toggles: logged-out shows login/demo/register; logged-in shows DASHBOARD + avatar (initials 'DO'); dropdown shows name/email/role pill (#FFCC00 trades yellow), Dashboard, My profile, Billing (owner-only), red Logout. Logout clears st_token, redirects to /, navbar reverts to public. ONE BACKEND BUG: password reset does NOT invalidate JWT tokens — old JWT remains valid for /auth/me after reset (cookie-based user_sessions are deleted, but stateless JWT is not invalidated because get_current_user does not check password_changed_at).",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/auth/reset-password",
+        "issue": "Password reset does NOT invalidate previously-issued JWT tokens. Spec requires '/auth/me' to return 401 after reset using the old bearer JWT. Currently returns 200. Code only does `db.user_sessions.delete_many({user_id})` which handles cookie sessions, but JWT is stateless and `get_current_user` does not consult `password_changed_at`. Fix: in get_current_user JWT branch, compare jwt iat to user's password_changed_at and reject if iat < password_changed_at.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "MarketingNav AuthMenu",
+        "issue": "Dashboard button rendered as <button onClick={navigate('/dashboard')}> instead of <Link to=\"/dashboard\">; element has no href attribute. Functionally works (click navigates) but breaks middle-click/right-click/open-in-new-tab and is inconsistent with spec wording 'links to /dashboard'.",
+        "selector": "[data-testid='nav-dashboard-btn']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_password_reset.py",
+    "/app/backend/tests/test_iter47_session_invalidation.py",
+    "/app/test_reports/pytest/iter47_password_reset.xml",
+    "/app/test_reports/pytest/iter47_session.xml"
+  ],
+  "action_items": [
+    "FIX (HIGH): Make password reset invalidate JWT tokens. In server.py get_current_user JWT branch: after decoding payload, fetch the user's password_changed_at; if jwt 'iat' < password_changed_at, return 401. Alternative: store the password_changed_at as a 'session epoch' and embed it in JWT claims or check it during decode.",
+    "NICE-TO-HAVE: Render nav-dashboard-btn as <Link to='/dashboard'> instead of <button onClick={...}> so it has an href and supports middle-click/new-tab."
+  ],
+  "critical_code_review_comments": [
+    "auth.py reset_password correctly atomically marks token used + invalidates other unused tokens for the user (good).",
+    "Rate-limit by inserting decoy records for non-existent emails is the right approach — prevents enumeration AND prevents bypass.",
+    "send_email is wrapped in try/except and never blocks the API response — correct fail-open design.",
+    "MAJOR: JWT session-invalidation gap (see backend critical) — the spec asks for this and the implementation only handles cookie sessions.",
+    "Reset-password also rejects reuse of current password (422) — nice extra UX guard.",
+    "ResetPassword.jsx 400 → setPhase('expired') treats every 400 as expired; if user re-uses a token they'll just see expired state, which is acceptable but message could be more specific."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter47_session_invalidation.py (new — confirms JWT-invalidation bug)"
+  ],
+  "success_rate": {"backend": "85% (6/7 — JWT invalidation requirement fails)", "frontend": "100%"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (verified restored after test run)",
+  "seed_data_creation": "Cleared db.password_resets at end of test run. Password verified restored to Demo@1234.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Demo password is Demo@1234 (verified). Industry='trades' (verified). password_resets collection was purged. Rate-limit window is fresh. The JWT-invalidation bug is reproduced by /app/backend/tests/test_iter47_session_invalidation.py — after fix, this test should pass (currently asserts that /auth/me returns 401 with old JWT after reset, which currently returns 200).",
+  "rca of the issue": "RCA — JWT not invalidated on password reset: server.py:get_current_user() JWT branch (lines ~212-217) decodes JWT, looks up user, and returns User(**user_doc) without checking when the password last changed. JWT is stateless — neither expiry nor any server-side blacklist is consulted beyond the standard exp claim. Mitigation: (1) Store password_changed_at on user (already done — line 472 in auth.py sets it). (2) In get_current_user JWT branch, compare jwt payload['iat'] (issued-at, already in token — see make_jwt) against user_doc.get('password_changed_at'); if iat < password_changed_at, raise 401. (3) Reproduction: login → call /auth/me with token (200) → forgot-password → reset-password → call /auth/me with SAME token (currently 200, should be 401)."
+}
