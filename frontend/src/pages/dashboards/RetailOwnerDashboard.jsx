@@ -13,6 +13,7 @@ import {
   Storefront, Users, Warning, Sparkle, ArrowRight, ShieldCheck,
   CheckCircle, IdentificationBadge, FilePlus, FirstAidKit, Drop,
 } from "@phosphor-icons/react";
+import IndustryAlertTile from "@/components/IndustryAlertTile";
 
 const PURPLE = "#5B2D8E";
 const PINK = "#E91E8C";
@@ -116,6 +117,9 @@ export default function RetailOwnerDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Lone-worker check-in alerts — Iter55 */}
+        <IndustryAlertTile industry="retail" />
 
         {/* TWO-COLUMN BELOW */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

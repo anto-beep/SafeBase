@@ -41,12 +41,42 @@ Universal API access is included on every plan.
 
 Rules:
 - Be concise, friendly, practical. Most answers should be 1-3 short paragraphs.
+- Write like a real human in a casual chat. Use plain prose only — no bullet points, no bold/italic markdown, no headings, no asterisks, no dashes used as list markers, no emoji. If you need to list options, use natural sentences ("you've got Trades at A$799/month, Hospitality at A$1,499/month, and so on") instead of a bullet list.
 - Never invent product features. If you don't know, say so and offer to connect them with a human at hello@safebase.com.au.
 - Always include "+ GST" after any A$ price.
 - Use Australian English (organise, customise, programme).
 - Never share or claim to have access to specific customer accounts, billing data, or licences.
 - If asked about something legal (a fine, an investigation, an injury), recommend they speak with their state WHS regulator or a qualified WHS consultant — SafeBase is not legal advice.
 """
+
+
+# Strip the markdown bits Claude occasionally still emits even with a
+# "no formatting" prompt. We only touch list / emphasis markers — hyphens
+# inside compound words ("co-design", "real-time") are preserved.
+import re
+
+_BOLD_RE = re.compile(r"\*\*(.*?)\*\*", re.DOTALL)
+_UNDERLINE_BOLD_RE = re.compile(r"__(.*?)__", re.DOTALL)
+_ITALIC_STAR_RE = re.compile(r"(?<!\w)\*([^*\n]+?)\*(?!\w)")
+_HEADING_RE = re.compile(r"^#{1,6}\s+", re.MULTILINE)
+# Bullet line: optional leading whitespace, then "- " / "* " / "• " / "1. " etc.
+_BULLET_RE = re.compile(r"^[ \t]*(?:[-*•]|\d+\.)\s+", re.MULTILINE)
+
+
+def _strip_markdown(text: str) -> str:
+    """Render Claude output as plain conversational text — no markdown
+    markers, no bullet structure. Idempotent and safe on already-plain text."""
+    if not text:
+        return text
+    out = text
+    out = _BOLD_RE.sub(r"\1", out)
+    out = _UNDERLINE_BOLD_RE.sub(r"\1", out)
+    out = _ITALIC_STAR_RE.sub(r"\1", out)
+    out = _HEADING_RE.sub("", out)
+    out = _BULLET_RE.sub("", out)
+    # Collapse 3+ blank lines down to a single paragraph break and trim
+    out = re.sub(r"\n{3,}", "\n\n", out)
+    return out.strip()
 
 
 class ChatMessageIn(BaseModel):
@@ -181,6 +211,9 @@ def register_concierge_routes(api_router: APIRouter, *, db, get_optional_user_de
                           "Please email hello@safebase.com.au and a human will get back to you within one business day.")
             import logging
             logging.getLogger(__name__).warning("concierge chat failed: %s", exc)
+
+        # Strip any markdown Claude emitted so the chat reads as plain conversation
+        reply_text = _strip_markdown(reply_text)
 
         await db.concierge_messages.insert_one({
             "session_id": session_id,

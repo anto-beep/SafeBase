@@ -24,7 +24,14 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
-### Iteration 55 — Per-industry dashboard widgets · Notification template variants · Concierge lead-capture (Feb 2026)
+### Iteration 56 — Trades + Retail dashboard widgets · Chat plain-prose (Feb 2026)
+- **Trades widget** ("Credentials expiring", `GET /api/dashboard/widget/credential-expiry`) — reads `licences` joined to `workers`, returns expiring-in-60-days + already-expired counts and rows with worker name, licence type, licence number, days_left. Yellow accent matches the trades theme. Mounted on `OwnerDashboard` (trades default) below the stat cards.
+- **Retail widget** ("Lone-worker check-ins", `GET /api/dashboard/widget/lone-worker`) — reads a new `lone_worker_shifts` collection, returns currently-open shifts + missed-check-in rows (where time since last check-in exceeds interval + 10 min grace). Purple accent matches the retail theme. Mounted on `RetailOwnerDashboard` below the top status strip.
+- **Chat reads as natural conversation** — strengthened the concierge system prompt ("Write like a real human in a casual chat. Use plain prose only — no bullet points, no markdown, no headings, no asterisks…") AND added a deterministic server-side `_strip_markdown(text)` helper applied to every Claude reply before persistence. The helper removes `**bold**`, `__underline-bold__`, `*italic*`, `# headings`, and list markers (`- `, `* `, `• `, `1. ` at start of line). Idempotent and safe — preserves compound-word hyphens like "co-design" and "real-time".
+- **Demo seed extended** (`backend/seed_widget_demo.py`) — now also provisions `trades.demo@safebase.com.au` + `retail.demo@safebase.com.au` (password `Demo@1234`, onboarding pre-completed) with 4 workers + 6 licences (1 expired, 4 expiring within 60 days) and 4 lone-worker shifts (2 missed check-ins).
+- **Verified** via curl + 3 dashboard screenshots — trades shows the yellow "Credentials expiring" tile with Jack Mitchell's expired White Card visible; retail shows the purple "Lone-worker shifts" tile with Jose Romero and Riley Hughes flagged. Chat reply checks confirmed `Contains **`, `Contains markdown bullet`, `Contains markdown heading` all return `False`.
+
+### Iteration 55 — Per-industry dashboard widgets (hospitality / transport / healthcare) · Notification template variants · Concierge lead-capture (Feb 2026)
 - **Per-industry dashboard widgets** (`components/IndustryAlertTile.jsx`) — one shared tile component that conditionally renders the right body per industry. Mounted at the top of each industry-specific owner dashboard:
   - **Hospitality** ("Temperature alerts"): units tracked, overdue today, out-of-range readings — drills into `/dashboard/food-safety`. Endpoint: `GET /api/dashboard/widget/temp-alert` reads `temp_units`.
   - **Transport** ("Driver fatigue (24h)"): drivers approaching cap (≥85%), drivers exceeding cap (Standard 12h, BFM 14h, AFM 15h) — drills into `/dashboard/fleet`. Endpoint: `GET /api/dashboard/widget/fatigue-alert` aggregates `driver_work_diary` for the trailing 24h.

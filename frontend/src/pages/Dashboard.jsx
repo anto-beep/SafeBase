@@ -22,6 +22,7 @@ import HospitalityOwnerDashboard from "./dashboards/HospitalityOwnerDashboard";
 import TransportOwnerDashboard from "./dashboards/TransportOwnerDashboard";
 import HealthcareOwnerDashboard from "./dashboards/HealthcareOwnerDashboard";
 import RetailOwnerDashboard from "./dashboards/RetailOwnerDashboard";
+import IndustryAlertTile from "@/components/IndustryAlertTile";
 
 // Growing Business plan covers 5 active sites — 6+ triggers Enterprise upsell banner.
 const GROWING_SITES_CAP = 5;
@@ -275,6 +276,9 @@ function OwnerDashboard() {
           </Link>
         ))}
       </div>
+
+      {/* Trades credential expiry alerts — Iter55 */}
+      {industrySlug === "trades" && <IndustryAlertTile industry="trades" />}
 
       {/* Industry starter — surfaces industry-specific doc shortcuts (new tenants) */}
       <div

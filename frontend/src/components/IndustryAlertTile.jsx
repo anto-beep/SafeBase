@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import api from "@/lib/api";
 import {
   Thermometer, Truck, Stethoscope, Warning, CheckCircle, Clock, ArrowRight,
+  HardHat, Storefront,
 } from "@phosphor-icons/react";
 
 const CONFIG = {
@@ -35,6 +36,20 @@ const CONFIG = {
     label: "AHPRA registrations",
     cta: { label: "Open clinicians", to: "/dashboard/team" },
     icon: Stethoscope,
+  },
+  trades: {
+    endpoint: "/dashboard/widget/credential-expiry",
+    accent: "#FFCC00",
+    label: "Worker credentials (60 days)",
+    cta: { label: "Open licences", to: "/dashboard/licences" },
+    icon: HardHat,
+  },
+  retail: {
+    endpoint: "/dashboard/widget/lone-worker",
+    accent: "#A855F7",
+    label: "Lone-worker check-ins",
+    cta: { label: "Open team", to: "/dashboard/team" },
+    icon: Storefront,
   },
 };
 
@@ -73,6 +88,8 @@ export default function IndustryAlertTile({ industry }) {
               {industry === "hospitality" && "Temperature alerts"}
               {industry === "transport" && "Fatigue alerts"}
               {industry === "healthcare" && "AHPRA renewals"}
+              {industry === "trades" && "Credentials expiring"}
+              {industry === "retail" && "Lone-worker shifts"}
             </div>
           </div>
         </div>
@@ -100,6 +117,8 @@ function Body({ industry, data, accent }) {
   if (industry === "hospitality") return <HospitalityBody data={data} accent={accent} />;
   if (industry === "transport")   return <TransportBody   data={data} accent={accent} />;
   if (industry === "healthcare")  return <HealthcareBody  data={data} accent={accent} />;
+  if (industry === "trades")      return <TradesBody      data={data} accent={accent} />;
+  if (industry === "retail")      return <RetailBody      data={data} accent={accent} />;
   return null;
 }
 
@@ -223,6 +242,83 @@ function HealthcareBody({ data, accent }) {
           severity={c.days_left <= 14 ? "danger" : "warn"}
           title={`${c.name} — ${c.profession}`}
           subtitle={`${c.registration_number || ""} · ${c.days_left} day${c.days_left === 1 ? "" : "s"} to renewal`}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ───────────────────── Trades body ───────────────────── */
+function TradesBody({ data }) {
+  const soon = data.expiring_soon || [];
+  const expired = data.expired || [];
+  const allOk = soon.length === 0 && expired.length === 0;
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Stat label="Expiring in 60 days" value={soon.length} highlight={soon.length > 0} />
+        <Stat label="Already expired" value={expired.length} danger={expired.length > 0} />
+      </div>
+      {allOk && (
+        <div className="border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm flex items-center gap-2" data-testid="industry-alert-tile-trades-ok">
+          <CheckCircle weight="fill" className="text-emerald-600 shrink-0" />
+          Every worker credential is current — no licences expiring in the next 60 days.
+        </div>
+      )}
+      {expired.slice(0, 4).map((c) => (
+        <Row
+          key={`exp-${c.licence_id}`}
+          testid={`industry-alert-tile-trades-exp-${c.licence_id}`}
+          severity="danger"
+          title={`${c.worker_name} — ${c.licence_type}`}
+          subtitle={`${c.licence_number || ""} · EXPIRED ${Math.abs(c.days_left)} day${Math.abs(c.days_left) === 1 ? "" : "s"} ago`}
+        />
+      ))}
+      {soon.slice(0, 4).map((c) => (
+        <Row
+          key={`soon-${c.licence_id}`}
+          testid={`industry-alert-tile-trades-soon-${c.licence_id}`}
+          severity={c.days_left <= 14 ? "danger" : "warn"}
+          title={`${c.worker_name} — ${c.licence_type}`}
+          subtitle={`${c.licence_number || ""} · ${c.days_left} day${c.days_left === 1 ? "" : "s"} to renewal`}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ───────────────────── Retail body ───────────────────── */
+function RetailBody({ data, accent }) {
+  const open = data.open_shifts || [];
+  const missed = data.missed || [];
+  const allOk = missed.length === 0;
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Stat label="Active shifts" value={open.length} />
+        <Stat label="Missed check-ins" value={missed.length} danger={missed.length > 0} />
+      </div>
+      {open.length === 0 && (
+        <EmptyState
+          accent={accent}
+          message="No active lone-worker shifts right now."
+          cta="Start a shift"
+          to="/dashboard/team"
+        />
+      )}
+      {open.length > 0 && allOk && (
+        <div className="border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm flex items-center gap-2" data-testid="industry-alert-tile-retail-ok">
+          <CheckCircle weight="fill" className="text-emerald-600 shrink-0" />
+          All active lone workers have checked in within their interval.
+        </div>
+      )}
+      {missed.slice(0, 4).map((s) => (
+        <Row
+          key={`miss-${s.shift_id}`}
+          testid={`industry-alert-tile-retail-miss-${s.shift_id}`}
+          severity="danger"
+          title={`${s.worker_name} — ${s.store_name}`}
+          subtitle={`No check-in for ${s.minutes_since_check_in}m (interval ${s.check_in_interval_mins}m) · call now`}
         />
       ))}
     </div>

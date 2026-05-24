@@ -126,6 +126,117 @@ def register_dashboard_widgets(api_router: APIRouter, *, db, get_current_user_de
             "window_hours": 24,
         }
 
+    # ─────────────── TRADES — Credential / SWMS expiry alert ───────────────
+    @api_router.get("/dashboard/widget/credential-expiry")
+    async def trades_credential_expiry(user=Depends(get_current_user_dep)):
+        """Trades: worker licences (White Card, trade licence, first aid, HRWL)
+        approaching expiry. Reads from `licences` joined to `workers` for name.
+        """
+        owner = user.user_id
+        now = _now()
+        # Pull every licence belonging to this owner's workers OR the owner.
+        # The licences collection uses `user_id` (=owner) per server.py L367.
+        cursor = db.licences.find({"user_id": owner}, {"_id": 0})
+        expiring_soon: list[dict] = []
+        expired: list[dict] = []
+        soon_cutoff = (now + timedelta(days=60)).date()
+        worker_cache: dict[str, str] = {}
+        async for lic in cursor:
+            exp_raw = lic.get("expiry_date")
+            if not exp_raw:
+                continue
+            try:
+                exp_dt = datetime.fromisoformat(exp_raw)
+                if exp_dt.tzinfo is None:
+                    exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+            days_left = (exp_dt.date() - now.date()).days
+            if days_left > 60:
+                continue
+            worker_id = lic.get("worker_id")
+            if worker_id and worker_id not in worker_cache:
+                w = await db.workers.find_one({"worker_id": worker_id}, {"_id": 0, "name": 1}) or {}
+                worker_cache[worker_id] = w.get("name") or "Worker"
+            entry = {
+                "licence_id": lic.get("licence_id"),
+                "worker_id": worker_id,
+                "worker_name": worker_cache.get(worker_id) or "Self",
+                "licence_type": (lic.get("licence_type") or "").replace("_", " ").title(),
+                "licence_number": lic.get("licence_number"),
+                "expires_on": exp_raw,
+                "days_left": days_left,
+            }
+            if days_left < 0:
+                expired.append(entry)
+            else:
+                expiring_soon.append(entry)
+        # sort: most-urgent first
+        expired.sort(key=lambda r: r["days_left"])  # most-negative first
+        expiring_soon.sort(key=lambda r: r["days_left"])
+        return {
+            "industry": "trades",
+            "kind": "credential_expiry",
+            "expiring_soon": expiring_soon,
+            "expired": expired,
+            "window_days": 60,
+        }
+
+    # ─────────────── RETAIL — Lone-worker check-in alert ───────────────
+    @api_router.get("/dashboard/widget/lone-worker")
+    async def retail_lone_worker(user=Depends(get_current_user_dep)):
+        """Retail: open lone-worker shifts and missed check-ins.
+
+        Reads `lone_worker_shifts` documents:
+          {shift_id, owner_id, worker_name, store_name, started_at,
+           expected_end_at, status: open|closed, last_check_in_at,
+           check_in_interval_mins (default 60)}
+        A check-in is "missed" if (now - last_check_in_at) >
+        check_in_interval_mins + 10 minute grace.
+        """
+        owner = user.user_id
+        now = _now()
+        open_shifts: list[dict] = []
+        missed: list[dict] = []
+        cursor = db.lone_worker_shifts.find(
+            {"owner_id": owner, "status": {"$ne": "closed"}}, {"_id": 0}
+        )
+        async for s in cursor:
+            interval_min = int(s.get("check_in_interval_mins") or 60)
+            last_iso = s.get("last_check_in_at") or s.get("started_at")
+            last_dt: Optional[datetime] = None
+            if last_iso:
+                try:
+                    last_dt = datetime.fromisoformat(last_iso.replace("Z", "+00:00"))
+                except ValueError:
+                    last_dt = None
+            mins_since = None
+            if last_dt:
+                mins_since = int((now - last_dt).total_seconds() // 60)
+            entry = {
+                "shift_id": s.get("shift_id"),
+                "worker_name": s.get("worker_name") or "Worker",
+                "store_name": s.get("store_name") or "Store",
+                "started_at": s.get("started_at"),
+                "last_check_in_at": last_iso,
+                "minutes_since_check_in": mins_since,
+                "check_in_interval_mins": interval_min,
+                "expected_end_at": s.get("expected_end_at"),
+            }
+            open_shifts.append(entry)
+            # Missed if we've blown past the interval + 10 min grace
+            if mins_since is not None and mins_since > (interval_min + 10):
+                missed.append(entry)
+        # Sort missed by most-overdue first
+        missed.sort(key=lambda r: -(r["minutes_since_check_in"] or 0))
+        return {
+            "industry": "retail",
+            "kind": "lone_worker",
+            "open_shifts": open_shifts,
+            "missed": missed,
+            "window_label": "active shifts",
+        }
+
     # ─────────────── HEALTHCARE — AHPRA expiry alert ───────────────
     @api_router.get("/dashboard/widget/ahpra-expiry")
     async def healthcare_ahpra_expiry(user=Depends(get_current_user_dep)):

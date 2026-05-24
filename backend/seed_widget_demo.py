@@ -8,6 +8,8 @@ Credentials seeded (all password = `Demo@1234`):
   • hospitality.demo@safebase.com.au
   • transport.demo@safebase.com.au
   • healthcare.demo@safebase.com.au
+  • trades.demo@safebase.com.au
+  • retail.demo@safebase.com.au
 """
 from __future__ import annotations
 
@@ -67,6 +69,8 @@ async def main():
         "hospitality": await _ensure_owner(db, "hospitality", "hospitality.demo@safebase.com.au", "Hospitality Demo Owner"),
         "transport":   await _ensure_owner(db, "transport",   "transport.demo@safebase.com.au",   "Transport Demo Owner"),
         "healthcare":  await _ensure_owner(db, "healthcare",  "healthcare.demo@safebase.com.au",  "Healthcare Demo Owner"),
+        "trades":      await _ensure_owner(db, "trades",      "trades.demo@safebase.com.au",      "Trades Demo Owner"),
+        "retail":      await _ensure_owner(db, "retail",      "retail.demo@safebase.com.au",      "Retail Demo Owner"),
     }
     for ind, uid in owners.items():
         print(f"[OK] {ind} owner ready — user_id={uid}")
@@ -168,6 +172,68 @@ async def main():
             upsert=True,
         )
     print(f"[OK] seeded {len(clinicians)} clinicians for healthcare owner {hc_owner}")
+
+    # ───────────── TRADES: workers + licences ─────────────
+    tr_owner = owners["trades"]
+    workers = [
+        {"id": "wk_jack",  "name": "Jack Mitchell"},
+        {"id": "wk_anna",  "name": "Anna Liu"},
+        {"id": "wk_chris", "name": "Chris Murphy"},
+        {"id": "wk_dave",  "name": "Dave Pham"},
+    ]
+    for w in workers:
+        await db.workers.update_one(
+            {"worker_id": w["id"]},
+            {"$set": {"worker_id": w["id"], "user_id": tr_owner, "name": w["name"],
+                       "trade": "general", "created_at": _iso(now)}},
+            upsert=True,
+        )
+    licences = [
+        {"id": "lic_jack_wc",  "worker": "wk_jack",  "type": "white_card",      "num": "WC-0012345",   "days": -7},   # expired
+        {"id": "lic_jack_fa",  "worker": "wk_jack",  "type": "first_aid",       "num": "FA-0023456",   "days": 18},
+        {"id": "lic_anna_el",  "worker": "wk_anna",  "type": "electrical",      "num": "EL-0034567",   "days": 42},
+        {"id": "lic_chris_hr", "worker": "wk_chris", "type": "high_risk_LF",    "num": "HR-0045678",   "days": 12},
+        {"id": "lic_dave_pl",  "worker": "wk_dave",  "type": "plumbing",        "num": "PL-0056789",   "days": 55},
+        {"id": "lic_anna_wc",  "worker": "wk_anna",  "type": "white_card",      "num": "WC-0067890",   "days": 240},  # outside window
+    ]
+    for lic in licences:
+        exp = (now + timedelta(days=lic["days"])).date().isoformat()
+        await db.licences.update_one(
+            {"licence_id": lic["id"]},
+            {"$set": {"licence_id": lic["id"], "user_id": tr_owner,
+                       "worker_id": lic["worker"],
+                       "licence_type": lic["type"],
+                       "licence_number": lic["num"],
+                       "expiry_date": exp,
+                       "created_at": _iso(now)}},
+            upsert=True,
+        )
+    print(f"[OK] seeded {len(licences)} licences for trades owner {tr_owner}")
+
+    # ───────────── RETAIL: lone-worker shifts ─────────────
+    rt_owner = owners["retail"]
+    # Clear any prior demo rows so re-runs don't accumulate stale shifts
+    await db.lone_worker_shifts.delete_many({"owner_id": rt_owner, "seed_marker": "iter55_demo"})
+    shifts = [
+        {"shift_id": "shift_riley",  "worker_name": "Riley Hughes", "store_name": "Bondi Junction",  "started_mins_ago": 270, "interval": 60, "last_checkin_mins_ago": 85},  # missed
+        {"shift_id": "shift_amber",  "worker_name": "Amber Chen",   "store_name": "Chatswood",       "started_mins_ago": 210, "interval": 60, "last_checkin_mins_ago": 25},
+        {"shift_id": "shift_jose",   "worker_name": "Jose Romero",  "store_name": "Bondi Junction",  "started_mins_ago": 130, "interval": 90, "last_checkin_mins_ago": 110}, # missed (90+10 grace = 100)
+        {"shift_id": "shift_lena",   "worker_name": "Lena Walker",  "store_name": "Parramatta",      "started_mins_ago": 60,  "interval": 60, "last_checkin_mins_ago": 5},
+    ]
+    for s in shifts:
+        await db.lone_worker_shifts.insert_one({
+            "shift_id": s["shift_id"],
+            "owner_id": rt_owner,
+            "worker_name": s["worker_name"],
+            "store_name": s["store_name"],
+            "started_at": _iso(now - timedelta(minutes=s["started_mins_ago"])),
+            "expected_end_at": _iso(now + timedelta(minutes=120)),
+            "status": "open",
+            "check_in_interval_mins": s["interval"],
+            "last_check_in_at": _iso(now - timedelta(minutes=s["last_checkin_mins_ago"])),
+            "seed_marker": "iter55_demo",
+        })
+    print(f"[OK] seeded {len(shifts)} lone-worker shifts for retail owner {rt_owner}")
 
     client.close()
     print("\n[DONE] Dashboard widget demo data seeded.")
