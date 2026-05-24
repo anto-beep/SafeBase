@@ -24,6 +24,16 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 54 — Responsive Marketing Navigation (phone / tablet / desktop) (Feb 2026)
+- **Mobile-first nav overhaul** (`components/marketing/Layout.jsx`) — the previous nav was desktop-only (`hidden md:flex` with no fallback), so phones and small tablets saw no navigation links and the auth buttons consumed the full bar.
+- **Hamburger + side drawer** (Sheet component) opens from the right on `<768px`. Drawer contains the full nav tree as collapsible `<details>` accordions: Industries (6 entries), Pricing, Resources (9 entries), Tools (6 entries), Compare, Book a Demo, plus a pinned bottom CTA section with **Start Free Trial** + **Log in** (or **Dashboard** + **Log out** for signed-in users). Each link auto-closes the drawer on tap.
+- **Responsive auth cluster** (`PublicAuthButtons`):
+  - `"Book a Demo"` button: `hidden lg:inline-flex` — only ≥1024px (previously always showed on tablet, taking real estate).
+  - `"Log in"` button: `hidden md:inline-flex` — only ≥768px (collapsed into the drawer on mobile).
+  - `"Start Free Trial"` CTA always visible, but text condenses to `"TRY FREE"` below 640px and padding tightens (`px-3 sm:px-4`).
+- **Tighter desktop spacing** — header padding scales `px-4 sm:px-6 lg:px-12`. Nav link gap scales `gap-4 lg:gap-6`. `"Compare"` top-level link moved to `hidden lg:inline` so the menu doesn't wrap on iPad-portrait (768–1024px).
+- **Verified** via DOM inspection at 1920px: hamburger `display: none`, desktop nav `display: flex`, login/demo/start all visible. Below 768px (real-device only — the screenshot tool forces 1920px) the inverse applies via standard Tailwind media queries.
+
 ### Iteration 53 — Phase 2 Internal Admin · Article pre-warming · PlanRightsizer dynamic ROI (Feb 2026)
 - **Internal Admin Phase 2 / Subscriptions page** (`/internal-admin/subscriptions`) — full subscription billing list across every owner account. Filterable by status (active/trial/past_due/canceled), billing cycle (monthly/annual), industry; free-text search across business + email. Summary tiles for active paid, active trials, MRR sum. Mocked-Stripe data flag visible. Backend: `GET /api/internal-admin/subscriptions` (joins `users` + `_mock_billing_for_user`).
 - **Internal Admin Phase 2 / Feature Flags page** (`/internal-admin/feature-flags`) — 8 registered platform flags (ai_swms_v2, regulator_pipeline, concierge_lead_capture, iot_temperature_v1, ewd_v1, academy_v2, ahpra_live_poll, stripe_native_oauth) with global on/off toggles. Per-account override count displayed per flag. Toggle action requires ops_lead+ rank, logged to `internal_admin_audit_log`. UI shows EDITOR vs READ-ONLY pill based on caller's role.

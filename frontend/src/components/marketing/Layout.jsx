@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Cube, ArrowRight, CaretDown, SquaresFour, SignOut, User, CreditCard } from "@phosphor-icons/react";
+import { useState } from "react";
+import { Cube, ArrowRight, CaretDown, SquaresFour, SignOut, User, CreditCard, List, X, CaretRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { INDUSTRY_LIST } from "@/data/industries.config";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -114,7 +116,12 @@ function AuthMenu() {
 function PublicAuthButtons() {
   return (
     <div className="flex items-center gap-2">
-      <Link to="/login">
+      {/* "Book a Demo" only on the desktop ≥lg */}
+      <Link to="/book-demo" className="hidden lg:inline-flex">
+        <Button variant="ghost" className="btn-sharp uppercase tracking-widest" data-testid="nav-demo-btn">Book a Demo</Button>
+      </Link>
+      {/* "Log in" only on desktop ≥md (replaced by drawer link on mobile) */}
+      <Link to="/login" className="hidden md:inline-flex">
         <Button
           variant="outline"
           className="btn-sharp border-2 border-ink bg-white hover:bg-warning hover:text-ink uppercase tracking-widest font-bold"
@@ -123,22 +130,175 @@ function PublicAuthButtons() {
           Log in
         </Button>
       </Link>
-      <Link to="/book-demo"><Button variant="ghost" className="btn-sharp uppercase tracking-widest hidden lg:inline-flex" data-testid="nav-demo-btn">Book a Demo</Button></Link>
-      <Link to="/register"><Button className="btn-sharp bg-ink text-white hover:bg-authority uppercase tracking-widest" data-testid="nav-register-btn">Start Free Trial <ArrowRight className="ml-1" /></Button></Link>
+      {/* Compact CTA: shorter copy "Start free" on tablet/mobile, full text on desktop */}
+      <Link to="/register">
+        <Button className="btn-sharp bg-ink text-white hover:bg-authority uppercase tracking-widest text-xs sm:text-sm px-3 sm:px-4" data-testid="nav-register-btn">
+          <span className="hidden sm:inline">Start Free Trial</span>
+          <span className="sm:hidden">Try Free</span>
+          <ArrowRight className="ml-1" weight="bold" />
+        </Button>
+      </Link>
     </div>
   );
 }
 
+/** Mobile drawer — full navigation tree opened from the hamburger.
+ *  Closes on link tap via Sheet's controlled open state. */
+function MobileNav({ user, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          aria-label="Open navigation menu"
+          className="md:hidden w-10 h-10 flex items-center justify-center text-ink hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ink"
+          data-testid="nav-mobile-toggle"
+        >
+          <List size={24} weight="bold" />
+        </button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-[300px] sm:w-[360px] p-0 bg-background border-l-2 border-ink overflow-y-auto" data-testid="nav-mobile-drawer">
+        <div className="bg-ink text-white px-5 py-5 flex items-center justify-between sticky top-0 z-10">
+          <Link to="/" onClick={close} className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-warning flex items-center justify-center"><Cube weight="fill" className="text-ink" size={16} /></div>
+            <span className="font-display font-black tracking-tight">SAFEBASE</span>
+          </Link>
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={close}
+            className="w-8 h-8 flex items-center justify-center hover:bg-white/10 focus:outline-none"
+            data-testid="nav-mobile-close"
+          >
+            <X size={20} weight="bold" />
+          </button>
+        </div>
+
+        <nav className="px-5 py-4 space-y-1">
+          <MobileGroup label="Industries">
+            <MobileItem to="/industries" onClick={close} bold testid="nav-mobile-industries-all">All industries</MobileItem>
+            {INDUSTRY_LIST.map((i) => (
+              <MobileItem key={i.slug} to={`/industries/${i.slug}`} onClick={close} testid={`nav-mobile-industries-${i.slug}`}>{i.name}</MobileItem>
+            ))}
+          </MobileGroup>
+
+          <Link to="/pricing" onClick={close} className="block py-3 px-2 border-b border-border font-display font-black text-lg tracking-tight" data-testid="nav-mobile-pricing">
+            Pricing
+          </Link>
+
+          <MobileGroup label="Resources">
+            <MobileItem to="/resources" onClick={close} bold testid="nav-mobile-resources-all">All resources</MobileItem>
+            <MobileItem to="/resources/trades" onClick={close} testid="nav-mobile-resources-trades">Trades resources</MobileItem>
+            <MobileItem to="/resources/hospitality" onClick={close} testid="nav-mobile-resources-hospitality">Hospitality resources</MobileItem>
+            <MobileItem to="/resources/transport" onClick={close} testid="nav-mobile-resources-transport">Transport resources</MobileItem>
+            <MobileItem to="/resources/healthcare" onClick={close} testid="nav-mobile-resources-healthcare">Healthcare resources</MobileItem>
+            <MobileItem to="/resources/retail" onClick={close} testid="nav-mobile-resources-retail">Retail resources</MobileItem>
+            <MobileItem to="/regulatory-digest" onClick={close} bold testid="nav-mobile-resources-digest">Regulatory Digest</MobileItem>
+            <MobileItem to="/templates" onClick={close} testid="nav-mobile-resources-templates">Free templates</MobileItem>
+            <MobileItem to="/resources#ai" onClick={close} testid="nav-mobile-resources-ai">Ask SafeBase AI</MobileItem>
+          </MobileGroup>
+
+          <MobileGroup label="Tools">
+            <MobileItem to="/plan-rightsizer" onClick={close} bold testid="nav-mobile-tools-rightsizer">Plan Right-sizer</MobileItem>
+            <MobileItem to="/risk-calculator" onClick={close} testid="nav-mobile-tools-risk">Industry Risk Calculator</MobileItem>
+            <MobileItem to="/credential-expiry-calculator" onClick={close} testid="nav-mobile-tools-cred">Credential Expiry Calculator</MobileItem>
+            <MobileItem to="/insurance-discount-calculator" onClick={close} testid="nav-mobile-tools-insurance">Insurance Discount Calculator</MobileItem>
+            <MobileItem to="/tools/fine-calculator" onClick={close} testid="nav-mobile-tools-fine">WHS Fine Calculator</MobileItem>
+            <MobileItem to="/compare" onClick={close} testid="nav-mobile-tools-compare">Compare SafeBase</MobileItem>
+          </MobileGroup>
+
+          <Link to="/compare" onClick={close} className="block py-3 px-2 border-b border-border font-display font-black text-lg tracking-tight" data-testid="nav-mobile-compare">
+            Compare
+          </Link>
+          <Link to="/book-demo" onClick={close} className="block py-3 px-2 border-b border-border font-display font-black text-lg tracking-tight" data-testid="nav-mobile-demo">
+            Book a Demo
+          </Link>
+        </nav>
+
+        {/* Auth CTA block — pinned bottom feel */}
+        <div className="border-t-2 border-ink p-5 bg-muted/40 space-y-2" data-testid="nav-mobile-cta">
+          {user ? (
+            <>
+              <Link to="/dashboard" onClick={close} className="block">
+                <Button className="btn-sharp w-full bg-ink text-white hover:bg-authority uppercase tracking-widest font-bold" data-testid="nav-mobile-dashboard">
+                  <SquaresFour size={16} weight="duotone" className="mr-2" />Dashboard
+                </Button>
+              </Link>
+              <Button
+                onClick={() => { close(); onLogout && onLogout(); }}
+                variant="outline"
+                className="btn-sharp w-full border-2 border-ink uppercase tracking-widest font-bold"
+                data-testid="nav-mobile-logout"
+              >
+                <SignOut size={16} className="mr-2" />Log out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/register" onClick={close} className="block">
+                <Button className="btn-sharp w-full bg-ink text-white hover:bg-authority uppercase tracking-widest font-bold" data-testid="nav-mobile-register">
+                  Start Free Trial <ArrowRight className="ml-1" weight="bold" />
+                </Button>
+              </Link>
+              <Link to="/login" onClick={close} className="block">
+                <Button variant="outline" className="btn-sharp w-full border-2 border-ink uppercase tracking-widest font-bold" data-testid="nav-mobile-login">
+                  Log in
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function MobileGroup({ label, children }) {
+  return (
+    <details className="border-b border-border group" data-testid={`nav-mobile-group-${label.toLowerCase()}`}>
+      <summary className="py-3 px-2 flex items-center justify-between cursor-pointer list-none font-display font-black text-lg tracking-tight">
+        <span>{label}</span>
+        <CaretRight size={16} className="transition-transform group-open:rotate-90" />
+      </summary>
+      <div className="pb-2 pl-2">
+        {children}
+      </div>
+    </details>
+  );
+}
+
+function MobileItem({ to, onClick, children, bold = false, testid }) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`block py-2 px-3 text-sm hover:bg-muted ${bold ? "font-bold" : "text-muted-foreground"}`}
+      data-testid={testid}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export function MarketingNav() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
+  const navigate = useNavigate();
+  const onLogoutMobile = async () => {
+    await logout();
+    toast.success("You have been signed out");
+    navigate("/");
+  };
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2" data-testid="brand-link">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 h-16 flex items-center justify-between gap-2">
+        <Link to="/" className="flex items-center gap-2 shrink-0" data-testid="brand-link">
           <div className="w-8 h-8 bg-ink flex items-center justify-center"><Cube weight="fill" className="text-warning" size={18} /></div>
           <span className="font-display font-black text-lg tracking-tight">SAFEBASE</span>
         </Link>
-        <nav className="hidden md:flex items-center gap-6 label-eyebrow">
+        {/* Desktop nav — hidden below md, condensed on md, full on lg+ */}
+        <nav className="hidden md:flex items-center gap-4 lg:gap-6 label-eyebrow">
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 outline-none uppercase tracking-widest" data-testid="nav-industries">
               INDUSTRIES <CaretDown size={10} />
@@ -184,10 +344,13 @@ export function MarketingNav() {
               <DropdownMenuItem asChild><Link to="/compare" data-testid="nav-tools-compare">Compare SafeBase</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link to="/compare" data-testid="nav-compare" className="uppercase tracking-widest">COMPARE</Link>
+          {/* "COMPARE" link only on ≥lg to avoid wrapping at md sizes */}
+          <Link to="/compare" data-testid="nav-compare" className="hidden lg:inline uppercase tracking-widest">COMPARE</Link>
         </nav>
+        {/* Right cluster: desktop auth or hamburger */}
         <div className="flex items-center gap-2">
           {loading ? null : user ? <AuthMenu /> : <PublicAuthButtons />}
+          <MobileNav user={user} onLogout={onLogoutMobile} />
         </div>
       </div>
     </header>
