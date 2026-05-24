@@ -13,6 +13,7 @@ import {
   HeartStraight, Lightning, Sparkle, ArrowRight, ShieldCheck,
   CheckCircle, XCircle, Clock, Calendar, FilePlus,
 } from "@phosphor-icons/react";
+import IndustryAlertTile from "@/components/IndustryAlertTile";
 
 const TEAL = "#2196A6";
 const SOFT_GREEN = "#4CAF8F";
@@ -119,6 +120,10 @@ export default function HealthcareOwnerDashboard() {
             </Button>
           </Link>
         </div>
+        {/* AHPRA expiry alerts — Iter54 */}
+        <IndustryAlertTile industry="healthcare" />
+
+
 
         {/* TWO-COLUMN */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

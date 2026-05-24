@@ -15,6 +15,7 @@ import {
   Thermometer, Calendar, ClipboardText, Lightning, Sparkle,
   ForkKnife, ShieldCheck, ArrowRight, CheckCircle, XCircle, Clock,
 } from "@phosphor-icons/react";
+import IndustryAlertTile from "@/components/IndustryAlertTile";
 
 const CREAM = "bg-[#F1ECE0]";
 const TEAL = "#0F4C5C";
@@ -138,6 +139,9 @@ export default function HospitalityOwnerDashboard() {
             ))}
           </div>
         </div>
+
+        {/* Live temperature alerts — Iter54 */}
+        <IndustryAlertTile industry="hospitality" />
 
         {/* TWO-COLUMN BELOW */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

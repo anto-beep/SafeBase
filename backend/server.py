@@ -2434,6 +2434,12 @@ register_concierge_routes(
     get_optional_user_dep=lambda req: get_current_user(req, req.headers.get("authorization"), req.cookies.get("session_token")),
 )
 
+# ─────── Per-industry Dashboard Widgets (Iter54) ───────
+from routes.dashboard_widgets import register_dashboard_widgets  # noqa: E402
+register_dashboard_widgets(
+    api_router, db=db, get_current_user_dep=get_current_user,
+)
+
 # ─────── Internal Admin (Iter49) — completely separate from customer auth ───
 from internal_admin import mount_internal_admin  # noqa: E402
 from internal_admin.seed import seed_super_admin  # noqa: E402

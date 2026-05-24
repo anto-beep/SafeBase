@@ -54,8 +54,37 @@ class ChatMessageIn(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
 
 
+class LeadCaptureIn(BaseModel):
+    session_id: Optional[str] = None
+    name: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=3, max_length=200)
+    phone: Optional[str] = Field(default=None, max_length=40)
+    industry: Optional[str] = Field(default=None, max_length=40)
+    company: Optional[str] = Field(default=None, max_length=200)
+    note: Optional[str] = Field(default=None, max_length=1000)
+
+
 class A11yPrefsIn(BaseModel):
     preferences: dict
+
+
+# High-intent keywords that surface the lead-capture banner inline in the chat
+# response. Kept narrow on purpose — we don't want to flash the banner on every
+# message, just the conversion-relevant ones.
+HIGH_INTENT_KEYWORDS = (
+    "demo", "demonstration", "trial", "pricing", "price", "quote",
+    "discount", "subscription", "subscribe", "buy", "purchase",
+    "onboard", "onboarding", "implementation", "rollout",
+    "integration", "integrate", "api", "xero", "deputy", "teletrac", "shopify",
+    "enterprise", "multi-site", "multisite", "rollout",
+    "talk to someone", "speak to someone", "human", "sales",
+    "contact you", "follow up", "call me", "email me",
+)
+
+
+def _detect_intent(message: str) -> bool:
+    msg = (message or "").lower()
+    return any(k in msg for k in HIGH_INTENT_KEYWORDS)
 
 
 def _now() -> str:
@@ -69,6 +98,37 @@ def register_concierge_routes(api_router: APIRouter, *, db, get_optional_user_de
     if a valid JWT is present, or None otherwise. We DO NOT require auth
     because anonymous visitors should be able to use both features.
     """
+
+    # ────────────────────────── Notification template preview ──────────
+    # Public utility for the dashboard / admin tooling to inspect what an
+    # industry-specific copy variant will look like. No auth required because
+    # the templates are static, not user data.
+    @api_router.get("/notification-templates/preview")
+    async def preview_template(key: str, industry: Optional[str] = None):
+        from routes.notification_templates import render, get_variant  # local import to avoid cycles
+        if not get_variant(key, industry):
+            raise HTTPException(status_code=404, detail=f"Unknown template key: {key}")
+        # Provide a representative context so the preview is readable.
+        ctx = dict(
+            credential_label="White Card",
+            worker_name="Jane Smith",
+            expires_on="2026-03-15",
+            days=14,
+            asset_label="Site 7 — Smith Builders",
+            site_name="Site 7",
+            incident_title="Slip and fall, customer",
+            incident_id="inc_demo123",
+        )
+        # Industry-specific tweak for credential label so the preview reads naturally
+        if industry == "hospitality":
+            ctx["credential_label"] = "Food Safety Supervisor"
+        elif industry == "transport":
+            ctx["credential_label"] = "Heavy-vehicle driver licence"
+        elif industry == "healthcare":
+            ctx["credential_label"] = "AHPRA registration"
+        elif industry == "retail":
+            ctx["credential_label"] = "RSA"
+        return {"key": key, "industry": industry, "rendered": render(key, industry, **ctx)}
 
     async def _maybe_user(request: Request):
         if not get_optional_user_dep:
@@ -130,7 +190,79 @@ def register_concierge_routes(api_router: APIRouter, *, db, get_optional_user_de
             "content": reply_text,
             "created_at": _now(),
         })
-        return {"session_id": session_id, "reply": reply_text}
+        # Suggest lead capture when the user's last message looks high-intent
+        # (asking about pricing / demos / integrations / "talk to someone").
+        offer_lead_capture = _detect_intent(body.message)
+        return {
+            "session_id": session_id,
+            "reply": reply_text,
+            "offer_lead_capture": offer_lead_capture,
+        }
+
+    @api_router.post("/concierge/lead")
+    async def capture_lead(body: LeadCaptureIn, request: Request,
+                           x_anon_id: Optional[str] = Header(default=None)):
+        """Capture a sales lead from the concierge widget. Stores in
+        `concierge_leads` and (best-effort) emails sales — never blocks the
+        user-facing flow if email fails."""
+        user = await _maybe_user(request)
+        owner_id = (user.user_id if user else None) or x_anon_id or "anon"
+        # Light email validation — concierge isn't a sign-up flow, so we just
+        # require an "@" + "." and let humans triage edge cases.
+        if "@" not in body.email or "." not in body.email.split("@")[-1]:
+            raise HTTPException(status_code=400, detail="Email looks malformed.")
+        lead_id = uuid.uuid4().hex[:24]
+        # Pull last few chat turns so the receiving human has context
+        history: list[dict] = []
+        if body.session_id:
+            async for m in db.concierge_messages.find(
+                {"session_id": body.session_id}, {"_id": 0, "role": 1, "content": 1, "created_at": 1}
+            ).sort("created_at", 1).limit(20):
+                history.append(m)
+        doc = {
+            "lead_id": lead_id,
+            "session_id": body.session_id,
+            "owner_id": owner_id,
+            "user_id": user.user_id if user else None,
+            "name": body.name.strip(),
+            "email": body.email.strip().lower(),
+            "phone": (body.phone or "").strip() or None,
+            "industry": (body.industry or "").strip().lower() or None,
+            "company": (body.company or "").strip() or None,
+            "note": (body.note or "").strip() or None,
+            "transcript_excerpt": history,
+            "status": "new",
+            "created_at": _now(),
+        }
+        await db.concierge_leads.insert_one(dict(doc))
+
+        # Fire-and-forget notify (Resend if configured, otherwise log).
+        try:
+            from routes.email_util import send_email  # local import to avoid cycles
+            to_addr = os.environ.get("CONCIERGE_LEAD_INBOX", "hello@safebase.com.au")
+            transcript_html = "".join(
+                f"<div style='margin:6px 0;padding:6px 10px;border-left:3px solid {'#FFCC00' if m['role'] == 'user' else '#0A0A0A'};background:#f7f7f7'>"
+                f"<strong style='text-transform:uppercase;font-size:10px;letter-spacing:.1em'>{m['role']}</strong><br/>{m['content']}"
+                f"</div>"
+                for m in history[-8:]
+            )
+            html = (
+                f"<h2>New SafeBase concierge lead</h2>"
+                f"<p><strong>Name:</strong> {doc['name']}<br/>"
+                f"<strong>Email:</strong> {doc['email']}<br/>"
+                f"<strong>Phone:</strong> {doc['phone'] or '—'}<br/>"
+                f"<strong>Industry:</strong> {doc['industry'] or '—'}<br/>"
+                f"<strong>Company:</strong> {doc['company'] or '—'}<br/>"
+                f"<strong>Note:</strong> {doc['note'] or '—'}</p>"
+                f"<h3>Last chat turns</h3>{transcript_html or '<em>No prior transcript</em>'}"
+                f"<p style='font-size:11px;color:#888'>Lead ID: {lead_id}</p>"
+            )
+            await send_email(to=to_addr, subject=f"[SafeBase] New concierge lead — {doc['name']}", html=html)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("concierge lead email failed: %s", exc)
+
+        return {"ok": True, "lead_id": lead_id}
 
     @api_router.get("/concierge/history")
     async def chat_history(session_id: str, request: Request):

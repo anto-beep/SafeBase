@@ -13,6 +13,7 @@ import {
   Truck, Lightning, Sparkle, ArrowRight, Plus, Warning, ShieldCheck,
   CheckCircle, XCircle, ClockCounterClockwise,
 } from "@phosphor-icons/react";
+import IndustryAlertTile from "@/components/IndustryAlertTile";
 
 const CHARCOAL = "bg-[#1C2526]";
 const CHARCOAL_2 = "bg-[#252F30]";
@@ -90,6 +91,10 @@ export default function TransportOwnerDashboard() {
             </Button>
           </Link>
         </div>
+        {/* Driver fatigue alerts — Iter54 */}
+        <IndustryAlertTile industry="transport" />
+
+
 
         {/* FLEET STATUS STRIP */}
         <div className={`${CHARCOAL_2} p-5`} data-testid="transport-fleet-strip">
