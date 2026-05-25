@@ -2389,6 +2389,14 @@ register_retail_routes(
 )
 
 
+# ----------- INDUSTRY ALERT TILE INLINE ACTIONS (Iter57) -----------
+from routes.inline_actions import register_inline_action_routes  # noqa: E402
+register_inline_action_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, log_audit_fn=log_audit, logger=logger,
+)
+
+
 # ----------- COMPLIANCE INBOX (cross-industry aggregator) -----------
 from routes.compliance_inbox import register_compliance_inbox_routes  # noqa: E402
 register_compliance_inbox_routes(
@@ -2532,6 +2540,8 @@ _TRIAL_ALLOWLIST_PREFIXES = (
     "/api/public/",  # public sign flows (no auth, used by SMS sign links)
     "/api/accessibility/",  # a11y prefs must always work (Iter50)
     "/api/concierge/",  # support chatbot must always be reachable (Iter50)
+    "/api/device-tokens/",  # push registration must work even for expired trials (re-engagement)
+    "/api/push/",  # alias prefix if any client uses it
 )
 
 

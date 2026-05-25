@@ -211,8 +211,9 @@ class TestIndustryAlertTileActions:
         if not units:
             pytest.skip("no hospitality demo units available")
         unit_name = units[0].get("name") or "Fridge 1"
+        # Iter57 contract: frontend now posts {equipment, temp_c} (was unit_name)
         r = requests.post(f"{BASE_URL}/api/hospitality/temperature-logs",
-                          json={"unit_name": unit_name, "temp_c": 3.5},
+                          json={"equipment": unit_name, "temp_c": 3.5},
                           headers=_h(tok), timeout=10)
         assert r.status_code in (200, 201), r.text
 

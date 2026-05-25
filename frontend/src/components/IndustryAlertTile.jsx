@@ -443,7 +443,7 @@ function LogTemperatureForm({ unit, onSubmitted, onCancel }) {
     }
     setSubmitting(true);
     try {
-      await api.post("/hospitality/temperature-logs", { unit_name: unit.name, temp_c: temp });
+      await api.post("/hospitality/temperature-logs", { equipment: unit.name, temp_c: temp });
       toast.success(`Logged ${temp}°C for ${unit.name}`);
       await onSubmitted();
     } catch {

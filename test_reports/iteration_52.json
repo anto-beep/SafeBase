@@ -1,0 +1,24 @@
+{
+  "summary": "Iter57 P1-backlog RE-TEST after main agent fixes. ALL 7 critical/high issues from iteration_51.json are resolved. backend pytest /app/backend/tests/test_iter57_p1_backlog.py → 28 passed, 0 failed (was 20/27 in iter51). Specifically validated: (a) all 4 newly-added inline-action endpoints (/api/transport/drivers/{id}/pause, /api/healthcare/ahpra-register/{id}/remind, /api/licences/{id}/remind, /api/retail/lone-worker/{id}/acknowledge) return 200 {ok:true,...} for the matching industry demo owner with a real resource ID; (b) hospitality temp-log now works with {equipment, temp_c} payload and the frontend IndustryAlertTile.jsx posts the same; (c) /api/device-tokens/register returns HTTP 200 for owner@safetradie.demo (trial-allowlist works regardless of trial status); (d) transport fatigue widget /api/dashboard/widget/fatigue-alert returns 2 approaching + 1 exceeding after re-seed; (e) /integrations page loads cleanly with ZERO console errors and all 6 required data-testid present (integrations-hero, -curl-example, -webhook-sample, integration-native-xero, integration-endpoint-/api/auth/login, integration-event-incident.created). Native OAuth status/start regression intact.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_iter57_p1_backlog.py", "/app/test_reports/pytest/iter57_retest.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All 4 inline-action endpoints in /app/backend/routes/inline_actions.py are clean: thin DB write + log_audit + best-effort email/push, _id excluded, ownership check on AHPRA/Licence/Lone-worker lookups. Good.",
+    "Carry-over from iter51 (not blocking iter57): trial_gate middleware still uses allowlist-by-prefix pattern; flipping to gate-by-decorator on data writes would prevent future repeats (push, a11y, concierge, etc.). Not urgent.",
+    "Hospitality temp-log: backend (POST /api/hospitality/temperature-logs) only accepts 'equipment' now; consider accepting both 'equipment' and 'unit_name' for forward-compat with any older mobile-app builds still in the wild.",
+    "Carry-over: native_oauth PROVIDERS['ahpra'] uses a placeholder OAuth URL — fine for scaffolding but should be gated behind a 'private_partner' flag in the UI before showing the Connect button in prod.",
+    "Carry-over: push_notifications._send_via_provider returns True even when PUSH_PROVIDER unwired — should return False so callers can mark tokens inactive."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter57_p1_backlog.py (test_log_temp_reading_hospitality: payload updated from {unit_name, temp_c} → {equipment, temp_c} to match the new frontend contract that main agent shipped this iteration)"
+  ],
+  "success_rate": {"backend": "100% (28/28 pass)", "frontend": "100% — /integrations renders all required test-ids with 0 console errors"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (push now works regardless of trial status); trades.demo / hospitality.demo / transport.demo / healthcare.demo / retail.demo @safebase.com.au / Demo@1234 (industry demo owners — all widgets + inline actions verified).",
+  "seed_data_creation": "Did NOT need to re-run seed_widget_demo — main agent already re-ran it. Transport widget now returns 2 approaching + 1 exceeding (fresh started_at within 24h).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Iter57 P1 backlog is fully done. All 4 new inline-action routes in /app/backend/routes/inline_actions.py work end-to-end with the IndustryAlertTile.jsx buttons. Hospitality temp-log contract is now {equipment, temp_c} on BOTH ends. /api/device-tokens/ and /api/push/ are in _TRIAL_ALLOWLIST_PREFIXES so mobile push works for expired-trial users. Native OAuth status/start scaffolding still returns 'not_configured' as expected (no vendor secrets in env). Transport fatigue widget has live seed data. Next iteration can move to P2 backlog.",
+  "rca of the issue": "N/A — all 7 issues from iteration_51 resolved by main agent. Verified by 28/28 pytest passes + targeted curl on owner push registration + browser smoke-test on /integrations."
+}
