@@ -1,6 +1,6 @@
 # SafeBase — Complete Build Summary (for Mobile App Planning)
 
-> Generated Feb 2026 · iter56 codebase snapshot
+> Generated Feb 2026 · **iter57 codebase snapshot** (P1 backlog complete: push notifications, native OAuth scaffolding, public Integrations API docs, actionable Industry Alert Tiles)
 > Use this document as the single source of truth when designing the SafeBase mobile companion app.
 
 ---
@@ -186,6 +186,15 @@
 | `resources_ai_log` | Audit log of Ask SafeBase AI questions |
 | `accessibility_prefs` | Per-account WCAG preferences |
 
+### Mobile / push / OAuth (Iter57)
+| Collection | Purpose |
+|-----------|---------|
+| `device_tokens` | Registered APNs/FCM tokens — fields: `token_id`, `user_id`, `account_id`, `platform` (`ios`/`android`/`web`), `token`, `active`, `registered_at`, `last_seen_at` |
+| `oauth_states` | Short-lived OAuth state nonces for native integrations (TTL guarded) |
+| `oauth_connections` | Stored vendor OAuth tokens once a tenant connects Xero / Deputy / Teletrac / AHPRA / Shopify |
+| `driver_pauses` | Audit trail of dashboard-tile "Pause driver" actions (`pause_id`, `driver_id`, `owner_id`, `reason`, `paused_at`, `active`) |
+| `reminders` | Outbound renewal reminders from dashboard tiles (`reminder_id`, `kind` ∈ {`ahpra_renewal`,`licence_renewal`}, `sent_at`, `sent_to`, `sent_via` ∈ {`resend`,`queued`}) |
+
 ### Partner program
 | Collection | Purpose |
 |-----------|---------|
@@ -202,7 +211,7 @@
 
 ---
 
-## 5. API surface (254 endpoints total)
+## 5. API surface (266 endpoints total)
 
 > Every route is `/api/<path>`. All customer routes require `Authorization: Bearer <jwt>` unless noted public.
 
@@ -291,10 +300,12 @@
 - GET / POST / PATCH `/transport/vehicles`
 - GET / POST `/transport/fitness-for-duty`
 - GET / POST `/transport/cor-due-diligence`
+- **POST `/transport/drivers/{driver_id}/pause`** *(Iter57 — Industry Alert Tile inline action)* — flag a driver as paused after fatigue cap reached/approached. Writes `driver_pauses` + stamps `users.paused=true`.
 
 ### 5.11 Healthcare
 - GET / POST / PATCH `/healthcare/ahpra-register`
 - GET `/healthcare/ahpra-register/expiring`
+- **POST `/healthcare/ahpra-register/{clinician_id}/remind`** *(Iter57 — Industry Alert Tile)* — emails the clinician an AHPRA renewal reminder + writes a `reminders` row. Best-effort Resend; `sent_via: "queued"` fallback.
 - GET / POST `/healthcare/care-minutes`
 - GET / POST `/healthcare/acqsc-evidence`
 - GET / POST / PATCH `/healthcare/sirs-incidents`
@@ -306,12 +317,16 @@
 - GET `/retail/lone-worker/active`
 - POST `/retail/lone-worker/checkin`
 - POST `/retail/lone-worker/escalate`
+- **POST `/retail/lone-worker/{shift_id}/acknowledge`** *(Iter57 — Industry Alert Tile)* — owner acknowledges a missed check-in. Stamps `last_acknowledged_at` + audit-logs.
 - GET `/retail/lone-worker/logs`
 - GET / POST `/retail/customer-incidents`
 - GET / POST `/retail/quick-induct`
 - GET `/retail/quick-induct/meta`
 - GET `/retail/quick-induct/{casual_id}/status`
 - GET `/retail/roster-eligibility/{worker_id}`
+
+### 5.12b Trades inline actions (Iter57)
+- **POST `/licences/{licence_id}/remind`** — emails the worker a renewal reminder and writes a `reminders` row.
 
 ### 5.13 Industry router & dashboard widgets
 - GET `/industries`
@@ -379,12 +394,26 @@
 - POST `/webhooks/test/{sid}`
 - GET `/webhooks/deliveries`
 
-### 5.22 Integrations (stubs ready)
-- GET `/integrations`
+### 5.22 Integrations — native OAuth (Iter57)
+**Public Integrations docs page lives at `/integrations` — single source of truth for API key setup + webhook reference.**
+
+OAuth scaffolding (returns `not_configured` until vendor secrets are added to env):
+- GET  `/oauth/status` — list of supported providers + `configured: bool` flag per provider
+- GET  `/oauth/{vendor}/start` — generates state nonce + returns vendor auth URL (vendor ∈ `xero` | `deputy` | `teletrac` | `ahpra` | `shopify`)
+- GET  `/oauth/{vendor}/callback` — exchanges code for tokens, persists to `oauth_connections`
+
+Legacy stubs (still mounted for backwards-compat):
+- GET  `/integrations`
 - POST `/integrations/ahpra/poll`
 - POST `/integrations/ahpra/webhook`
 - POST `/integrations/ewd/fatigue`
 - POST `/integrations/iot/temperature`
+
+### 5.22b Push notifications (Iter57 — mobile)
+- POST `/device-tokens/register` — body `{token, platform}` (`ios`/`android`/`web`). Returns `{ok, token_id, rebound}`.
+- DELETE `/device-tokens/{token_id}` — soft-deactivate a token.
+- **Both endpoints are in `_TRIAL_ALLOWLIST_PREFIXES`** so push registration works even when a user's trial has expired (re-engagement path).
+- Dispatch fan-out (`send_push(user_id, title, body, data)`) is internal; auto-deactivates a token on provider rejection.
 
 ### 5.23 Regulator pipeline (Phase 1)
 - POST `/regulator-pipeline/draft`
@@ -488,7 +517,7 @@
 | `/franchises` | Franchises |
 | `/partners` | Partners |
 | `/ecosystem` | Ecosystem |
-| `/integrations` | Integrations (currently lists supported integrations — public docs page is a P1 follow-up) |
+| `/integrations` | Integrations — public API & webhooks docs page (Iter57). Native OAuth cards, bearer-token curl quick-start, endpoint groups, 9 webhook event types, sample payload. |
 
 ### 6.2 Auth flow
 - `/login` · `/register` · `/forgot-password` · `/reset-password` · `/auth/callback`
@@ -611,6 +640,18 @@ Separate JWT auth + TOTP 2FA + RBAC + KPI dashboard + accounts list + account de
 - Concierge chat reply has all markdown stripped (`**bold**`, `__bold__`, `*italic*`, `# headings`, `- /` `* /` `• ` / `1. ` list markers) — chat now reads as natural human prose
 - 2 more demo owners (trades.demo + retail.demo @ safebase.com.au)
 
+### Iter57 — P1 backlog ship: Push, Native OAuth, Integrations docs, Actionable tiles (Feb 25 2026)
+- **Public Integrations API/Webhooks docs page** (`/integrations`) — rebuilt as a developer reference: native OAuth cards, bearer-token quick-start curl, all REST endpoint groups, 9 webhook event types, sample webhook payload. Phosphor icon-import crash (`Webhooks` → `WebhooksLogo`) fixed.
+- **Native OAuth scaffolding** (`/app/backend/routes/native_oauth.py`) — `/api/oauth/status` lists 5 providers + `configured` flag; `/api/oauth/{vendor}/start` returns auth URL or `not_configured`; `/api/oauth/{vendor}/callback` state-TTL guarded. Ready for real vendor secrets.
+- **Push notifications backend** (`/app/backend/routes/push_notifications.py`) — `POST /api/device-tokens/register`, `DELETE /api/device-tokens/{token_id}`, fan-out dispatch helper, auto-deactivate on provider rejection. `/api/device-tokens/` + `/api/push/` added to `_TRIAL_ALLOWLIST_PREFIXES`.
+- **Actionable Industry Alert Tiles** (`/app/backend/routes/inline_actions.py`) — 4 new inline-action endpoints:
+  - `POST /api/transport/drivers/{driver_id}/pause` (pause-driver button)
+  - `POST /api/healthcare/ahpra-register/{clinician_id}/remind` (email AHPRA reminder)
+  - `POST /api/licences/{licence_id}/remind` (email licence reminder)
+  - `POST /api/retail/lone-worker/{shift_id}/acknowledge` (ack a missed check-in)
+- **Hospitality temp-log payload aligned** — `IndustryAlertTile.jsx` now posts `{equipment, temp_c}` matching the backend contract.
+- **Test coverage** — `/app/backend/tests/test_iter57_p1_backlog.py` 28/28 passing.
+
 ---
 
 ## 8. Demo accounts (re-seeded by `python -m seed_widget_demo`)
@@ -637,10 +678,14 @@ All customer demo accounts have `onboarding_complete: true` so they land directl
 - **Stripe** — payments and subscription mirroring (`STRIPE_API_KEY`).
 
 ### Stubs / scaffolding
+- **Xero / Deputy / Teletrac / AHPRA / Shopify OAuth** — *(Iter57)* native flows scaffolded at `/api/oauth/*`. `/api/oauth/status` returns each provider with `configured: false` until env keys (`XERO_CLIENT_ID`, `XERO_CLIENT_SECRET`, `DEPUTY_CLIENT_ID`, …) are added. Once those are set, `/api/oauth/{vendor}/start` returns a real vendor auth URL.
 - **AHPRA live polling** — `/integrations/ahpra/poll` endpoint exists, real SDK pending
 - **EWD (Electronic Work Diary)** — `/integrations/ewd/fatigue`, SDK pending
 - **IoT temperature sensors** — `/integrations/iot/temperature`, real device integration pending
-- **Xero / Deputy / Teletrac / Shopify OAuth** — pages exist, native OAuth flows pending
+
+### Mobile push (Iter57 — backend live)
+- `device_tokens` collection + `/api/device-tokens/register|deregister` endpoints + internal `send_push` fan-out helper.
+- Provider adapters: APNs (iOS) / FCM (Android) / Web Push. Currently `_send_via_provider` is a stub that returns `True` with a warning when `PUSH_PROVIDER` env var is unwired — swap in your provider creds to go live.
 
 ### Planned (Phase 3 / backlog)
 - Zapier app-directory listing
@@ -685,11 +730,13 @@ All customer demo accounts have `onboarding_complete: true` so they land directl
 - Errors return `{ "detail": "<message>" }` with the appropriate HTTP status.
 - 401 responses fire a global axios interceptor on web — mobile should do the same and redirect to login.
 
-### 10.4 Push notifications (NEEDS NEW BACKEND HOOK)
-- Backend currently has `notifications` (in-app) and email (Resend), but **no push channel**.
-- Recommended addition: a `device_tokens` collection (`{user_id, platform: 'ios'|'android', token, registered_at}`) + a single `send_push(user_id, title, body, data)` helper that dispatches to APNs / FCM.
-- Wire into the same places that currently write to `db.notifications` (e.g. when a lone-worker check-in is missed, fatigue cap exceeded, AHPRA renewal D-7 etc.).
-- Strong candidate to reuse the `notification_templates.render(key, industry, **ctx)` registry — it already returns industry-appropriate copy.
+### 10.4 Push notifications (Iter57 — backend LIVE, mobile client-side wiring pending)
+- `device_tokens` collection now exists. Backend endpoints to integrate from the mobile app:
+  - `POST /api/device-tokens/register` — body `{token: string, platform: 'ios'|'android'|'web'}`. Idempotent — re-registering the same token returns `rebound: true` rather than creating duplicates. Returns `{ok, token_id}`.
+  - `DELETE /api/device-tokens/{token_id}` — soft-deactivates a token (call on logout).
+- **No trial-gate** on these endpoints — they're allowlisted so users with expired trials can still register for re-engagement push.
+- Internal helper `send_push(user_id, title, body, data)` fans out to every active token. Currently uses a placeholder provider — swap in APNs/FCM keys (`PUSH_PROVIDER`, `APNS_KEY_ID`, `FCM_SERVER_KEY` env vars) to actually deliver.
+- Wire-up suggestion: also call `send_push` from the same places that write to `db.notifications` (missed lone-worker check-in, fatigue cap exceeded, AHPRA renewal D-7, etc.) — reuse the `notification_templates.render(key, industry, **ctx)` registry for industry-correct copy.
 
 ### 10.5 Offline-first considerations
 - **Temperature logs / pre-trip inspections / lone-worker check-ins** are the most likely use-cases needing offline capture (van/warehouse/clinic dead-zones).
@@ -741,6 +788,25 @@ INTERNAL_ADMIN_SEED_EMAIL=admin@safebase.internal
 INTERNAL_ADMIN_SEED_PASSWORD=AdminDemo@1234
 EXPOSE_RESET_TOKEN=0      # 1 in dev to expose tokens via the password-reset endpoint
 CONCIERGE_LEAD_INBOX=hello@safebase.com.au  # optional, defaults to hello@
+
+# ── Iter57 — native OAuth (all optional; missing keys → /api/oauth/{vendor}/start returns "not_configured")
+XERO_CLIENT_ID=…
+XERO_CLIENT_SECRET=…
+DEPUTY_CLIENT_ID=…
+DEPUTY_CLIENT_SECRET=…
+TELETRAC_CLIENT_ID=…
+TELETRAC_CLIENT_SECRET=…
+AHPRA_CLIENT_ID=…
+AHPRA_CLIENT_SECRET=…
+SHOPIFY_CLIENT_ID=…
+SHOPIFY_CLIENT_SECRET=…
+
+# ── Iter57 — mobile push (all optional; missing keys → send_push is a no-op that logs a warning)
+PUSH_PROVIDER=             # 'apns' | 'fcm' | '' (no-op)
+APNS_KEY_ID=…
+APNS_TEAM_ID=…
+APNS_PRIVATE_KEY=…
+FCM_SERVER_KEY=…
 ```
 
 ### `frontend/.env`
@@ -752,40 +818,42 @@ ENABLE_HEALTH_CHECK=true
 
 ---
 
-## 12. Open backlog (post-Iter56)
+## 12. Open backlog (post-Iter57)
 
-### P1 (this should ship next)
-- Wire `notification_templates.render(...)` into the live notification dispatcher (templates exist but aren't called yet — currently in-app `notifications` use generic copy)
-- Native OAuth flows for top integrations (Xero, Deputy, Teletrac, AHPRA, Shopify)
-- Public `/integrations` documentation page (the page exists but should expose API key setup + webhook reference)
-- Mobile push notification backend hook (`device_tokens` collection + `send_push` helper)
-- Make alert tiles **actionable in one click** — e.g. "Log temperature now" mini-form inline on the hospitality tile
+### P1 (next)
+- **Connect real OAuth vendor credentials** — add `XERO_CLIENT_ID/SECRET`, `DEPUTY_CLIENT_ID/SECRET`, `TELETRAC_CLIENT_ID/SECRET`, `AHPRA_CLIENT_ID/SECRET`, `SHOPIFY_CLIENT_ID/SECRET` to backend `.env` so `/api/oauth/{vendor}/start` flips from `not_configured` to a real auth URL.
+- **Wire real push provider** (APNs/FCM) — `_send_via_provider` in `push_notifications.py` currently returns `True` with a warning; swap in real provider keys and return `False` when delivery fails so tokens auto-deactivate.
+- Wire `notification_templates.render(...)` into the live notification dispatcher (templates exist but aren't called yet — currently in-app `notifications` use generic copy).
+- Idempotency keys on POST endpoints (mobile offline-first prep) — `client_event_id` on `/retail/lone-worker/checkin`, `/transport/pretrip-inspections`, `/hospitality/temperature-logs`, `/incidents`.
 
 ### P2 (backlog)
-- Real Stripe integration to replace mocked subscriptions in /internal-admin/subscriptions (Stripe API + customers exist; just swap `_mock_billing_for_user`)
-- Zapier app-directory listing
-- Refactor `server.py` into router blueprints (now 2,550+ lines)
-- Idempotency keys on POST endpoints (precursor to mobile offline-first)
-- Refresh-token flow (customer JWT currently has fixed 7-day TTL)
+- Real Stripe integration to replace mocked subscriptions in `/internal-admin/subscriptions`.
+- Zapier app-directory listing.
+- Refactor `server.py` into router blueprints (now 2,600+ lines).
+- Refresh-token flow (customer JWT currently has fixed 7-day TTL — important for mobile so users don't have to re-login every 7 days).
+- Invert `trial_gate` middleware from allowlist-by-prefix to decorator-on-writes (cleaner long-term).
 
 ### P3 (nice-to-have)
-- Native dark mode (accessibility widget supports it; full dark-mode-by-default is a larger lift)
-- Real IoT temperature + AHPRA polling + EWD SDKs
-- Expand SafeBase Academy with additional microlearning per industry
+- Native dark mode (accessibility widget supports it; full dark-mode-by-default is a larger lift).
+- Real IoT temperature + AHPRA polling + EWD SDKs.
+- Expand SafeBase Academy with additional microlearning per industry.
 
 ---
 
 ## 13. File map (the 30 files you'll actually open most often)
 
 ### Backend
-- `/app/backend/server.py` — main FastAPI app, customer routes (2,550 lines)
+- `/app/backend/server.py` — main FastAPI app, customer routes (2,600+ lines)
 - `/app/backend/routes/auth.py` — customer auth + password reset
 - `/app/backend/routes/concierge.py` — chat + lead capture + accessibility prefs
 - `/app/backend/routes/dashboard_widgets.py` — all 5 industry widget endpoints
+- `/app/backend/routes/inline_actions.py` *(Iter57)* — pause-driver / AHPRA-remind / licence-remind / lone-worker-ack
+- `/app/backend/routes/native_oauth.py` *(Iter57)* — `/api/oauth/status|start|callback` for Xero/Deputy/Teletrac/AHPRA/Shopify
+- `/app/backend/routes/push_notifications.py` *(Iter57)* — device-tokens + dispatch fan-out
 - `/app/backend/routes/notification_templates.py` — 5-industry × 3-key template registry
 - `/app/backend/routes/hospitality.py` · `transport.py` · `healthcare.py` · `retail.py` — industry-specific endpoints
 - `/app/backend/routes/billing.py` — Stripe checkout + plan tiers
-- `/app/backend/routes/integrations.py` — integration stubs
+- `/app/backend/routes/integrations.py` — legacy integration stubs (IoT/EWD/AHPRA-poll)
 - `/app/backend/routes/resources.py` — articles + AI ask
 - `/app/backend/routes/regulator_pipeline.py`
 - `/app/backend/routes/scheduling.py` — credential-gated rostering
@@ -793,6 +861,7 @@ ENABLE_HEALTH_CHECK=true
 - `/app/backend/internal_admin/auth.py` — admin JWT + RBAC + 2FA
 - `/app/backend/seed_articles.py` — pre-warm Claude article bodies
 - `/app/backend/seed_widget_demo.py` — seed the 5 industry demo owners
+- `/app/backend/tests/test_iter57_p1_backlog.py` — 28-test suite covering Iter57 surface
 
 ### Frontend
 - `/app/frontend/src/App.js` — route table
@@ -846,9 +915,11 @@ The single most useful endpoint surface for the mobile app's MVP is:
 2. `/api/auth/me` (whoami)
 3. `/api/dashboard/widget/*` (5 industry tiles)
 4. `/api/notifications` + `/api/notifications/{id}/read`
-5. The industry-specific capture endpoints (lone-worker checkin, temp log, pre-trip inspection, fitness-for-duty, incident report)
+5. `/api/device-tokens/register` *(Iter57 — call right after login to enable push)*
+6. The industry-specific capture endpoints (lone-worker checkin, temp log, pre-trip inspection, fitness-for-duty, incident report)
+7. The Iter57 inline-action endpoints (`/transport/drivers/{id}/pause`, `/healthcare/ahpra-register/{id}/remind`, `/licences/{id}/remind`, `/retail/lone-worker/{id}/acknowledge`) — perfect for an owner's "morning check" notification roll-up.
 
-Build the mobile app around those 10 endpoints and you'll cover ~80% of daily-active value before adding anything else.
+Build the mobile app around those 12 endpoints and you'll cover ~85% of daily-active value before adding anything else.
 
 ---
 
