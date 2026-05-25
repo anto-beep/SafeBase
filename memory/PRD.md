@@ -24,6 +24,19 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 57 — P1 backlog ship · Inline actions live (Feb 25, 2026)
+- **Integrations API/Webhooks docs page** — `/integrations` rebuilt as a developer-facing reference: native OAuth cards (Xero, Deputy, Teletrac, AHPRA, Shopify), bearer-token quick-start curl, all REST endpoint groups, 9 webhook event types, sample webhook payload. Fixed icon-import crash (`Webhooks` → `WebhooksLogo` from `@phosphor-icons/react`).
+- **Native OAuth scaffolding** (`/app/backend/routes/native_oauth.py`) — `/api/oauth/status` (lists 5 providers + configured flag), `/api/oauth/{vendor}/start` (returns auth URL or `not_configured` when env keys missing), `/api/oauth/{vendor}/callback` (state-TTL guarded). Ready for real vendor secrets in env.
+- **Push notifications** (`/app/backend/routes/push_notifications.py`) — `POST /api/device-tokens/register`, `DELETE /api/device-tokens/{token_id}` with auto-deactivate on provider rejection. Added `/api/device-tokens/` + `/api/push/` to `_TRIAL_ALLOWLIST_PREFIXES` so re-engagement push works even for expired-trial users.
+- **Industry Alert Tile inline actions** (`/app/backend/routes/inline_actions.py`) — 4 new endpoints power the actionable dashboard buttons:
+  - `POST /api/transport/drivers/{driver_id}/pause` — writes `driver_pauses` row + flags `users.paused=true`.
+  - `POST /api/healthcare/ahpra-register/{clinician_id}/remind` — emails clinician + logs `reminders` row (Resend best-effort, queued fallback).
+  - `POST /api/licences/{licence_id}/remind` — emails worker + logs `reminders` row.
+  - `POST /api/retail/lone-worker/{shift_id}/acknowledge` — stamps `last_acknowledged_at` on the shift.
+- **Hospitality temp-log schema alignment** — frontend `IndustryAlertTile.jsx` now posts `{equipment, temp_c}` matching the backend contract.
+- **Test coverage** — `/app/backend/tests/test_iter57_p1_backlog.py` 28/28 passing across all 5 inline actions, OAuth status/start, push register/deregister, dashboard widgets, and trial-gate allowlist.
+
+
 ### Iteration 56 — Trades + Retail dashboard widgets · Chat plain-prose (Feb 2026)
 - **Trades widget** ("Credentials expiring", `GET /api/dashboard/widget/credential-expiry`) — reads `licences` joined to `workers`, returns expiring-in-60-days + already-expired counts and rows with worker name, licence type, licence number, days_left. Yellow accent matches the trades theme. Mounted on `OwnerDashboard` (trades default) below the stat cards.
 - **Retail widget** ("Lone-worker check-ins", `GET /api/dashboard/widget/lone-worker`) — reads a new `lone_worker_shifts` collection, returns currently-open shifts + missed-check-in rows (where time since last check-in exceeds interval + 10 min grace). Purple accent matches the retail theme. Mounted on `RetailOwnerDashboard` below the top status strip.
