@@ -1,0 +1,53 @@
+{
+  "summary": "Iter57 P1-backlog validation. Backend pytest 20/27 PASS, 7 FAIL, 1 skipped (test_iter57_p1_backlog.py). Frontend /integrations page renders perfectly — every required data-testid (integrations-hero, integrations-curl-example, integrations-webhook-sample, integration-native-xero, integration-endpoint-/api/auth/login, integration-event-incident.created) is visible; #native/#api/#webhooks anchor jump links present; no JS errors (only benign 401s from unauthenticated /api/auth/me probe on public page). Native OAuth scaffolding works as designed — /api/oauth/status returns all 5 providers (xero, deputy, teletrac, ahpra, shopify) with configured=false; /api/oauth/{vendor}/start returns 400 'not configured' for every vendor (expected happy path — no vendor secrets in env); unknown provider → 404; status requires auth (401). Push device-tokens register/list/deregister flow works end-to-end for trial-active users (verified with trades.demo). HOWEVER: 5 critical P1 issues found — see action_items.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/transport/drivers/{driver_id}/pause", "issue": "MISSING (404). IndustryAlertTile.jsx 'Pause driver' button calls this but no route is mounted in any router.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/healthcare/ahpra-register/{clinician_id}/remind", "issue": "MISSING (404). IndustryAlertTile.jsx 'Send AHPRA reminder' button calls this but no route exists.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/licences/{licence_id}/remind", "issue": "MISSING (404). IndustryAlertTile.jsx (TradesBody) 'Remind worker' button calls this but no route exists.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/retail/lone-worker/{shift_id}/acknowledge", "issue": "MISSING (404). IndustryAlertTile.jsx (RetailBody) 'Acknowledge check-in' button calls this — no route in retail.py (only /checkin, /escalate, /active, /logs).", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/hospitality/temperature-logs", "issue": "Schema mismatch — backend requires {equipment, temp_c} but IndustryAlertTile.jsx posts {unit_name, temp_c} → 400 'equipment and temp_c are required'. Inline 'Log temp' tile button is broken end-to-end.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/device-tokens/register", "issue": "Returns 402 trial_expired for any user whose trial has ended (e.g. owner@safetradie.demo). Mobile push registration MUST work for paid + free-tier + expired-trial users. Same trial_gate allowlist pattern as Iter50 a11y/concierge fix — add '/api/device-tokens/' to _TRIAL_ALLOWLIST_PREFIXES in server.py.", "priority": "CRITICAL"},
+      {"endpoint": "GET /api/dashboard/widget/fatigue-alert", "issue": "Transport widget returns empty arrays (approaching=[], exceeding=[]) — seed_widget_demo's driver_work_diary entries fall outside the 24h trailing window the widget queries (started_at < now-24h). Either re-seed with current timestamps or change the window/use rolling cycle hours. Currently the transport dashboard tile will look empty in prod.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "Push endpoints path naming", "issue": "Review request referred to /api/push/register & /api/push/deregister but implementation uses /api/device-tokens/register (POST) and DELETE /api/device-tokens/{token_id}. Frontend mobile clients should use the device-tokens paths; spec wording in PRD should be updated."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Industry Alert Tile inline actions", "issue": "4/5 inline-action buttons inside IndustryAlertTile.jsx are wired to backend endpoints that don't exist (404). The hospitality temp-log button is wired but posts the wrong field name ('unit_name' vs backend 'equipment'). Net effect: none of the Industry Alert Tile inline actions actually work in production.", "affected_selectors": ["IndustryAlertTile HospitalityBody Log Temp form", "IndustryAlertTile TransportBody Pause button", "IndustryAlertTile HealthcareBody Send Reminder button", "IndustryAlertTile TradesBody Remind worker button", "IndustryAlertTile RetailBody Acknowledge button"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter57_p1_backlog.py",
+    "/app/test_reports/pytest/iter57.xml"
+  ],
+  "action_items": [
+    "CRITICAL — Implement the 4 missing inline-action endpoints used by IndustryAlertTile.jsx: POST /api/transport/drivers/{driver_id}/pause, POST /api/healthcare/ahpra-register/{clinician_id}/remind, POST /api/licences/{licence_id}/remind, POST /api/retail/lone-worker/{shift_id}/acknowledge. Each should write to its existing collection and (where applicable) fire push_notification + log_audit. Resend dispatch can stay mocked.",
+    "CRITICAL — Fix hospitality temp-log schema mismatch. Either: (a) change IndustryAlertTile.jsx HospitalityBody (line 446) to post {equipment: unit.name, equipment_type: unit.unit_type, temp_c}, OR (b) make backend POST /api/hospitality/temperature-logs accept either 'equipment' or 'unit_name'. Recommend (a) so payloads stay consistent.",
+    "CRITICAL — Add '/api/device-tokens/' (and ideally '/api/push/') to _TRIAL_ALLOWLIST_PREFIXES in server.py — mobile push registration must work even for expired-trial users (it's how we re-engage them).",
+    "HIGH — Re-run `python -m seed_widget_demo` OR rework seed_widget_demo.py so the transport driver_work_diary rows use timestamps within the last 24 hours (currently rolling out of the widget's window).",
+    "MINOR — Update the P1 spec/docs to reflect actual push paths: /api/device-tokens/register (POST) and /api/device-tokens/{token_id} (DELETE), not /api/push/*."
+  ],
+  "critical_code_review_comments": [
+    "trial_gate middleware once again caught a new feature (device-tokens) by surprise. As suggested in Iter50, invert the model: gate-by-decorator on business-data writes, instead of allowlisting every cross-cutting concern (a11y, concierge, push, possibly mobile sync). Otherwise this pattern will keep recurring.",
+    "IndustryAlertTile.jsx → server contract is implicit. Add an integration smoke-test (this iter57 test file is a start) that runs in CI so missing-endpoint regressions get caught before ship.",
+    "native_oauth.py is well-structured (provider registry, configured-flag, state TTL) — the configured=false UX is clean. One nit: PROVIDERS['ahpra'] uses a non-existent AHPRA OAuth URL — fine as a placeholder, but consider gating ahpra behind a 'private_partner' flag the UI checks before showing 'Connect'.",
+    "push_notifications.py — solid stub + dispatch fan-out + auto-deactivate on provider rejection. _send_via_provider currently always returns True even when PUSH_PROVIDER is set but unwired (returns True with a warning) — should return False so the calling code marks the token inactive instead of silently 'succeeding'.",
+    "dashboard_widgets.py — fatigue widget reads `started_at` as ISO string and uses a 24h cutoff, but seed data needs to be live. Consider a relative-time seed or a longer window so the demo always shows data.",
+    "device-tokens collection is missing an index on (user_id, active) and a unique index on token — would speed up dispatch_to_devices and prevent duplicate token rows if upserts race."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter57_p1_backlog.py (NEW — 27 tests covering full P1 backlog)"
+  ],
+  "success_rate": {"backend": "74% (20/27 pass, 1 skip)", "frontend": "100% — /integrations renders all required test-ids cleanly with no JS errors"},
+  "test_credentials": "owner@safetradie.demo / Demo@1234 (trial-expired in this env, blocks any trial-gated write); trades.demo / hospitality.demo / transport.demo / healthcare.demo / retail.demo @safebase.com.au / Demo@1234 (trial-active per-industry demos used for widgets + inline actions).",
+  "seed_data_creation": "Did NOT re-run seed_widget_demo (per instructions). Note transport.demo driver_work_diary entries are now stale — widget returns empty.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The /integrations frontend page and Native OAuth scaffolding are DONE. Push device-tokens work for trial-active users but trip the trial_gate for expired-trial users — fix is one line (add '/api/device-tokens/' to _TRIAL_ALLOWLIST_PREFIXES). The biggest gap is that 4/5 IndustryAlertTile inline-action endpoints don't exist in the backend at all (404) and the 5th (hospitality temp-log) has a payload schema mismatch. Re-run test_iter57_p1_backlog.py after E1 implements the missing endpoints — the test already auto-fetches IDs from the widget responses so no fixture changes needed. The transport widget will also need a fresh seed run.",
+  "rca of the issue": "RCA — Industry Alert Tile inline actions: IndustryAlertTile.jsx was implemented assuming 5 backend endpoints exist (pause-driver, ahpra-remind, licence-remind, lone-worker-acknowledge, hospitality temp-log), but only 1 of the 5 (temperature-logs) has a backend route, and that one has a divergent payload contract (frontend sends unit_name+temp_c, backend expects equipment+temp_c). Reproduction: log in as each industry demo, fetch /api/dashboard/widget/{...} to grab an ID, POST the corresponding action endpoint → 404 for 4/5, 400 for 1/5. Mitigation: implement the missing routes (each is a thin DB update + audit + optional email/push) and align temp-log payload field name. Push 402 RCA: trial_gate middleware in server.py blocks all writes for users whose trial has ended; /api/device-tokens/ was never added to _TRIAL_ALLOWLIST_PREFIXES so push registration fails for expired-trial users (e.g. owner@safetradie.demo). Same fix shape as Iter50 — append '/api/device-tokens/' (and ideally '/api/push/') to the prefix tuple."
+}

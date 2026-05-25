@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import MarketingLayout from "@/components/marketing/Layout";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Plug, Code, Webhooks, Key, ShieldCheck, Plugs } from "@phosphor-icons/react";
+import { ArrowRight, Plug, Code, WebhooksLogo, Key, ShieldCheck, Plugs } from "@phosphor-icons/react";
 
 const ENDPOINT_GROUPS = [
   { title: "Authentication", anchor: "auth", endpoints: [
@@ -68,7 +68,7 @@ export default function Integrations() {
               <Code weight="duotone" />REST API
             </a>
             <a href="#webhooks" className="btn-sharp inline-flex items-center gap-2 bg-white text-ink hover:bg-warning px-4 py-2 font-bold uppercase tracking-widest text-xs">
-              <Webhooks weight="duotone" />Webhooks
+              <WebhooksLogo weight="duotone" />Webhooks
             </a>
           </div>
         </div>
