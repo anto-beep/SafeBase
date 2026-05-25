@@ -764,7 +764,36 @@ async def update_notif_prefs(body: NotificationPrefsIn, current_user: User = Dep
 
 
 # ----------- NOTIFICATIONS CENTRE -----------
-async def push_notification(user_id: str, tone: str, tag: str, title: str, body: str, link: Optional[str] = None):
+async def push_notification(
+    user_id: str, tone: str, tag: str, title: str, body: str,
+    link: Optional[str] = None,
+    *,
+    template_key: Optional[str] = None,
+    template_ctx: Optional[dict] = None,
+):
+    """Persist an in-app notification and (best-effort) fan it out to any
+    registered mobile devices.
+
+    template_key / template_ctx — when provided, the title/body/link are
+    overridden by the industry-specific copy registered in
+    routes.notification_templates. The caller still gets the rendered doc
+    back so legacy code that displays the result keeps working.
+    """
+    # Industry-aware template override (Iter57 — wires the template registry
+    # built in Iter55 into the live dispatcher).
+    if template_key:
+        try:
+            from routes.notification_templates import render as render_template  # noqa: WPS433
+            user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "industry": 1})
+            industry = (user_doc or {}).get("industry")
+            rendered = render_template(template_key, industry, **(template_ctx or {}))
+            title = rendered.get("title") or title
+            body = rendered.get("body") or body
+            link = rendered.get("cta_path") or link
+        except Exception as exc:  # never let template rendering kill a notify
+            import logging
+            logging.getLogger(__name__).warning("template render failed for %s: %s", template_key, exc)
+
     doc = {
         "notification_id": f"ntf_{uuid.uuid4().hex[:12]}",
         "user_id": user_id,
@@ -777,6 +806,17 @@ async def push_notification(user_id: str, tone: str, tag: str, title: str, body:
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.notifications.insert_one({**doc})
+
+    # Fan out to mobile devices (Iter57 — P1 push backend hook). Fire-and-forget,
+    # never block the in-app write on a push failure.
+    try:
+        from routes.push_notifications import dispatch_to_devices  # noqa: WPS433
+        await dispatch_to_devices(db, user_id=user_id, title=title, body=body,
+                                   data={"link": link or "", "tag": tag, "tone": tone})
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("push fan-out failed: %s", exc)
+
     return doc
 
 
@@ -2437,6 +2477,18 @@ register_concierge_routes(
 # ─────── Per-industry Dashboard Widgets (Iter54) ───────
 from routes.dashboard_widgets import register_dashboard_widgets  # noqa: E402
 register_dashboard_widgets(
+    api_router, db=db, get_current_user_dep=get_current_user,
+)
+
+# ─────── Mobile push notifications (Iter57 / P1.4) ───────
+from routes.push_notifications import register_push_routes  # noqa: E402
+register_push_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+)
+
+# ─────── Native OAuth integrations scaffolding (Iter57 / P1.2) ───────
+from routes.native_oauth import register_native_oauth_routes  # noqa: E402
+register_native_oauth_routes(
     api_router, db=db, get_current_user_dep=get_current_user,
 )
 
