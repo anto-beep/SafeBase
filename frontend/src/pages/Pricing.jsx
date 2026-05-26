@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
@@ -11,7 +11,7 @@ import { INDUSTRY_PRICING, INDUSTRY_LIST } from "@/data/pricing.config";
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function Pricing() {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialIndustry = INDUSTRY_LIST.includes(searchParams.get("industry"))
     ? searchParams.get("industry") : "trades";
@@ -22,13 +22,14 @@ export default function Pricing() {
   const cfg = INDUSTRY_PRICING[industry];
 
   // Iter58 — load existing per-industry subscriptions so we can swap CTAs.
+  // We re-fetch whenever `user` flips truthy/falsy and on industry change so
+  // the trial-banner state is always in sync with the auth context.
   useEffect(() => {
-    if (!token) { setMySubs([]); return; }
-    axios.get(`${API_URL}/api/billing/my-subscriptions`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(r => setMySubs(r.data.subscriptions || []))
+    if (!user) { setMySubs([]); return; }
+    api.get("/billing/my-subscriptions")
+      .then(r => setMySubs(r.data.subscriptions || []))
       .catch(() => setMySubs([]));
-  }, [token]);
+  }, [user]);
 
   const subForCurrentIndustry = useMemo(
     () => mySubs.find(s => s.industry === industry),
@@ -63,19 +64,19 @@ export default function Pricing() {
   })), [cfg, cycle]);
 
   const startCheckout = async (tier, slug) => {
-    if (!token) {
+    if (!user) {
       window.location.href = `/register?industry=${industry}`;
       return;
     }
     setLoading(slug);
     try {
       // Iter58 — use v2 per-industry endpoint so the right industry sub row is created.
-      const r = await axios.post(`${API_URL}/api/billing/checkout-industry`, {
+      const r = await api.post("/billing/checkout-industry", {
         industry,
         tier,
         cycle,
         origin_url: window.location.origin,
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
       window.location.href = r.data.url;
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Checkout failed");
@@ -85,14 +86,13 @@ export default function Pricing() {
   };
 
   const startTrial = async () => {
-    if (!token) {
+    if (!user) {
       window.location.href = `/register?industry=${industry}`;
       return;
     }
     setLoading("trial");
     try {
-      await axios.post(`${API_URL}/api/billing/start-trial`, { industry },
-        { headers: { Authorization: `Bearer ${token}` } });
+      await api.post("/billing/start-trial", { industry });
       toast.success(`14-day ${cfg.label} trial started — opening dashboard…`);
       setTimeout(() => { window.location.href = "/dashboard"; }, 700);
     } catch (e) {
@@ -163,7 +163,7 @@ export default function Pricing() {
           </div>
 
           {/* Iter58 — when logged in but NO sub for this industry, offer the free trial. */}
-          {token && !subForCurrentIndustry && (
+          {user && !subForCurrentIndustry && (
             <div
               className="mb-8 p-5 border-2 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between"
               style={{ borderColor: cfg.accent, background: `${cfg.accent}15` }}
@@ -190,7 +190,7 @@ export default function Pricing() {
           )}
 
           {/* Iter58 — when an active sub exists for this industry, show a status banner. */}
-          {token && subForCurrentIndustry && (
+          {user && subForCurrentIndustry && (
             <div
               className="mb-8 p-5 border-2 border-ink bg-ink text-white flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between"
               data-testid="pricing-status-banner"
@@ -270,7 +270,7 @@ export default function Pricing() {
                 >
                   {loading === t.slug
                     ? "Redirecting…"
-                    : !token
+                    : !user
                       ? "Start Free Trial"
                       : subForCurrentIndustry?.status === "trial"
                         ? "Choose Plan"
