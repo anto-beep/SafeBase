@@ -18,7 +18,22 @@ export default function Pricing() {
   const [industry, setIndustry] = useState(initialIndustry);
   const [cycle, setCycle] = useState("monthly"); // monthly is the default per Iter44 spec (save-badge still visible in both states)
   const [loading, setLoading] = useState(null);
+  const [mySubs, setMySubs] = useState([]);
   const cfg = INDUSTRY_PRICING[industry];
+
+  // Iter58 — load existing per-industry subscriptions so we can swap CTAs.
+  useEffect(() => {
+    if (!token) { setMySubs([]); return; }
+    axios.get(`${API_URL}/api/billing/my-subscriptions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(r => setMySubs(r.data.subscriptions || []))
+      .catch(() => setMySubs([]));
+  }, [token]);
+
+  const subForCurrentIndustry = useMemo(
+    () => mySubs.find(s => s.industry === industry),
+    [mySubs, industry]
+  );
 
   // URL deep-link support — clicking a tab updates the URL.
   useEffect(() => {
@@ -47,20 +62,41 @@ export default function Pricing() {
     badge: idx === 2 ? "MOST POPULAR" : idx === 3 ? "FOR LARGER OPERATIONS" : null,
   })), [cfg, cycle]);
 
-  const startCheckout = async (slug) => {
+  const startCheckout = async (tier, slug) => {
     if (!token) {
       window.location.href = `/register?industry=${industry}`;
       return;
     }
     setLoading(slug);
     try {
-      const r = await axios.post(`${API_URL}/api/billing/checkout`, {
-        tier_slug: slug,
+      // Iter58 — use v2 per-industry endpoint so the right industry sub row is created.
+      const r = await axios.post(`${API_URL}/api/billing/checkout-industry`, {
+        industry,
+        tier,
+        cycle,
         origin_url: window.location.origin,
       }, { headers: { Authorization: `Bearer ${token}` } });
       window.location.href = r.data.url;
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Checkout failed");
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const startTrial = async () => {
+    if (!token) {
+      window.location.href = `/register?industry=${industry}`;
+      return;
+    }
+    setLoading("trial");
+    try {
+      await axios.post(`${API_URL}/api/billing/start-trial`, { industry },
+        { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(`14-day ${cfg.label} trial started — opening dashboard…`);
+      setTimeout(() => { window.location.href = "/dashboard"; }, 700);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not start trial");
     } finally {
       setLoading(null);
     }
@@ -126,6 +162,57 @@ export default function Pricing() {
             </div>
           </div>
 
+          {/* Iter58 — when logged in but NO sub for this industry, offer the free trial. */}
+          {token && !subForCurrentIndustry && (
+            <div
+              className="mb-8 p-5 border-2 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between"
+              style={{ borderColor: cfg.accent, background: `${cfg.accent}15` }}
+              data-testid="pricing-trial-banner"
+            >
+              <div>
+                <div className="text-xs font-mono uppercase tracking-widest" style={{ color: cfg.accent }}>/ 14-day free trial</div>
+                <div className="font-display text-xl font-black tracking-tight mt-1">
+                  Try {cfg.label} free for 14 days
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  One free trial per industry per email. After 14 days, choose any plan below.
+                </p>
+              </div>
+              <Button
+                onClick={startTrial}
+                disabled={loading === "trial"}
+                className="btn-sharp h-11 bg-ink text-white hover:bg-authority"
+                data-testid="pricing-start-trial"
+              >
+                {loading === "trial" ? "Starting…" : "Start Free Trial"} <ArrowRight className="ml-2" />
+              </Button>
+            </div>
+          )}
+
+          {/* Iter58 — when an active sub exists for this industry, show a status banner. */}
+          {token && subForCurrentIndustry && (
+            <div
+              className="mb-8 p-5 border-2 border-ink bg-ink text-white flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between"
+              data-testid="pricing-status-banner"
+            >
+              <div>
+                <div className="text-xs font-mono uppercase tracking-widest" style={{ color: cfg.accent }}>
+                  / {subForCurrentIndustry.status === "trial" ? "trial · in progress" : "active subscription"}
+                </div>
+                <div className="font-display text-xl font-black tracking-tight mt-1">
+                  {subForCurrentIndustry.status === "trial"
+                    ? `${subForCurrentIndustry.trial_days_left ?? "—"} days left in your ${cfg.label} trial`
+                    : `${subForCurrentIndustry.tier || "Active"} · ${subForCurrentIndustry.cycle || ""}`}
+                </div>
+              </div>
+              <Link to="/dashboard/billing">
+                <Button variant="outline" className="btn-sharp h-11 border-white text-white hover:bg-white hover:text-ink">
+                  Manage subscription <ArrowRight className="ml-2" />
+                </Button>
+              </Link>
+            </div>
+          )}
+
           {/* TIER CARDS */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {tiers.map((t) => (
@@ -173,12 +260,22 @@ export default function Pricing() {
                   ))}
                 </ul>
                 <Button
-                  onClick={() => startCheckout(t.slug)}
+                  onClick={() => {
+                    const tier_only = t.slug.replace(/_(monthly|annual)$/, "");
+                    startCheckout(tier_only, t.slug);
+                  }}
                   disabled={loading === t.slug}
                   className="mt-6 btn-sharp h-12 bg-ink text-white hover:bg-authority"
                   data-testid={`pricing-cta-${t.name.replace(/\s+/g, "-").toLowerCase()}`}
                 >
-                  {loading === t.slug ? "Redirecting…" : "Start Free Trial"} <ArrowRight className="ml-2" />
+                  {loading === t.slug
+                    ? "Redirecting…"
+                    : !token
+                      ? "Start Free Trial"
+                      : subForCurrentIndustry
+                        ? (subForCurrentIndustry.tier_slug === t.slug ? "Current Plan" : "Choose Plan")
+                        : "Choose Plan"}
+                  {(loading !== t.slug && subForCurrentIndustry?.tier_slug !== t.slug) && <ArrowRight className="ml-2" />}
                 </Button>
               </div>
             ))}

@@ -386,6 +386,50 @@ def register_billing_routes(api_router: APIRouter, *, db, User, get_current_user
                             "subscription_started_at": datetime.now(timezone.utc).isoformat(),
                         }},
                     )
+                    # Iter58: if this was a v2 per-industry checkout, update the per-industry sub row
+                    if txn.get("v2") and txn.get("industry"):
+                        now_iso2 = datetime.now(timezone.utc).isoformat()
+                        period_end = (
+                            datetime.now(timezone.utc)
+                            + timedelta(days=365 if txn.get("cycle") == "annual" else 30)
+                        ).isoformat()
+                        await db.user_subscriptions.update_one(
+                            {"user_id": txn["user_id"], "industry": txn["industry"]},
+                            {"$set": {
+                                "tier": txn.get("tier"),
+                                "cycle": txn.get("cycle"),
+                                "tier_slug": txn.get("tier_slug"),
+                                "status": "active",
+                                "current_period_end": period_end,
+                                "last_payment_session_id": sess_id,
+                                "updated_at": now_iso2,
+                            },
+                             "$setOnInsert": {
+                                 "sub_id": f"sub_{uuid.uuid4().hex[:12]}",
+                                 "user_id": txn["user_id"],
+                                 "email": txn.get("email"),
+                                 "email_lower": (txn.get("email") or "").lower(),
+                                 "industry": txn["industry"],
+                                 "created_at": now_iso2,
+                             }},
+                            upsert=True,
+                        )
+                        # If a downgrade was pending and the period actually rolled, apply now
+                        existing = await db.user_subscriptions.find_one(
+                            {"user_id": txn["user_id"], "industry": txn["industry"]}, {"_id": 0}
+                        )
+                        pending = (existing or {}).get("pending_change")
+                        if pending:
+                            await db.user_subscriptions.update_one(
+                                {"user_id": txn["user_id"], "industry": txn["industry"]},
+                                {"$unset": {"pending_change": ""}},
+                            )
+                        # Mark trial as converted in trial_history (won't unblock a future trial)
+                        await db.trial_history.update_one(
+                            {"email_lower": (txn.get("email") or "").lower(),
+                             "industry": txn["industry"]},
+                            {"$set": {"outcome": "converted", "ended_at": now_iso2}},
+                        )
         return {"ok": True}
 
     return {

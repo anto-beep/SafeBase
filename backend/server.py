@@ -44,7 +44,7 @@ class RegisterIn(BaseModel):
     password: str
     name: str
     company_name: Optional[str] = None
-    role: Literal["owner", "worker"] = "owner"
+    role: Literal["owner", "admin", "supervisor", "worker"] = "owner"
 
 
 class LoginIn(BaseModel):
@@ -2186,6 +2186,18 @@ register_billing_routes(
     resend_api_key=RESEND_API_KEY_ENV,
     trial_length_days=TRIAL_LENGTH_DAYS,
     trial_reminder_day=TRIAL_REMINDER_DAY,
+)
+
+
+# ----------- PER-INDUSTRY SUBSCRIPTIONS + PERMISSIONS (Iter58) -----------
+from routes.subscriptions import register_subscription_routes  # noqa: E402
+register_subscription_routes(
+    api_router,
+    db=db,
+    User=User,
+    get_current_user=get_current_user,
+    logger=logger,
+    stripe_api_key=STRIPE_API_KEY,
 )
 
 

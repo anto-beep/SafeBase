@@ -10,6 +10,7 @@ import IndustryDashboardPreview from "@/components/marketing/IndustryDashboardPr
 import ProductTour from "@/components/marketing/ProductTour";
 import { INDUSTRIES, INDUSTRY_LIST } from "@/data/industries.config";
 import { Icon } from "@/components/industry/IndustryPage";
+import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -47,6 +48,7 @@ const HOMEPAGE_TESTIMONIALS = [
 ];
 
 export default function Landing() {
+  const { token } = useAuth();
   const [activeIndustry, setActiveIndustry] = useState("trades");
   const [liveSignals, setLiveSignals] = useState({});
   const ind = INDUSTRIES[activeIndustry];
@@ -129,9 +131,9 @@ export default function Landing() {
             </div>
 
             <div className="flex flex-wrap gap-3 mt-10">
-              <Link to="/register">
+              <Link to={token ? "/pricing" : "/register"}>
                 <Button size="lg" className="btn-sharp bg-warning text-ink hover:opacity-90 uppercase tracking-widest font-bold h-12 px-6" data-testid="home-cta-primary">
-                  Start Free Trial <ArrowRight className="ml-2" />
+                  {token ? "Choose Plan" : "Start Free Trial"} <ArrowRight className="ml-2" />
                 </Button>
               </Link>
               <a href="#industries">
@@ -314,13 +316,13 @@ export default function Landing() {
         <section className="py-24 bg-gradient-to-br from-[#0A1F44] to-[#0E2C5C] text-white">
           <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center">
             <h2 className="font-display text-4xl lg:text-6xl font-black tracking-tighter">Your Industry. Your Compliance. Your Platform.</h2>
-            <p className="text-lg text-white/80 mt-6 leading-relaxed">Start your free trial today. Select your industry on signup and SafeBase configures everything in under ten minutes.</p>
-            <Link to="/register">
+            <p className="text-lg text-white/80 mt-6 leading-relaxed">{token ? "Pick a plan for every industry you operate in. Monthly or annual, your choice." : "Start your free trial today. Select your industry on signup and SafeBase configures everything in under ten minutes."}</p>
+            <Link to={token ? "/pricing" : "/register"}>
               <Button size="lg" className="btn-sharp bg-warning text-ink hover:opacity-90 uppercase tracking-widest font-bold mt-8 h-14 px-8 text-base" data-testid="home-final-cta">
-                Start Free Trial <ArrowRight className="ml-2" />
+                {token ? "Choose Plan" : "Start Free Trial"} <ArrowRight className="ml-2" />
               </Button>
             </Link>
-            <p className="text-xs font-mono text-white/60 mt-6 uppercase tracking-widest">14-day free trial · No credit card required · Australian data hosting · Cancel anytime</p>
+            <p className="text-xs font-mono text-white/60 mt-6 uppercase tracking-widest">{token ? "Monthly or annual · Per-industry billing · Manage from your dashboard" : "14-day free trial · No credit card required · Australian data hosting · Cancel anytime"}</p>
           </div>
         </section>
       </main>
