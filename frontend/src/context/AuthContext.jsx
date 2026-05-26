@@ -47,7 +47,16 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginEmail, registerEmail, logout, setUser, checkAuth }}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      // Iter58 — single canonical "is the user signed in?" boolean. Use
+      // `isAuthenticated` (or the convenience hook in /hooks/useIsAuthenticated.js)
+      // instead of reading `token` or `user` truthiness directly so that this
+      // contract stays identical across web and mobile.
+      isAuthenticated: !!user,
+      loginEmail, registerEmail, logout, setUser, checkAuth,
+    }}>
       {children}
     </AuthContext.Provider>
   );

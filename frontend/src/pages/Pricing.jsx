@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthState } from "@/hooks/useIsAuthenticated";
 import { Button } from "@/components/ui/button";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { CheckCircle, ArrowRight, Star, ShieldCheck } from "@phosphor-icons/react";
@@ -11,7 +11,7 @@ import { INDUSTRY_PRICING, INDUSTRY_LIST } from "@/data/pricing.config";
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function Pricing() {
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuthState();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialIndustry = INDUSTRY_LIST.includes(searchParams.get("industry"))
     ? searchParams.get("industry") : "trades";
@@ -22,14 +22,12 @@ export default function Pricing() {
   const cfg = INDUSTRY_PRICING[industry];
 
   // Iter58 — load existing per-industry subscriptions so we can swap CTAs.
-  // We re-fetch whenever `user` flips truthy/falsy and on industry change so
-  // the trial-banner state is always in sync with the auth context.
   useEffect(() => {
-    if (!user) { setMySubs([]); return; }
+    if (!isAuthenticated) { setMySubs([]); return; }
     api.get("/billing/my-subscriptions")
       .then(r => setMySubs(r.data.subscriptions || []))
       .catch(() => setMySubs([]));
-  }, [user]);
+  }, [isAuthenticated]);
 
   const subForCurrentIndustry = useMemo(
     () => mySubs.find(s => s.industry === industry),
@@ -64,7 +62,7 @@ export default function Pricing() {
   })), [cfg, cycle]);
 
   const startCheckout = async (tier, slug) => {
-    if (!user) {
+    if (!isAuthenticated) {
       window.location.href = `/register?industry=${industry}`;
       return;
     }
@@ -86,7 +84,7 @@ export default function Pricing() {
   };
 
   const startTrial = async () => {
-    if (!user) {
+    if (!isAuthenticated) {
       window.location.href = `/register?industry=${industry}`;
       return;
     }
@@ -163,7 +161,7 @@ export default function Pricing() {
           </div>
 
           {/* Iter58 — when logged in but NO sub for this industry, offer the free trial. */}
-          {user && !subForCurrentIndustry && (
+          {isAuthenticated && !subForCurrentIndustry && (
             <div
               className="mb-8 p-5 border-2 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between"
               style={{ borderColor: cfg.accent, background: `${cfg.accent}15` }}
@@ -190,7 +188,7 @@ export default function Pricing() {
           )}
 
           {/* Iter58 — when an active sub exists for this industry, show a status banner. */}
-          {user && subForCurrentIndustry && (
+          {isAuthenticated && subForCurrentIndustry && (
             <div
               className="mb-8 p-5 border-2 border-ink bg-ink text-white flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between"
               data-testid="pricing-status-banner"
@@ -270,7 +268,7 @@ export default function Pricing() {
                 >
                   {loading === t.slug
                     ? "Redirecting…"
-                    : !user
+                    : !isAuthenticated
                       ? "Start Free Trial"
                       : subForCurrentIndustry?.status === "trial"
                         ? "Choose Plan"
