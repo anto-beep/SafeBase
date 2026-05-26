@@ -134,9 +134,92 @@ def register_subscription_routes(api_router: APIRouter, *, db, User, get_current
         return {"industry": industry, "trial_days": TRIAL_DAYS, "plans": rows}
 
     # ──────────────── MY SUBSCRIPTIONS ────────────────
+    async def _backfill_primary_industry_trial(current_user) -> None:
+        """For users who registered before the per-industry system rolled out,
+        create a synthetic trial row for `user.industry` based on their
+        `created_at` + 14d window. Fires AT MOST ONCE per (user, industry).
+        Locks the industry trial in `trial_history` so re-trial is blocked."""
+        industry = (getattr(current_user, "industry", None) or "trades").lower()
+        if industry not in SUPPORTED_INDUSTRIES:
+            return
+        # Already has any row for this industry? Skip.
+        existing = await db.user_subscriptions.find_one(
+            {"user_id": current_user.user_id, "industry": industry}, {"_id": 0}
+        )
+        if existing:
+            return
+        # Compute trial window from user.created_at
+        created_at = getattr(current_user, "created_at", None)
+        if created_at is None:
+            created_at_dt = datetime.now(timezone.utc)
+        elif isinstance(created_at, str):
+            try:
+                created_at_dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                if created_at_dt.tzinfo is None:
+                    created_at_dt = created_at_dt.replace(tzinfo=timezone.utc)
+            except Exception:
+                created_at_dt = datetime.now(timezone.utc)
+        else:
+            created_at_dt = created_at
+            if created_at_dt.tzinfo is None:
+                created_at_dt = created_at_dt.replace(tzinfo=timezone.utc)
+        trial_end_dt = created_at_dt + timedelta(days=TRIAL_DAYS)
+        now_dt = datetime.now(timezone.utc)
+        # If their 14-day window has already lapsed AND they have no paid sub,
+        # mark the row as "expired" so the frontend can prompt them to choose
+        # a paid plan (instead of letting "Start Free Trial" mislead them).
+        status = "trial" if trial_end_dt > now_dt else "expired"
+        email_lower = (current_user.email or "").strip().lower()
+        now_iso = _now_iso()
+        sub = {
+            "sub_id": f"sub_{uuid.uuid4().hex[:12]}",
+            "user_id": current_user.user_id,
+            "email": current_user.email,
+            "email_lower": email_lower,
+            "industry": industry,
+            "tier": None,
+            "cycle": None,
+            "tier_slug": None,
+            "status": status,
+            "stripe_customer_id": None,
+            "stripe_subscription_id": None,
+            "current_period_end": None,
+            "trial_started_at": created_at_dt.isoformat(),
+            "trial_ends_at": trial_end_dt.isoformat(),
+            "created_at": now_iso,
+            "updated_at": now_iso,
+            "backfilled": True,
+        }
+        try:
+            await db.user_subscriptions.insert_one(sub)
+        except Exception:
+            return  # unique-index race — another worker beat us, fine
+        # Lock the industry trial in trial_history so they can't re-trial it
+        try:
+            await db.trial_history.update_one(
+                {"email_lower": email_lower, "industry": industry},
+                {"$setOnInsert": {
+                    "email_lower": email_lower,
+                    "industry": industry,
+                    "user_id": current_user.user_id,
+                    "started_at": created_at_dt.isoformat(),
+                    "ended_at": trial_end_dt.isoformat() if status == "expired" else None,
+                    "outcome": "expired" if status == "expired" else "ongoing",
+                    "backfilled": True,
+                }},
+                upsert=True,
+            )
+        except Exception:
+            pass
+
     @api_router.get("/billing/my-subscriptions")
     async def my_subscriptions(current_user=Depends(get_current_user)):
-        """Returns one row per industry the user has either trialed or paid for."""
+        """Returns one row per industry the user has either trialed or paid for.
+
+        First call after the Iter58 rollout auto-backfills a synthetic trial
+        row for `user.industry` so existing users see their in-flight trial.
+        """
+        await _backfill_primary_industry_trial(current_user)
         cursor = db.user_subscriptions.find(
             {"user_id": current_user.user_id}, {"_id": 0}
         ).sort("industry", 1)
