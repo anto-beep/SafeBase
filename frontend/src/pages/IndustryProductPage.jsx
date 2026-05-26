@@ -155,18 +155,18 @@ export default function IndustryProductPage({ industry }) {
         </div>
       </section>
 
-      {/* 7. DASHBOARD PREVIEW */}
-      <section className="py-16 px-6 lg:px-12 bg-ink text-white" data-testid={`industry-dashboard-preview-${industry}`}>
+      {/* 7. DASHBOARD PREVIEW — light section wrap, dark dashboard card inside. */}
+      <section className="py-16 px-6 lg:px-12 bg-background" data-testid={`industry-dashboard-preview-${industry}`}>
         <div className="max-w-6xl mx-auto">
           <div className="label-eyebrow" style={{ color: cfg.accent }}>/ Dashboard preview</div>
-          <h2 className="font-display text-4xl font-black tracking-tighter mt-3">Industry-specific dashboard.</h2>
-          <p className="text-white/70 mt-3 max-w-2xl">Every widget on your dashboard is built for {cfg.label.toLowerCase()} — not generic checklists adapted from another industry.</p>
-          <div className="mt-10 border border-white/20 bg-ink/40 p-6 lg:p-10" style={{ borderTop: `4px solid ${cfg.accent}` }}>
+          <h2 className="font-display text-4xl font-black tracking-tighter mt-3 text-ink">Industry-specific dashboard.</h2>
+          <p className="text-muted-foreground mt-3 max-w-2xl">Every widget on your dashboard is built for {cfg.label.toLowerCase()} — not generic checklists adapted from another industry.</p>
+          <div className="mt-10 border border-white/20 bg-ink/95 p-6 lg:p-10 text-white shadow-2xl" style={{ borderTop: `4px solid ${cfg.accent}` }}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {cfg.hero.stats.map((s, i) => (
                 <div key={i} className="bg-ink border border-white/10 p-4">
                   <ChartBar size={14} style={{ color: cfg.accent }} />
-                  <div className="font-display text-2xl font-black mt-2">{s.value}</div>
+                  <div className="font-display text-2xl font-black mt-2 text-white">{s.value}</div>
                   <div className="text-[10px] uppercase tracking-widest text-white/50 mt-1">{s.label}</div>
                 </div>
               ))}

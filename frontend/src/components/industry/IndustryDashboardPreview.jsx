@@ -369,14 +369,14 @@ export default function IndustryDashboardPreview({ industry, slug: slugProp, acc
   const accent = accentProp || industry?.color?.accentText?.match(/#[0-9A-Fa-f]{6}/)?.[0] || "#FFCC00";
 
   return (
-    <section className="py-24 bg-ink text-white relative overflow-hidden" data-testid={`industry-dash-section-${slug}`}>
-      <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-           style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+    <section className="py-24 bg-muted text-ink relative overflow-hidden" data-testid={`industry-dash-section-${slug}`}>
+      <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
+           style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #0A0A0A 1px, transparent 0)", backgroundSize: "32px 32px" }} />
       <div className="relative max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
         <div className="lg:col-span-4">
           <div className="text-[10px] font-mono uppercase tracking-widest" style={{ color: accent }}>{copy.eyebrow}</div>
-          <h2 className="font-display text-3xl lg:text-4xl font-black tracking-tighter mt-3 leading-tight">{copy.h}</h2>
-          <ul className="mt-6 space-y-3 text-sm text-white/70">
+          <h2 className="font-display text-3xl lg:text-4xl font-black tracking-tighter mt-3 leading-tight text-ink">{copy.h}</h2>
+          <ul className="mt-6 space-y-3 text-sm text-ink/75">
             <li className="flex gap-2"><CheckCircle weight="fill" size={16} style={{ color: accent }} className="shrink-0 mt-0.5" />Live data from the same product every customer uses.</li>
             <li className="flex gap-2"><CheckCircle weight="fill" size={16} style={{ color: accent }} className="shrink-0 mt-0.5" />AI surfaces the one thing that needs attention today.</li>
             <li className="flex gap-2"><CheckCircle weight="fill" size={16} style={{ color: accent }} className="shrink-0 mt-0.5" />Audit pack exportable in under two minutes.</li>
