@@ -43,23 +43,27 @@ export default function IndustryProductPage({ industry }) {
 
   return (
     <MarketingLayout>
-      {/* 1. HERO */}
-      <section className="bg-ink text-white py-20 px-6" data-testid={`industry-hero-${industry}`} style={{ borderBottom: `6px solid ${cfg.accent}` }}>
+      {/* 1. HERO — full-bleed industry-accent background, ink text. */}
+      <section
+        className="text-ink py-20 px-6"
+        data-testid={`industry-hero-${industry}`}
+        style={{ backgroundColor: cfg.accent, borderBottom: `6px solid #0A0A0A` }}
+      >
         <div className="max-w-6xl mx-auto">
-          <div className="label-eyebrow" style={{ color: cfg.accent }}>/ {cfg.hero.tagline}</div>
-          <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-4">
+          <div className="label-eyebrow text-ink/70">/ {cfg.hero.tagline}</div>
+          <h1 className="font-display text-5xl lg:text-6xl font-black tracking-tighter mt-4 text-ink">
             {cfg.hero.headline}
           </h1>
-          <p className="text-lg text-white/70 mt-6 max-w-3xl">{cfg.hero.sub}</p>
+          <p className="text-lg text-ink/75 mt-6 max-w-3xl">{cfg.hero.sub}</p>
           <div className="flex gap-3 mt-8">
-            <Link to="/register"><Button className="btn-sharp h-12 bg-warning text-ink hover:bg-warning/90 uppercase tracking-widest" data-testid={`industry-trial-${industry}`}>Start Free Trial <ArrowRight className="ml-2" /></Button></Link>
-            <Link to="/contact?type=demo"><Button variant="outline" className="btn-sharp h-12 border-white/40 text-white hover:bg-white hover:text-ink uppercase tracking-widest">Book a Demo</Button></Link>
+            <Link to="/register"><Button className="btn-sharp h-12 bg-ink text-warning hover:opacity-90 uppercase tracking-widest" data-testid={`industry-trial-${industry}`}>Start Free Trial <ArrowRight className="ml-2" /></Button></Link>
+            <Link to="/contact?type=demo"><Button variant="outline" className="btn-sharp h-12 border-ink text-ink bg-transparent hover:bg-ink hover:text-warning uppercase tracking-widest">Book a Demo</Button></Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 border-t border-white/20 pt-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 border-t border-ink/20 pt-8">
             {cfg.hero.stats.map((s, i) => (
               <div key={i}>
-                <div className="text-3xl font-display font-black" style={{ color: cfg.accent }}>{s.value}</div>
-                <div className="text-[10px] uppercase tracking-widest text-white/60 mt-1">{s.label}</div>
+                <div className="text-3xl font-display font-black text-ink">{s.value}</div>
+                <div className="text-[10px] uppercase tracking-widest text-ink/65 mt-1">{s.label}</div>
               </div>
             ))}
           </div>
