@@ -7,7 +7,7 @@
  * shown + provides a "Browse other industries" deep-link for self-serve.
  */
 import { useEffect, useState, useMemo } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,7 +21,7 @@ const ICONS = { ShieldCheck, UserCircle, Handshake, Warning, Wrench, Clipboard: 
 
 const INDUSTRY_TABS = [
   { slug: "trades", label: "Trades", accent: "#FFCC00" },
-  { slug: "hospitality", label: "Hospitality", accent: "#0F4C5C" },
+  { slug: "hospitality", label: "Hospitality", accent: "#F59E0B" },
   { slug: "transport", label: "Transport", accent: "#0DC4B5" },
   { slug: "healthcare", label: "Healthcare", accent: "#2196A6" },
   { slug: "retail", label: "Retail", accent: "#A855F7" },
@@ -30,9 +30,10 @@ const INDUSTRY_TABS = [
 export default function DocumentLibraryHub() {
   const { user } = useAuth();
   const userIndustry = user?.industry || "trades";
-  const [searchParams] = useSearchParams();
-  const browseIndustry = searchParams.get("industry");
-  const activeIndustry = browseIndustry || userIndustry;
+  // Iter58 — Document Library is locked to the user's own industry; we no
+  // longer expose the cross-industry tab bar. Browsing other industries is
+  // handled (read-only) from the public /resources surface instead.
+  const activeIndustry = userIndustry;
 
   const [cat, setCat] = useState(null);
   const [rows, setRows] = useState([]);
@@ -43,14 +44,14 @@ export default function DocumentLibraryHub() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      api.get(`/docs/types${browseIndustry ? `?industry=${browseIndustry}` : ""}`),
+      api.get("/docs/types"),
       api.get("/docs"),
     ]).then(([t, r]) => {
       setCat(t.data);
       setRows(r.data || []);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [browseIndustry]);
+  }, []);
 
   const recent = useMemo(() => (rows || []).slice(0, 5), [rows]);
   const countByCat = useMemo(() => {
@@ -62,7 +63,8 @@ export default function DocumentLibraryHub() {
   if (loading) return <div className="p-8 text-sm text-muted-foreground">Loading library…</div>;
   if (!cat) return <div className="p-8 text-sm text-muted-foreground">Could not load library.</div>;
 
-  const isBrowsing = browseIndustry && browseIndustry !== userIndustry;
+  const activeTab = INDUSTRY_TABS.find((t) => t.slug === activeIndustry) || INDUSTRY_TABS[0];
+  const typeCount = (cat.types || []).length;
 
   return (
     <div className="space-y-6" data-testid="doc-library-hub">
@@ -77,43 +79,26 @@ export default function DocumentLibraryHub() {
         </p>
       </div>
 
-      {/* Industry tab switcher (Part 7) */}
-      <div className="bg-background border border-border" data-testid="doclib-industry-tabs">
-        <div className="flex flex-wrap items-center">
-          {INDUSTRY_TABS.map((t) => {
-            const active = activeIndustry === t.slug;
-            const isUserIndustry = t.slug === userIndustry;
-            const href = isUserIndustry ? "/dashboard/document-library" : `/dashboard/document-library?industry=${t.slug}`;
-            return (
-              <Link
-                key={t.slug}
-                to={href}
-                data-testid={`doclib-tab-${t.slug}`}
-                className={`px-5 py-3 text-sm font-display font-black tracking-tight uppercase border-b-4 transition-all ${active ? "text-ink" : "text-muted-foreground hover:text-ink border-transparent"}`}
-                style={active ? { borderColor: t.accent } : {}}
-              >
-                {t.label}
-                {isUserIndustry && <span className="ml-2 text-[10px] tracking-widest opacity-60">YOURS</span>}
-              </Link>
-            );
-          })}
-        </div>
-        {isBrowsing && (
-          <div className="border-t border-border bg-warning text-ink p-3 text-xs flex items-center gap-2 flex-wrap">
-            <span className="font-bold">Browse mode</span>
-            <span>You're previewing the {INDUSTRY_TABS.find((t) => t.slug === browseIndustry)?.label} document library. To generate documents you must switch your account industry in Settings → Business.</span>
-            <Link to="/dashboard/document-library" className="ml-auto underline font-bold">Back to your library →</Link>
-          </div>
-        )}
+      {/* Iter58 — single industry pill (no cross-industry tab bar). */}
+      <div
+        className="flex items-center gap-3 border border-border bg-background p-4"
+        data-testid="doclib-industry-pill"
+        style={{ borderLeft: `6px solid ${activeTab.accent}` }}
+      >
+        <div className="label-eyebrow" style={{ color: activeTab.accent }}>/ Industry</div>
+        <div className="font-display text-lg font-black tracking-tight uppercase">{activeTab.label}</div>
+        <span className="ml-auto text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+          {typeCount} document types available
+        </span>
       </div>
 
-      {/* Quick generate */}
+      {/* Quick generate — industry-scoped dropdown */}
       <div className="bg-ink text-white p-4 flex items-center gap-3 flex-wrap">
-        <div className="label-eyebrow text-warning whitespace-nowrap">Quick generate</div>
+        <div className="label-eyebrow text-warning whitespace-nowrap">Quick generate · {activeTab.label}</div>
         <div className="flex-1 min-w-[200px]">
-          <Select value={quickType} onValueChange={setQuickType} disabled={isBrowsing}>
+          <Select value={quickType} onValueChange={setQuickType}>
             <SelectTrigger className="h-10 rounded-none border-warning bg-white text-ink" data-testid="quick-type-select">
-              <SelectValue placeholder={isBrowsing ? "Switch to your industry to generate" : "Pick a document type…"} />
+              <SelectValue placeholder={`Pick a ${activeTab.label} document type…`} />
             </SelectTrigger>
             <SelectContent>
               {cat.types.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
@@ -121,8 +106,8 @@ export default function DocumentLibraryHub() {
           </Select>
         </div>
         <Button
-          className="btn-sharp bg-warning text-ink hover:bg-yellow-400 h-10"
-          disabled={!quickType || isBrowsing}
+          className="btn-sharp bg-warning text-ink hover:opacity-90 h-10"
+          disabled={!quickType}
           onClick={() => nav(`/dashboard/document-library/${quickType}/new`)}
           data-testid="quick-generate-btn"
         >
