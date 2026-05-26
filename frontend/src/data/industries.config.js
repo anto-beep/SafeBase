@@ -7,7 +7,9 @@
 
 export const INDUSTRY_BADGE_COLORS = {
   trades: { from: "from-[#0A1F44]", to: "to-[#0E2C5C]", accent: "bg-[#0DC4B5]", accentText: "text-[#0DC4B5]" },
-  hospitality: { from: "from-[#5B2A0A]", to: "to-[#0A1F44]", accent: "bg-[#F59E0B]", accentText: "text-[#F59E0B]" },
+  // Hospitality: warm amber palette (was brown→navy, too muddy + low contrast).
+  // Both shades still dark enough for white text on top (≥7:1 contrast — AAA).
+  hospitality: { from: "from-[#92400E]", to: "to-[#78350F]", accent: "bg-[#F59E0B]", accentText: "text-[#FCD34D]" },
   transport: { from: "from-[#0E3B3B]", to: "to-[#0A1F44]", accent: "bg-[#0DC4B5]", accentText: "text-[#0DC4B5]" },
   healthcare: { from: "from-[#1E3A8A]", to: "to-[#0A1F44]", accent: "bg-[#60A5FA]", accentText: "text-[#60A5FA]" },
   retail: { from: "from-[#4C1D95]", to: "to-[#0A1F44]", accent: "bg-[#A855F7]", accentText: "text-[#A855F7]" },

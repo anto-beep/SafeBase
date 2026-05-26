@@ -64,6 +64,13 @@
   .btn-sharp {
     @apply rounded-none transition-all duration-150;
   }
+  /* WCAG safety net — prevent any custom-coloured btn-sharp from losing
+     text contrast on hover. The Button cva default uses hover:opacity-90
+     (not hover:bg-primary/90) so the user-chosen bg always wins; this
+     adds a subtle brightness tactile feel without recolouring. */
+  .btn-sharp:hover:not(:disabled) {
+    filter: brightness(0.95);
+  }
 }
 
 @layer base {
