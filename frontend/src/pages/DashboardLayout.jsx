@@ -7,18 +7,16 @@ import { Button } from "@/components/ui/button";
 import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books, Plug, Shield } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 import IndustrySwitcher from "@/components/IndustrySwitcher";
-import ActivityTicker from "@/components/ActivityTicker";
 
 const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
   { to: "/dashboard/compliance-inbox", label: "Compliance Inbox", icon: Bell, feature: "compliance_dashboard" },
-  { to: "/dashboard/swms", labelKey: "primary_safety_module", label: "SWMS Library", icon: FileText, feature: "swms_generator" },
-  // Industry-specific primary modules — only one of these will be enabled per
-  // industry by the feature registry, so the user always sees exactly one
-  // "primary" link in their sidebar regardless of which industry they're in.
-  { to: "/dashboard/food-safety", label: "Food Safety", icon: ClipboardText, feature: "food_safety_module" },
-  { to: "/dashboard/cor", label: "Chain of Responsibility", icon: Truck, feature: "cor_module" },
-  { to: "/dashboard/care-quality", label: "Care Quality", icon: FirstAidKit, feature: "care_quality_module" },
+  { to: "/dashboard/swms", labelKey: "primary_safety_module", label: "SWMS Library", icon: FileText, feature: "swms_generator", industries: ["trades"] },
+  // Industry-specific primary modules — hard-gated to their owning industries
+  // so the trades sidebar never accidentally shows Food Safety, etc.
+  { to: "/dashboard/food-safety", label: "Food Safety", icon: ClipboardText, feature: "food_safety_module", industries: ["hospitality"] },
+  { to: "/dashboard/cor", label: "Chain of Responsibility", icon: Truck, feature: "cor_module", industries: ["transport"] },
+  { to: "/dashboard/care-quality", label: "Care Quality", icon: FirstAidKit, feature: "care_quality_module", industries: ["healthcare"] },
   { to: "/dashboard/inductions", label: "Inductions", icon: QrCode, feature: "inductions_module" },
   { to: "/dashboard/document-library", label: "Document Library", icon: FileText, feature: "document_library" },
   { to: "/dashboard/incidents", label: "Incidents", icon: Warning, feature: "incident_management" },
@@ -140,6 +138,7 @@ export default function DashboardLayout() {
   const flagsReady = enabled_features && enabled_features.length > 0;
   const renderedNav = NAV
     .map((it) => it.labelKey && labelOverrides[it.labelKey] ? { ...it, label: labelOverrides[it.labelKey] } : it)
+    .filter((it) => !it.industries || it.industries.includes(industry))
     .filter((it) => !it.feature || !flagsReady || has(it.feature));
   const renderedAppsNav = APPS_NAV.map((it) => {
     if (it.to.endsWith("/tradeinduct")) return { ...it, label: appAliases.tradeinduct };
@@ -283,7 +282,6 @@ export default function DashboardLayout() {
       </header>
 
       <main className="lg:ml-64 min-h-screen">
-        <ActivityTicker />
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-ink text-white z-40 grid grid-cols-5 border-t border-white/10">
           {NAV.slice(0, 5).map((item) => (
             <NavLink

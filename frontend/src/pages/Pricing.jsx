@@ -272,10 +272,12 @@ export default function Pricing() {
                     ? "Redirecting…"
                     : !token
                       ? "Start Free Trial"
-                      : subForCurrentIndustry
-                        ? (subForCurrentIndustry.tier_slug === t.slug ? "Current Plan" : "Choose Plan")
-                        : "Choose Plan"}
-                  {(loading !== t.slug && subForCurrentIndustry?.tier_slug !== t.slug) && <ArrowRight className="ml-2" />}
+                      : subForCurrentIndustry?.status === "trial"
+                        ? "Choose Plan"
+                        : subForCurrentIndustry?.tier_slug === t.slug
+                          ? "Current Plan"
+                          : "Choose Plan"}
+                  {(loading !== t.slug && !(subForCurrentIndustry?.status !== "trial" && subForCurrentIndustry?.tier_slug === t.slug)) && <ArrowRight className="ml-2" />}
                 </Button>
               </div>
             ))}
