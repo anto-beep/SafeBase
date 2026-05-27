@@ -24,6 +24,15 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 61 — Idempotency + PeoplePicker rollout + control guidance (Feb 27, 2026)
+- **Offline-replay idempotency** (`/app/backend/idempotency.py`) — POSTs accept a `client_event_id` (UUID v4); same key + same endpoint within an account returns the original record instead of creating a duplicate. Wired into `POST /api/incidents` (key stripped before persisting; field added to `IncidentIn` Pydantic model) and `POST /api/retail/lone-worker/checkin`. New `idempotency_keys` collection + unique compound index `(account_id, client_event_id, endpoint)` created on startup.
+- **PeoplePicker rollout** to remaining major forms:
+  - `IncidentDetail.jsx` — corrective + preventive action assignees now use `<PeoplePicker>` (legacy worker-name Select removed).
+  - `SafetyModulePage.jsx` (generic safety module renderer) — new `type: 'person'` field type mounts PeoplePicker; table cells auto-render person objects via `personLabel()`.
+  - `Inspections.jsx` and `ToolboxTalks.jsx` — `conducted_by` field migrated from `type: 'text'` to `type: 'person'`.
+- **Implementation guidance** field on library controls (per PDF spec). Backend (`risk_module.py` library control insert) + LibraryPage create dialog + inline RiskForm control editor (amber-tinted Textarea per control). Auto-carries through when adding from library to a risk.
+- Verified via `testing_agent_v3_fork` (iteration_55): 10/10 backend pytest pass, frontend verified, multi-tenant idempotency isolation confirmed, zero bugs.
+
 ### Iteration 60 — People-Picker + CAPA Register (Feb 27, 2026)
 - **New `GET /api/users/picker`** (`/app/backend/routes/people_picker.py`) — unified person/people resolver. Returns `[{user_id, worker_id, display_name, email, role, source_type}, ...]` with "Me" pinned first when `include_me=true`. Searches both `users` (account members) and `workers` (WHS roster) within the caller's account, deduped by email. Ranking: exact name > email match > role match > recency.
 - **New CAPA Register** (`/app/backend/routes/capa.py`) — Corrective & Preventive Actions cross-cutting collection. Endpoints: `GET/POST /api/capa`, `GET/PATCH /api/capa/{id}`, `POST /api/capa/{id}/close`, `DELETE /api/capa/{id}` (soft-archive), `GET /api/capa/summary`. `assigned_to` accepts either the PeoplePicker object OR a legacy plain string (normalised with `source_type: 'legacy'`).
