@@ -1,0 +1,29 @@
+{
+  "summary": "SafeBase Academy Stage 1 MVP backend + frontend fully verified. 40/40 backend pytest pass across catalogue/module/quiz/submit/cert/legacy. Frontend Academy page loads, renders 18 trades modules, all 5 filter tabs work, RTO disclaimers + MVP badges + anchor badges render, quiz modal opens with exactly 5 real questions.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_academy_stage1.py",
+    "/app/test_reports/pytest/iter53_academy.xml"
+  ],
+  "action_items": [
+    "Documentation only: review_request stated route '/app/academy' but the actual new Academy page is mounted at '/dashboard/academy-app' in /app/frontend/src/App.js (line 226). The '/dashboard/academy' path serves the legacy AcademyLMS page. Update the PRD/route doc to /dashboard/academy-app, or alias the route so '/app/academy' works for external links."
+  ],
+  "critical_code_review_comments": [
+    "academy_module.py is ~70KB single file — fine for MVP but consider splitting MODULES + QUIZZES into separate data modules when adding the remaining 71 non-MVP quizzes.",
+    "Submit-quiz creates a new academy_completions record on every pass even if user has already passed (duplicate certs accumulate). Consider upsert-on-pass keyed by (user_id, module_slug) to keep one canonical cert per user/module.",
+    "Cert PDF endpoint falls back to text/plain when reportlab/weasyprint unavailable — fine for MVP, but worth verifying the PDF generation path in production (test currently tolerates either content-type)."
+  ],
+  "updated_files": ["/app/backend/tests/test_academy_stage1.py"],
+  "success_rate": {"backend": "100% (40/40)", "frontend": "100% on critical flows"},
+  "test_credentials": "trades.demo@safebase.com.au / Demo@1234 (login returns {token, user}; token stored in localStorage key 'st_token'). Same password for hospitality/transport/healthcare/retail demo users.",
+  "seed_data_creation": "Test run created academy_completions for swms_full (multiple) and heights_full (failed attempt) under trades.demo. Safe to leave; module page now shows 'Completed' + cert download link for swms_full.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Login endpoint returns {token, user} (NOT access_token). Auth-gated routes are nested under /dashboard (not /app). New Academy lives at /dashboard/academy-app — old AcademyLMS still at /dashboard/academy. Backend route prefix is /api. All 17 MVP slugs verified to have 5-Q real quizzes. The 4 RTO-boundary slugs (trades_general_induction_refresher, food_handler_cert, rsa_foundation, retail_age_restricted_alcohol) all carry rto_boundary=True + rto_disclaimer string. Industry totals: trades=18/5MVP, hospitality=16/4, transport=16/3, healthcare=22/2, retail=16/3 — all match spec.",
+  "rca_of_the_issue": "N/A — no functional bugs found. Only a route-naming discrepancy between the problem statement ('/app/academy') and the deployed route ('/dashboard/academy-app'). The page itself works correctly once you hit the right URL."
+}
