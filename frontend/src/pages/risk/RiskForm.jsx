@@ -13,6 +13,7 @@ import {
   HIERARCHY_LEVELS, HIERARCHY_MAP, HAZARD_CATEGORIES,
   LIKELIHOOD_SCALE, CONSEQUENCE_SCALE, SOURCE_OPTIONS, riskLevel, MatrixCellClass,
 } from "./constants";
+import { PeoplePicker, personLabel } from "@/components/PeoplePicker";
 
 const SECTIONS = [
   { id: "sec1", label: "1. Process & Activity" },
@@ -375,10 +376,14 @@ export default function RiskForm() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <Label className="label-eyebrow">Risk owner</Label>
-            <Select value={form.risk_owner || "__none__"} onValueChange={(v) => patch("risk_owner", v === "__none__" ? "" : v)}>
-              <SelectTrigger className="mt-2 h-11 rounded-none border-ink" data-testid="f-owner"><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent><SelectItem value="__none__">—</SelectItem>{workers.map((w) => <SelectItem key={w.worker_id} value={w.name}>{w.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <div className="mt-2" data-testid="f-owner">
+              <PeoplePicker
+                value={form.risk_owner}
+                onChange={(v) => patch("risk_owner", v)}
+                placeholder="Search account users + workers…"
+                testId="picker-risk-owner"
+              />
+            </div>
           </div>
           <div>
             <Label className="label-eyebrow">Date identified</Label>
@@ -562,12 +567,16 @@ export default function RiskForm() {
           <div className="space-y-2">
             <Label className="label-eyebrow">Additional actions</Label>
             {form.additional_actions.map((a, i) => (
-              <div key={i} className="grid grid-cols-1 md:grid-cols-6 gap-2 items-center border border-border p-2">
+              <div key={i} className="grid grid-cols-1 md:grid-cols-6 gap-2 items-start border border-border p-2">
                 <Input placeholder="Action" value={a.description} onChange={(e) => patchAction(i, "description", e.target.value)} className="h-9 rounded-none border-ink md:col-span-2" />
-                <Select value={a.assigned_to || "__none__"} onValueChange={(v) => patchAction(i, "assigned_to", v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue placeholder="Assignee" /></SelectTrigger>
-                  <SelectContent><SelectItem value="__none__">—</SelectItem>{workers.map((w) => <SelectItem key={w.worker_id} value={w.name}>{w.name}</SelectItem>)}</SelectContent>
-                </Select>
+                <div className="md:col-span-1">
+                  <PeoplePicker
+                    value={a.assigned_to}
+                    onChange={(v) => patchAction(i, "assigned_to", v)}
+                    placeholder="Assignee"
+                    testId={`picker-action-${i}`}
+                  />
+                </div>
                 <Input type="date" value={a.due_date || ""} onChange={(e) => patchAction(i, "due_date", e.target.value)} className="h-9 rounded-none border-ink" />
                 <Select value={a.priority || "medium"} onValueChange={(v) => patchAction(i, "priority", v)}>
                   <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue /></SelectTrigger>
@@ -633,7 +642,7 @@ export default function RiskForm() {
           <div><strong>Primary hazard:</strong> {form.primary_hazard || "—"}</div>
           <div><strong>Inherent:</strong> {inherent.label} ({il || "—"}) · <strong>Residual:</strong> {residual.label} ({rl || "—"})</div>
           <div><strong>Controls:</strong> {form.controls.length}</div>
-          <div><strong>Owner:</strong> {form.risk_owner || "—"}</div>
+          <div><strong>Owner:</strong> {personLabel(form.risk_owner) || "—"}</div>
         </div>
         <div>
           <Label className="label-eyebrow">Risk owner acknowledgement</Label>

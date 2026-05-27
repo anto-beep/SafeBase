@@ -1,0 +1,35 @@
+{
+  "summary": "Iter 54 — People-Picker + CAPA Register tested end-to-end on trades.demo & hospitality.demo. 19/19 backend pytest cases pass (picker shape, ranking, me-pin, include_me toggle, limit, source_type=user/worker; CAPA CRUD, summary, multi-tenant isolation, legacy-string assignee normalisation, picker-object assignee persist, status filters, linked-entity filters, soft-archive, close idempotency, risk-review accept-remediation auto-spawns CAPA with source=risk_review_remediation + linked_entity_type=review, empty-body 400). Frontend smoke: /dashboard/capa loads with capa-page/capa-stats/capa-table/capa-create-btn; Create modal contains capa-create-assignee; PeoplePicker popover opens, search input filters, ME + WORKER badges render correctly; CAPA submit creates a row that appears in the table immediately. /dashboard/risk-register/new mounts picker-risk-owner (PeoplePicker) replacing old Select, search by 'demo' filters to Me row.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_capa_people_picker.py",
+    "/app/test_reports/pytest/iter54_capa_picker.xml"
+  ],
+  "action_items": [
+    "Consider adding data-testid='picker-option-<id>' to each PeoplePicker option row (currently option rows in the popover are clickable but have no per-row test id). Minor — testing agents can still locate via role/text but a stable testid would harden automation."
+  ],
+  "critical_code_review_comments": [
+    "routes/people_picker.py: dedupe-by-email loop is O(N*M) when there are many users + many workers; fine at MVP scale but consider building an index dict if seed grows >5k.",
+    "routes/capa.py: legacy-fallback branches (query without account_id) double the DB roundtrips on every read; consider single $or query.",
+    "routes/capa.py update_capa: invalid status now correctly 400s, but invalid action_type/priority on UPDATE returns 400 only for action_type — priority is silently accepted; consider validating priority on PATCH for consistency with POST.",
+    "routes/capa.py archive uses status='archived' which is in STATUSES set but no endpoint exposes 'unarchive'. Confirm intended UX."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_capa_people_picker.py (new)"
+  ],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% (smoke)"},
+  "test_credentials": "trades.demo@safebase.com.au / Demo@1234 (primary), hospitality.demo@safebase.com.au / Demo@1234 (multi-tenant isolation)",
+  "seed_data_creation": "Several TEST_* CAPA rows + 1 TEST_PickerWorker worker created in trades.demo tenant via tests. Safe to leave (filtered by TEST_ prefix).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "PeoplePicker uses Popover; option rows currently lack data-testid='picker-option-*'. Picker for risk_owner uses data-testid='picker-risk-owner'; CAPA assignee uses 'capa-create-assignee'. Clear button testid format: 'picker-clear-<field>' (e.g. picker-clear-risk-owner) — unverified because options have no testid. accept-remediation lives at POST /api/risk-reviews/{review_id}/accept-remediation and accepts {capa_items:[{description, action_type, assigned_to, due_date, priority}]} — returns {capa_ids: [...]}.",
+  "rca of the issue": "N/A — no defects found."
+}

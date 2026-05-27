@@ -644,10 +644,15 @@ def register_library_routes(app_db, get_current_user):
 
     @risk_router.post("/risk-reviews/{review_id}/accept-remediation")
     async def accept_remediation(review_id: str, body: dict, current_user=Depends(get_current_user)):
-        """Create a Toolbox Talk and/or SWMS Revision Task from the AI-drafted
-        remediation payload. Links both back onto the review + risk record and
-        emits a notification. Used when a Risk Review has flagged failing
-        controls and the Safety Manager accepts the reverse-loop draft."""
+        """Create a Toolbox Talk, SWMS Revision Task, and/or CAPA items from the
+        AI-drafted remediation payload. Links everything back onto the review +
+        risk record and emits a notification. Used when a Risk Review has flagged
+        failing controls and the Safety Manager accepts the reverse-loop draft.
+
+        CAPA auto-creation rule (per product spec): only on this explicit
+        Accept-Remediation gate — never auto on failing-control detection.
+        Body shape for CAPA: {"capa_items": [{description, action_type, assigned_to, due_date, priority, linked_control_id?}, ...]}
+        """
         review = await app_db.risk_reviews.find_one(
             {"review_id": review_id, "user_id": current_user.user_id}, {"_id": 0}
         )
@@ -721,8 +726,42 @@ def register_library_routes(app_db, get_current_user):
             created["swms_revision_id"] = swr_id
             created["swms_revision_title"] = swms["title"]
 
+        # 3) CAPA items — one row per failing control the user accepted.
+        capa_items_in = body.get("capa_items") or []
+        capa_ids: list[str] = []
+        if capa_items_in:
+            from routes.capa import create_capa_internal  # local import to avoid cycle
+            # Resolve account_id from the risk owner if possible, else caller.
+            account_id = current_user.user_id
+            try:
+                user_doc = await app_db.users.find_one(
+                    {"user_id": current_user.user_id}, {"_id": 0, "account_id": 1}
+                ) or {}
+                account_id = user_doc.get("account_id") or current_user.user_id
+            except Exception:
+                pass
+            for item in capa_items_in:
+                payload = {
+                    "description": item.get("description") or "",
+                    "action_type": item.get("action_type") or "corrective",
+                    "assigned_to": item.get("assigned_to"),
+                    "due_date": item.get("due_date"),
+                    "priority": item.get("priority") or "medium",
+                    "linked_entity_type": "review",
+                    "linked_entity_id": review_id,
+                    "linked_entity_label": review.get("risk_title") or review_id,
+                    "source": "risk_review_remediation",
+                }
+                doc = await create_capa_internal(
+                    app_db, current_user=current_user,
+                    account_id=account_id, payload=payload,
+                )
+                capa_ids.append(doc["capa_id"])
+            created["capa_ids"] = capa_ids
+            created["capa_count"] = len(capa_ids)
+
         if not created:
-            raise HTTPException(400, "Provide toolbox_talk and/or swms_revision payload")
+            raise HTTPException(400, "Provide toolbox_talk, swms_revision, and/or capa_items payload")
 
         # Link onto the review
         remediation = (review.get("remediation") or {}).copy()

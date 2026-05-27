@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import api from "@/lib/api";
+import { personLabel } from "@/components/PeoplePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -100,7 +100,7 @@ function RegisterTab() {
     const header = "risk_id,title,process,activity,inherent,residual,owner,next_review,status\n";
     const rows = filtered.map((r) => [
       r.risk_id, `"${(r.title || "").replace(/"/g, "''")}"`, r.process_name || "", r.activity_name || "",
-      r.inherent_score || "", r.residual_score || "", r.risk_owner || "",
+      r.inherent_score || "", r.residual_score || "", `"${personLabel(r.risk_owner).replace(/"/g, "''")}"`,
       r.next_review_date || "", r.status || "",
     ].join(",")).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });

@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PencilSimple, Archive, ArrowRight, FileText, Sparkle, ShieldWarning, ClockCounterClockwise, Link as LinkIcon, ListChecks } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { riskLevel, HIERARCHY_MAP } from "./constants";
+import { personLabel } from "@/components/PeoplePicker";
 
 export default function RiskDetail() {
   const { risk_id } = useParams();
@@ -61,7 +62,7 @@ export default function RiskDetail() {
               <span className="text-xs text-muted-foreground">{risk.status}</span>
             </div>
             <h1 className="font-display text-3xl font-black tracking-tighter mt-1">{risk.title}</h1>
-            <div className="text-sm text-muted-foreground mt-1">Owner {risk.risk_owner || "—"} · Next review {risk.next_review_date ? new Date(risk.next_review_date).toLocaleDateString("en-AU") : "—"}</div>
+            <div className="text-sm text-muted-foreground mt-1">Owner {personLabel(risk.risk_owner)} · Next review {risk.next_review_date ? new Date(risk.next_review_date).toLocaleDateString("en-AU") : "—"}</div>
           </div>
           <div className="flex gap-2">
             <Link to={`/dashboard/risk-register/${risk_id}/edit`}><Button variant="outline" className="btn-sharp border-ink h-11" data-testid="edit-risk-btn"><PencilSimple className="mr-2" />Edit</Button></Link>

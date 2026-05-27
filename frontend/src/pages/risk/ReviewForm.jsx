@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import {
   REVIEW_REASONS, ACTION_TYPES, LIKELIHOOD_SCALE, CONSEQUENCE_SCALE, riskLevel,
 } from "./constants";
+import { PeoplePicker } from "@/components/PeoplePicker";
 
 const SECTIONS = [
   "1. Identification", "2. Evidence", "3. Control Effectiveness",
@@ -540,10 +541,14 @@ export default function ReviewForm() {
           </div>
           <div>
             <Label className="label-eyebrow">Assigned to</Label>
-            <Select value={form.assigned_to || "__none__"} onValueChange={(v) => patch("assigned_to", v === "__none__" ? "" : v)}>
-              <SelectTrigger className="mt-2 h-11 rounded-none border-ink"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="__none__">—</SelectItem>{workers.map((w) => <SelectItem key={w.worker_id} value={w.name}>{w.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <div className="mt-2">
+              <PeoplePicker
+                value={form.assigned_to}
+                onChange={(v) => patch("assigned_to", v)}
+                placeholder="Select assignee…"
+                testId="picker-review-assigned"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -675,16 +680,20 @@ export default function ReviewForm() {
       <section id="rsec5" className="bg-background border border-border p-6 space-y-3">
         <h2 className="font-display text-2xl font-black">5. New actions from this review</h2>
         {form.new_actions.map((a, i) => (
-          <div key={i} className="grid grid-cols-1 md:grid-cols-6 gap-2 border border-border p-2 items-center" data-testid={`action-${i}`}>
+          <div key={i} className="grid grid-cols-1 md:grid-cols-6 gap-2 border border-border p-2 items-start" data-testid={`action-${i}`}>
             <Input placeholder="Action" value={a.description} onChange={(e) => patchAction(i, "description", e.target.value)} className="h-9 rounded-none border-ink md:col-span-2" />
             <Select value={a.type || "Other"} onValueChange={(v) => patchAction(i, "type", v)}>
               <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue /></SelectTrigger>
               <SelectContent>{ACTION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={a.assigned_to || "__none__"} onValueChange={(v) => patchAction(i, "assigned_to", v === "__none__" ? "" : v)}>
-              <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue placeholder="Assignee" /></SelectTrigger>
-              <SelectContent><SelectItem value="__none__">—</SelectItem>{workers.map((w) => <SelectItem key={w.worker_id} value={w.name}>{w.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <div className="md:col-span-1">
+              <PeoplePicker
+                value={a.assigned_to}
+                onChange={(v) => patchAction(i, "assigned_to", v)}
+                placeholder="Assignee"
+                testId={`picker-newaction-${i}`}
+              />
+            </div>
             <Input type="date" value={a.due_date || ""} onChange={(e) => patchAction(i, "due_date", e.target.value)} className="h-9 rounded-none border-ink" />
             <Button variant="ghost" size="sm" onClick={() => removeAction(i)} className="text-destructive"><Trash /></Button>
           </div>
