@@ -24,6 +24,18 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 59 — SafeBase Academy Stage 1 MVP (Feb 27, 2026)
+- **Rewrote `/app/backend/academy_module.py`** from the Academy Research Report (PDF). 88 modules now seeded across 5 industries with full schema: `slug`, `title`, `type` (microlearning/standard/full_course derived from duration), `duration_minutes`, `regulatory_anchor` (e.g., "WHS Reg 299", "HVNL Pt 1A"), `rto_boundary` + `rto_disclaimer`, `mvp_stage1` flag, `authoring_standard` ("SCORM 1.2 + xAPI"), `scorm_package_url` (null placeholder for future).
+- **Module counts**: trades 18 · hospitality 16 · transport 16 · healthcare 22 · retail 16 = 88.
+- **Stage 1 MVP modules** (17 total, marked "Yes" in PDF Stage-1 column) each ship with a **real 5-question regulatory quiz** (vs generic 3-Q fallback for non-MVP modules). Pass threshold 80% → certificate PDF.
+- **RTO boundary disclaimer** seeded for 4 modules whose formal credential must be issued by an RTO (White Card, FSS, RSA Refresher, RSA Retail Awareness). Global Academy disclaimer surfaced on every catalogue response.
+- **New endpoint**: `GET /api/academy/modules/{slug}` returns full module detail incl. anchor + disclaimer.
+- **Updated**: `/api/academy/catalogue` now returns `modules` (flat list), `microlearning`, `standard`, `full_courses`, `stage1_mvp`, `total_modules`, `rto_boundary_notice`. Backwards-compatible derived `CATALOGUE` shim preserved.
+- **Certificate PDF** now includes regulatory anchor footnote and "Academy is not an RTO" disclaimer.
+- **Frontend `/app/frontend/src/pages/Academy.jsx` rewrite**: ModuleCard + QuizModal components; filter tabs (All / MVP / Microlearning / Standard / Full Course); amber RTO info-box (page-level + per-module); yellow MVP star badge; regulatory-anchor pill on every card; quiz modal carries anchor + RTO disclaimer.
+- Legacy `/api/academy/courses` and `/api/academy/enrolments` routes in `server.py` left untouched (different LMS-progress flow).
+- Verified via `testing_agent_v3_fork` (iteration_53): 40/40 backend tests pass, frontend renders all five industries with correct counts, RTO disclaimers, MVP badges, and filter tabs working.
+
 ### Iteration 57 — P1 backlog ship · Inline actions live (Feb 25, 2026)
 - **Integrations API/Webhooks docs page** — `/integrations` rebuilt as a developer-facing reference: native OAuth cards (Xero, Deputy, Teletrac, AHPRA, Shopify), bearer-token quick-start curl, all REST endpoint groups, 9 webhook event types, sample webhook payload. Fixed icon-import crash (`Webhooks` → `WebhooksLogo` from `@phosphor-icons/react`).
 - **Native OAuth scaffolding** (`/app/backend/routes/native_oauth.py`) — `/api/oauth/status` (lists 5 providers + configured flag), `/api/oauth/{vendor}/start` (returns auth URL or `not_configured` when env keys missing), `/api/oauth/{vendor}/callback` (state-TTL guarded). Ready for real vendor secrets in env.
