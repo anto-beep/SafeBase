@@ -24,6 +24,16 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 60 — People-Picker + CAPA Register (Feb 27, 2026)
+- **New `GET /api/users/picker`** (`/app/backend/routes/people_picker.py`) — unified person/people resolver. Returns `[{user_id, worker_id, display_name, email, role, source_type}, ...]` with "Me" pinned first when `include_me=true`. Searches both `users` (account members) and `workers` (WHS roster) within the caller's account, deduped by email. Ranking: exact name > email match > role match > recency.
+- **New CAPA Register** (`/app/backend/routes/capa.py`) — Corrective & Preventive Actions cross-cutting collection. Endpoints: `GET/POST /api/capa`, `GET/PATCH /api/capa/{id}`, `POST /api/capa/{id}/close`, `DELETE /api/capa/{id}` (soft-archive), `GET /api/capa/summary`. `assigned_to` accepts either the PeoplePicker object OR a legacy plain string (normalised with `source_type: 'legacy'`).
+- **Risk Review → CAPA auto-spawn** — `POST /api/risk-reviews/{id}/accept-remediation` now also accepts `capa_items[]` and creates one CAPA per item with `source: risk_review_remediation` and `linked_entity_type: review`. Gated to this explicit endpoint only (no auto-creation on failing-control detection).
+- **New `<PeoplePicker>` React component** (`/app/frontend/src/components/PeoplePicker.jsx`) — debounced search popover with shadcn Popover + Input, keyboard-nav, single + multi variants, returns full object, legacy-string backward-compat with amber badge + Replace button. `personLabel()` helper for read-only displays.
+- **Risk Register migration** — `risk_owner` and `additional_actions[].assigned_to` (RiskForm) + `assigned_to` and `new_actions[].assigned_to` (ReviewForm) now use `<PeoplePicker>`. Risk Detail + Risk Register CSV export use `personLabel()` for backward-compat rendering.
+- **New `/dashboard/capa` page** (`/app/frontend/src/pages/capa/CapaRegister.jsx`) — full CRUD UI: stats row (open/in-progress/overdue/closed), filters (status, action_type), table with overdue highlighting, Create modal (with PeoplePicker), Close modal (with closure notes).
+- **Sidebar nav** — new "CAPA Register" link (ListChecks icon) under Risk Reviews.
+- Verified via `testing_agent_v3_fork` (iteration_54): 19/19 backend pytest pass, frontend smoke verified end-to-end across 2 tenants, zero bugs.
+
 ### Iteration 59 — SafeBase Academy Stage 1 MVP (Feb 27, 2026)
 - **Rewrote `/app/backend/academy_module.py`** from the Academy Research Report (PDF). 88 modules now seeded across 5 industries with full schema: `slug`, `title`, `type` (microlearning/standard/full_course derived from duration), `duration_minutes`, `regulatory_anchor` (e.g., "WHS Reg 299", "HVNL Pt 1A"), `rto_boundary` + `rto_disclaimer`, `mvp_stage1` flag, `authoring_standard` ("SCORM 1.2 + xAPI"), `scorm_package_url` (null placeholder for future).
 - **Module counts**: trades 18 · hospitality 16 · transport 16 · healthcare 22 · retail 16 = 88.
