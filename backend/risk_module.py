@@ -306,6 +306,7 @@ def register_library_routes(app_db, get_current_user):
             doc["hierarchy_level"] = body.get("hierarchy_level", "administrative")
             doc["effectiveness"] = body.get("effectiveness", "medium")
             doc["applicable_activity_id"] = body.get("applicable_activity_id")
+            doc["implementation_guidance"] = body.get("implementation_guidance", "")
         await _coll(app_db, kind).insert_one({**doc})
         return {k: v for k, v in doc.items() if k != "_id"}
 

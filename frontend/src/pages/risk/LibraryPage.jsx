@@ -46,7 +46,7 @@ export default function LibraryPage({ kind }) {
     parent_activity_id: "", parent_activity_name: "",
     duration: "", hrcw_trigger: false, hrcw_categories: [],
     hierarchy_level: "administrative", effectiveness: "medium",
-    applicable_activity_id: "",
+    applicable_activity_id: "", implementation_guidance: "",
   });
   const [form, setForm] = useState(emptyForm());
 
@@ -360,6 +360,17 @@ export default function LibraryPage({ kind }) {
                       <SelectItem value="low">Low — minor reduction</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="label-eyebrow">Implementation guidance</Label>
+                  <Textarea
+                    rows={2}
+                    value={form.implementation_guidance || ""}
+                    onChange={(e) => setForm({ ...form, implementation_guidance: e.target.value })}
+                    placeholder="e.g. 'per AS 2675', 'two-person hoist transfers per provider lift policy'"
+                    className="mt-2 rounded-none border-amber-300 bg-amber-50/40"
+                    data-testid="lib-control-guidance"
+                  />
                 </div>
               </>
             )}

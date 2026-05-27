@@ -194,6 +194,7 @@ export default function RiskForm() {
     ...f,
     controls: [...f.controls, {
       name: "", description: "", hierarchy_level: "administrative",
+      implementation_guidance: "",
       status: "planned", responsible: "", implementation_date: "",
       effectiveness: "medium", evidence: "",
     }],
@@ -206,7 +207,9 @@ export default function RiskForm() {
     ...f,
     controls: [...f.controls, {
       library_id: lib.id, name: lib.name, description: lib.description,
-      hierarchy_level: lib.hierarchy_level, status: "planned",
+      hierarchy_level: lib.hierarchy_level,
+      implementation_guidance: lib.implementation_guidance || "",
+      status: "planned",
       responsible: "", implementation_date: "",
       effectiveness: lib.effectiveness, evidence: "",
     }],
@@ -462,6 +465,7 @@ export default function RiskForm() {
                   <Button variant="ghost" size="sm" onClick={() => removeControl(i)} className="text-destructive"><Trash /></Button>
                 </div>
                 <Textarea rows={2} value={c.description} onChange={(e) => patchControl(i, "description", e.target.value)} placeholder="Description" className="rounded-none border-ink" />
+                <Textarea rows={2} value={c.implementation_guidance || ""} onChange={(e) => patchControl(i, "implementation_guidance", e.target.value)} placeholder="Implementation guidance (e.g. 'per AS 2675', 'two-person hoist transfers')" className="rounded-none border-amber-300 bg-amber-50/40 text-xs" data-testid={`control-guidance-${i}`} />
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                   <Select value={c.hierarchy_level} onValueChange={(v) => patchControl(i, "hierarchy_level", v)}>
                     <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue /></SelectTrigger>

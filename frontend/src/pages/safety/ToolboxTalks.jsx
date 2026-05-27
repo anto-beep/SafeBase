@@ -188,7 +188,7 @@ export default function ToolboxTalks() {
         { key: "topic", label: "Topic", type: "select", options: TOPICS, required: true, span: 2 },
         { key: "site", label: "Site", type: "text", span: 2 },
         { key: "scheduled_at", label: "Date & time", type: "datetime-local", required: true },
-        { key: "conducted_by", label: "Conducted by", type: "text" },
+        { key: "conducted_by", label: "Conducted by", type: "person" },
         { key: "status", label: "Status", type: "select", options: STATUS, default: "scheduled" },
         { key: "attendees_count", label: "Expected attendees", type: "number", min: 1 },
         { key: "notes", label: "Key points / notes", type: "textarea", span: 2 },

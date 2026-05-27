@@ -76,6 +76,14 @@ def register_retail_routes(api_router: APIRouter, *, db, get_current_user_dep,
         for f in required:
             if not body.get(f):
                 raise HTTPException(400, f"{f} is required")
+        # Idempotency for offline replay
+        from idempotency import idempotency_check, idempotency_store
+        cached = await idempotency_check(
+            db, current_user, body, endpoint="retail.lone_worker.checkin",
+            record_collection="lone_worker_logs", id_field="checkin_id",
+        )
+        if cached is not None:
+            return cached
         next_checkin_min = int(body.get("next_checkin_min") or 60)
         next_due = (_now() + timedelta(minutes=next_checkin_min)).isoformat()
         doc = {
@@ -97,6 +105,10 @@ def register_retail_routes(api_router: APIRouter, *, db, get_current_user_dep,
         await log_audit_fn(db, user=current_user, action="checkin",
                            record_type="lone_worker_log", record_id=doc["checkin_id"], request=request)
         doc.pop("_id", None)
+        await idempotency_store(
+            db, current_user, body, doc,
+            endpoint="retail.lone_worker.checkin", id_field="checkin_id",
+        )
         return doc
 
     @api_router.post("/retail/lone-worker/escalate")

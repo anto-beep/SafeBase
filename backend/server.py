@@ -111,6 +111,7 @@ class IncidentIn(BaseModel):
     photos: List[str] = []
     workers_involved: List[str] = []
     corrective_actions: Optional[str] = None
+    client_event_id: Optional[str] = None  # mobile offline replay idempotency key
 
 
 class Incident(IncidentIn):
@@ -391,18 +392,33 @@ async def list_incidents(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/incidents")
 async def create_incident(body: IncidentIn, request: Request, current_user: User = Depends(get_current_user)):
+    body_dict = body.model_dump()
+    # Idempotency for offline replay
+    from idempotency import idempotency_check, idempotency_store
+    cached = await idempotency_check(
+        db, current_user, body_dict, endpoint="incidents.create",
+        record_collection="incidents", id_field="incident_id",
+    )
+    if cached is not None:
+        return cached
     incident_id = f"inc_{uuid.uuid4().hex[:10]}"
     notify_regulator = body.severity in ("serious", "critical")
+    # Strip the idempotency key from the persisted document
+    body_dict.pop("client_event_id", None)
     doc = stamp_account({
         "incident_id": incident_id,
         "user_id": current_user.user_id,
         "status": "open",
         "notify_regulator": notify_regulator,
-        **body.model_dump(),
+        **body_dict,
     }, current_user)
     await db.incidents.insert_one({**doc})
     await log_audit(db, user=current_user, action="create", record_type="incident", record_id=incident_id, request=request, detail={"severity": body.severity})
     await trigger_webhook_event(current_user.user_id, "incident.created", {"incident_id": incident_id, "severity": body.severity, "notify_regulator": notify_regulator})
+    await idempotency_store(
+        db, current_user, {"client_event_id": body.client_event_id}, doc,
+        endpoint="incidents.create", id_field="incident_id",
+    )
     return doc
 
 
@@ -2539,6 +2555,15 @@ async def _seed_internal_admin():
         await seed_super_admin(db)
     except Exception as exc:
         logger.warning("seed_super_admin failed: %s", exc)
+
+
+@app.on_event("startup")
+async def _ensure_idempotency_index():
+    try:
+        from idempotency import ensure_idempotency_index
+        await ensure_idempotency_index(db)
+    except Exception as exc:
+        logger.warning("ensure_idempotency_index failed: %s", exc)
 
 
 

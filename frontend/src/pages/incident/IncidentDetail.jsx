@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import LifecycleTracker from "./LifecycleTracker";
+import { PeoplePicker } from "@/components/PeoplePicker";
 import {
   SEVERITIES, severityColor, INCIDENT_TYPES,
   SERIOUS_INJURY_ITEMS, DANGEROUS_OCCURRENCE_ITEMS,
@@ -346,15 +347,19 @@ function ActionsForm({ doc, onSaved }) {
       {(f[bucket] || []).map((a, i) => (
         <div key={i} className="border border-border p-3 space-y-2" data-testid={`${bucket}-${i}`}>
           <Input value={a.description} onChange={(e) => patchRow(bucket, i, "description", e.target.value)} placeholder="Action description" className="h-10 rounded-none border-ink" />
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-start">
             <Select value={a.type} onValueChange={(v) => patchRow(bucket, i, "type", v)}>
               <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue /></SelectTrigger>
               <SelectContent>{types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={a.assigned_to || "__none__"} onValueChange={(v) => patchRow(bucket, i, "assigned_to", v === "__none__" ? "" : v)}>
-              <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue placeholder="Assignee" /></SelectTrigger>
-              <SelectContent><SelectItem value="__none__">—</SelectItem>{workers.map((w) => <SelectItem key={w.worker_id} value={w.name}>{w.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <div className="md:col-span-1">
+              <PeoplePicker
+                value={a.assigned_to}
+                onChange={(v) => patchRow(bucket, i, "assigned_to", v)}
+                placeholder="Assignee"
+                testId={`incident-${bucket}-picker-${i}`}
+              />
+            </div>
             <Input type="date" value={a.due_date || ""} onChange={(e) => patchRow(bucket, i, "due_date", e.target.value)} className="h-9 rounded-none border-ink" />
             <Select value={a.priority} onValueChange={(v) => patchRow(bucket, i, "priority", v)}>
               <SelectTrigger className="h-9 rounded-none border-ink"><SelectValue /></SelectTrigger>

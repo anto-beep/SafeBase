@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { PeoplePicker, personLabel } from "@/components/PeoplePicker";
 
 /**
  * SafetyModulePage — generic list + create/delete page for a safety module.
@@ -15,7 +16,7 @@ import { toast } from "sonner";
  *  - module: backend module slug
  *  - title, eyebrow, lead — header text
  *  - icon — Phosphor icon component
- *  - fields — [{ key, label, type: 'text'|'textarea'|'date'|'select'|'number', options?, required?, span? }]
+ *  - fields — [{ key, label, type: 'text'|'textarea'|'date'|'select'|'number'|'person', options?, required?, span? }]
  *  - columns — [{ key, label, render?: (item) => ReactNode, className? }]
  *  - computeDefaults — (form) => updates, called when user opens dialog (optional)
  *  - emptyMessage — string
@@ -91,6 +92,15 @@ export default function SafetyModulePage({
                       <SelectTrigger className="mt-2 h-11 rounded-none border-ink" data-testid={`${module}-f-${f.key}`}><SelectValue placeholder={f.placeholder} /></SelectTrigger>
                       <SelectContent>{f.options.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}</SelectContent>
                     </Select>
+                  ) : f.type === "person" ? (
+                    <div className="mt-2" data-testid={`${module}-f-${f.key}`}>
+                      <PeoplePicker
+                        value={form[f.key]}
+                        onChange={(v) => setForm({ ...form, [f.key]: v })}
+                        placeholder={f.placeholder || "Select person…"}
+                        testId={`${module}-picker-${f.key}`}
+                      />
+                    </div>
                   ) : (
                     <Input data-testid={`${module}-f-${f.key}`} type={f.type || "text"} value={form[f.key] || ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} className="mt-2 h-11 rounded-none border-ink" required={f.required} placeholder={f.placeholder} min={f.min} max={f.max} />
                   )}
@@ -123,11 +133,15 @@ export default function SafetyModulePage({
             <tbody>
               {items.map((it) => (
                 <tr key={it.item_id} className="border-t border-border" data-testid={`${module}-row-${it.item_id}`}>
-                  {columns.map((c) => (
-                    <td key={c.key} className={`px-4 py-3 ${c.className || ""}`}>
-                      {c.render ? c.render(it) : (it[c.key] ?? "—")}
-                    </td>
-                  ))}
+                  {columns.map((c) => {
+                    const raw = it[c.key];
+                    const isPerson = raw && typeof raw === "object" && ("display_name" in raw);
+                    return (
+                      <td key={c.key} className={`px-4 py-3 ${c.className || ""}`}>
+                        {c.render ? c.render(it) : isPerson ? personLabel(raw) : (raw ?? "—")}
+                      </td>
+                    );
+                  })}
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     {rowActions && rowActions(it, load)}
                     <Button variant="ghost" size="sm" onClick={() => remove(it.item_id)} className="text-destructive ml-1" data-testid={`${module}-del-${it.item_id}`}><Trash /></Button>

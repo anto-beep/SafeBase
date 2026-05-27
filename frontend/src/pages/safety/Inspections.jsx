@@ -28,7 +28,7 @@ export default function Inspections() {
       fields={[
         { key: "template_name", label: "Template", type: "select", options: TEMPLATES, required: true, span: 2 },
         { key: "site", label: "Site", type: "text" },
-        { key: "conducted_by", label: "Conducted by", type: "text" },
+        { key: "conducted_by", label: "Conducted by", type: "person" },
         { key: "conducted_at", label: "Date", type: "date" },
         { key: "score", label: "Score (%)", type: "number", min: 0, max: 100 },
         { key: "status", label: "Status", type: "select", options: STATUS, default: "scheduled" },
