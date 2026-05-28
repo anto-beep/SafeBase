@@ -1,0 +1,35 @@
+{
+  "summary": "Iter57 retest of route-shadowing fix on GET /api/documents/custom. Endpoint was renamed to GET /api/documents/custom/list to avoid being shadowed by /api/documents/{document_id} (declared earlier in server.py:512). Updated /app/backend/tests/test_iter56_phase1.py to call the new path and added an extra empty-array assertion (hospitality account has no custom templates -> must return 200 + []). All 22 tests pass (19 carryover from iter56 + 2 renamed list tests + 1 new empty-state test). No regressions detected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter56_phase1.py",
+    "/app/test_reports/pytest/iter57_retest_v2.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Rename to /documents/custom/list works but only because the literal path comes before the path-param in FastAPI's match algorithm for *path-segment count*. The real fix that would have preserved REST shape (GET /documents/custom) is to register ai_docs_module BEFORE the generic /documents/{document_id} catch-all in server.py — recommend a follow-up refactor.",
+    "server.py is still 2667 lines; the >700-line threshold remains exceeded. Splitting it should be planned.",
+    "GET /api/documents/custom/list is not yet consumed by the frontend per E1's note — the listing UI is a future-phase task. Verify that the future UI uses the /list path."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter56_phase1.py"
+  ],
+  "success_rate": {
+    "backend": "100% (22/22)",
+    "frontend": "N/A (not in scope per E1)"
+  },
+  "test_credentials": "trades.demo@safebase.com.au / Demo@1234 and hospitality.demo@safebase.com.au / Demo@1234 — both confirmed working via /api/auth/login.",
+  "seed_data_creation": "Test run creates and cleans up: TEST_iter56_activity (library_activity), TEST_iter56_task (library_task), one TEST_iter56 CAPA, one TEST_iter56 risk, custom_ template TEST_iter56_ladder_checklist (deleted at end). Library activity/task records persist after run (no DELETE endpoint exercised).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter57 single-bug retest closed. The custom doc endpoints are: POST /api/documents/custom/propose, POST /api/documents/custom, GET /api/documents/custom/list, DELETE /api/documents/custom/{template_id}. Note the deliberate /list suffix on the GET — the bare /documents/custom path remains shadowed by /documents/{document_id} in server.py:512. If a future iteration tries to clean up and restore GET /documents/custom, it must move the ai_docs router registration above server.py:512 first.",
+  "rca of the issue": "Original bug RCA (iter56): FastAPI resolves routes in registration order; server.py:512 defined GET /documents/{document_id} before ai_docs_module.register_ai_docs_routes was invoked at server.py:2355, so GET /documents/custom matched the path-param route and returned 404. Fix applied in iter57: renamed the list endpoint to GET /documents/custom/list — this path has 3 segments instead of 2, so it does not collide with /documents/{document_id} regardless of registration order. Verified by curl & full test suite (22/22 pass)."
+}

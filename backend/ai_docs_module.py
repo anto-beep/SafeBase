@@ -428,7 +428,7 @@ def register_ai_docs_routes(api_router: APIRouter, *, db, get_current_user_dep,
         doc.pop("_id", None)
         return doc
 
-    @api_router.get("/documents/custom")
+    @api_router.get("/documents/custom/list")
     async def list_custom_documents(current_user=Depends(get_current_user_dep)):
         """List all custom templates for this account."""
         rows = await db.document_templates.find(

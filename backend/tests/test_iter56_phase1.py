@@ -234,18 +234,25 @@ class TestCustomDocs:
         TestCustomDocs.template_id = doc["template_id"]
 
     def test_list_custom_docs(self, trades_token):
-        r = requests.get(f"{BASE_URL}/api/documents/custom",
+        r = requests.get(f"{BASE_URL}/api/documents/custom/list",
                          headers=_h(trades_token), timeout=15)
         assert r.status_code == 200
         ids = [d["template_id"] for d in r.json()]
         assert TestCustomDocs.template_id in ids
 
     def test_hospi_does_not_see_trades_custom(self, hospi_token):
-        r = requests.get(f"{BASE_URL}/api/documents/custom",
+        r = requests.get(f"{BASE_URL}/api/documents/custom/list",
                          headers=_h(hospi_token), timeout=15)
         assert r.status_code == 200
         ids = [d["template_id"] for d in r.json()]
         assert TestCustomDocs.template_id not in ids
+
+    def test_list_custom_empty_returns_200_not_404(self, hospi_token):
+        # hospitality has no custom docs => endpoint must return 200 + array, not 404
+        r = requests.get(f"{BASE_URL}/api/documents/custom/list",
+                         headers=_h(hospi_token), timeout=15)
+        assert r.status_code == 200, r.text
+        assert isinstance(r.json(), list)
 
     def test_delete_custom_doc(self, trades_token):
         tid = TestCustomDocs.template_id
