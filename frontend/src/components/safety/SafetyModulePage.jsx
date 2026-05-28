@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Plus, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { PeoplePicker, personLabel } from "@/components/PeoplePicker";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 /**
  * SafetyModulePage — generic list + create/delete page for a safety module.
@@ -16,10 +17,11 @@ import { PeoplePicker, personLabel } from "@/components/PeoplePicker";
  *  - module: backend module slug
  *  - title, eyebrow, lead — header text
  *  - icon — Phosphor icon component
- *  - fields — [{ key, label, type: 'text'|'textarea'|'date'|'select'|'number'|'person', options?, required?, span? }]
+ *  - fields — [{ key, label, type: 'text'|'textarea'|'date'|'select'|'number'|'person'|'address', options?, required?, span? }]
  *  - columns — [{ key, label, render?: (item) => ReactNode, className? }]
  *  - computeDefaults — (form) => updates, called when user opens dialog (optional)
  *  - emptyMessage — string
+ *  - openHref — (item) => string. If provided, the first text column becomes a clickable link to that route.
  */
 export default function SafetyModulePage({
   module, title, eyebrow, lead, icon: Icon,
@@ -99,6 +101,15 @@ export default function SafetyModulePage({
                         onChange={(v) => setForm({ ...form, [f.key]: v })}
                         placeholder={f.placeholder || "Select person…"}
                         testId={`${module}-picker-${f.key}`}
+                      />
+                    </div>
+                  ) : f.type === "address" ? (
+                    <div className="mt-2" data-testid={`${module}-f-${f.key}`}>
+                      <AddressAutocomplete
+                        value={form[f.key]}
+                        onChange={(v) => setForm({ ...form, [f.key]: v })}
+                        placeholder={f.placeholder || "Start typing address…"}
+                        testId={`${module}-addr-${f.key}`}
                       />
                     </div>
                   ) : (

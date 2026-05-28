@@ -736,7 +736,14 @@ export default function RiskForm() {
         </div>
         <div>
           <Label className="label-eyebrow">Risk owner acknowledgement</Label>
-          <Input value={form.acknowledged_by} onChange={(e) => patch("acknowledged_by", e.target.value)} placeholder="Type owner name to acknowledge" className="mt-2 h-11 rounded-none border-ink" data-testid="f-ack" />
+          <div className="mt-2" data-testid="f-ack">
+            <PeoplePicker
+              value={form.acknowledged_by}
+              onChange={(v) => patch("acknowledged_by", v)}
+              placeholder="Risk owner who acknowledges this risk"
+              testId="picker-acknowledged-by"
+            />
+          </div>
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="outline" className="btn-sharp border-ink h-11" onClick={() => save("draft")} disabled={saving}>Save as draft</Button>

@@ -2406,6 +2406,14 @@ register_inbox_routes(
 )
 
 
+# ----------- HAZARD LIBRARY (industry-tagged) -----------
+from routes.hazard_library import register_hazard_library_routes  # noqa: E402
+register_hazard_library_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for,
+)
+
+
 # ----------- INDUSTRY-SPECIFIC MODULES (Iter 35) -----------
 # Each of these is hard-blocked to a single industry via require_feature().
 from routes.hospitality import register_hospitality_routes  # noqa: E402

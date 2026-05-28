@@ -227,8 +227,12 @@ function RegisterTab() {
               const rl = riskLevel(r.residual_score);
               return (
                 <tr key={r.risk_id} className="border-t border-border" data-testid={`risk-row-${r.risk_id}`}>
-                  <td className="px-4 py-3 font-mono text-xs font-bold">{r.risk_id}</td>
-                  <td className="px-4 py-3 max-w-xs"><div className="font-bold line-clamp-2">{r.title}</div></td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">
+                    <Link to={`/dashboard/risk-register/${r.risk_id}`} className="hover:underline" data-testid={`risk-link-id-${r.risk_id}`}>{r.risk_id}</Link>
+                  </td>
+                  <td className="px-4 py-3 max-w-xs">
+                    <Link to={`/dashboard/risk-register/${r.risk_id}`} className="font-bold line-clamp-2 hover:underline" data-testid={`risk-link-title-${r.risk_id}`}>{r.title}</Link>
+                  </td>
                   <td className="px-4 py-3 text-xs">{r.process_name || "—"}<div className="text-muted-foreground">{r.activity_name || "—"}</div></td>
                   <td className="px-4 py-3"><span className={`${il.color} px-2 py-0.5 text-[10px] font-bold tracking-widest`}>{il.label}</span> <span className="text-xs text-muted-foreground">{r.inherent_score || ""}</span></td>
                   <td className="px-4 py-3 text-center">{(r.controls || []).length}</td>

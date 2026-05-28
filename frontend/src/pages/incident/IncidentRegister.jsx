@@ -141,9 +141,13 @@ export default function IncidentRegister() {
           <tbody>
             {filtered.map((r) => (
               <tr key={r.incident_id} className={`border-t border-border ${r.urgent ? "bg-red-50" : ""}`} data-testid={`incident-row-${r.reference}`}>
-                <td className="px-3 py-3 font-mono text-xs font-bold">{r.reference}</td>
+                <td className="px-3 py-3 font-mono text-xs font-bold">
+                  <Link to={`/dashboard/incidents/${r.incident_id}`} className="hover:underline" data-testid={`incident-link-ref-${r.reference}`}>{r.reference}</Link>
+                </td>
                 <td className="px-3 py-3 text-xs">{new Date(r.created_at).toLocaleDateString("en-AU")}</td>
-                <td className="px-3 py-3 max-w-xs"><div className="font-bold line-clamp-2">{r.title}</div></td>
+                <td className="px-3 py-3 max-w-xs">
+                  <Link to={`/dashboard/incidents/${r.incident_id}`} className="font-bold line-clamp-2 hover:underline" data-testid={`incident-link-title-${r.reference}`}>{r.title}</Link>
+                </td>
                 <td className="px-3 py-3"><span className={`${severityColor(r.severity)} px-2 py-0.5 text-[10px] font-bold tracking-widest`}>{r.severity ? `SEV ${r.severity}` : "—"}</span></td>
                 <td className="px-3 py-3 text-xs">{r.site || "—"}</td>
                 <td className="px-3 py-3">{r.notifiable ? <span className="bg-red-700 text-white px-2 py-0.5 text-[10px] font-bold tracking-widest"><Warning weight="fill" className="inline mr-1" />YES</span> : <span className="text-xs text-muted-foreground">no</span>}</td>

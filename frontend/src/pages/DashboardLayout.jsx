@@ -22,6 +22,7 @@ const NAV = [
   { to: "/dashboard/document-library", label: "Document Library", icon: FileText, feature: "document_library" },
   { to: "/dashboard/incidents", label: "Incidents", icon: Warning, feature: "incident_management" },
   { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning, feature: "risk_register" },
+  { to: "/dashboard/hazards", label: "Hazard Library", icon: Warning, feature: "risk_register" },
   { to: "/dashboard/risk-register?tab=reviews", label: "Risk Reviews", icon: ClipboardText, feature: "risk_register" },
   { to: "/dashboard/capa", label: "CAPA Register", icon: ListChecks, feature: "risk_register" },
   { to: "/dashboard/workers", labelKey: "workers", label: "Workers", icon: Users, feature: "workers" },
@@ -72,7 +73,6 @@ const LIBRARY_NAV = [
 
 const WORKFLOW_NAV = [
   { to: "/dashboard/workflows/new-employee", label: "New Employee", icon: UserPlus },
-  { to: "/dashboard/workflows/incident-resolution", label: "Incident Resolution", icon: Warning },
   { to: "/dashboard/workflows/swms-job-start", label: "SWMS to Job Start", icon: FlowArrow },
   { to: "/dashboard/workflows/annual-review", label: "Annual WHS Review", icon: Calendar },
   { to: "/dashboard/workflows/subcontractor", label: "Subcontractor", icon: Handshake },
@@ -284,6 +284,30 @@ export default function DashboardLayout() {
       </header>
 
       <main className="lg:ml-64 min-h-screen">
+        {/* Desktop top-right bar — Settings + Notifications + Profile */}
+        <header className="hidden lg:flex sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border h-14 items-center justify-end gap-3 px-6" data-testid="desktop-top-bar">
+          <Link to="/dashboard/notifications" className="relative p-1.5 hover:opacity-80" data-testid="topbar-notifications" title="Notifications">
+            <Bell size={18} weight="bold" />
+            {unread > 0 && <span className="absolute top-0.5 right-0.5 bg-red-600 w-2 h-2 rounded-full" />}
+          </Link>
+          <Link
+            to="/dashboard/settings"
+            className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest font-bold px-3 py-1.5 border border-ink hover:bg-ink hover:text-white"
+            data-testid="topbar-settings"
+            title="Settings"
+          >
+            <Gear size={14} weight="bold" /> Settings
+          </Link>
+          <div className="hidden xl:flex items-center gap-2 pl-3 border-l border-border" data-testid="topbar-user">
+            <div className="w-7 h-7 bg-ink text-white flex items-center justify-center text-xs font-black">
+              {(user?.name || "U").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+            </div>
+            <div className="text-xs leading-tight">
+              <div className="font-bold truncate max-w-[10rem]">{user?.name || "User"}</div>
+              <div className="text-muted-foreground truncate max-w-[10rem]">/ {user?.role}</div>
+            </div>
+          </div>
+        </header>
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-ink text-white z-40 grid grid-cols-5 border-t border-white/10">
           {NAV.slice(0, 5).map((item) => (
             <NavLink

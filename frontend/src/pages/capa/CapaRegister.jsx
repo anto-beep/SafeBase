@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,7 +136,13 @@ export default function CapaRegister() {
               return (
                 <tr key={c.capa_id} className="border-b border-border last:border-b-0 hover:bg-muted/50" data-testid={`capa-row-${c.capa_id}`}>
                   <td className="px-3 py-2">
-                    <div className="font-bold">{c.description}</div>
+                    {c.linked_entity_type === "risk" && c.linked_entity_id ? (
+                      <Link to={`/dashboard/risk-register/${c.linked_entity_id}`} className="font-bold hover:underline" data-testid={`capa-link-title-${c.capa_id}`}>{c.description}</Link>
+                    ) : c.linked_entity_type === "incident" && c.linked_entity_id ? (
+                      <Link to={`/dashboard/incidents/${c.linked_entity_id}`} className="font-bold hover:underline" data-testid={`capa-link-title-${c.capa_id}`}>{c.description}</Link>
+                    ) : (
+                      <div className="font-bold">{c.description}</div>
+                    )}
                     {c.linked_entity_label && (
                       <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">{c.linked_entity_label}</div>
                     )}
