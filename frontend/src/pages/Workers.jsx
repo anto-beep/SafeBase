@@ -24,19 +24,30 @@ const CUSTOM_ROLE_VALUE = "__custom__";
 export default function Workers() {
   const { user } = useAuth();
   const industry = (user?.industry || "trades").toLowerCase();
-  const industryRoles = useMemo(() => ROLES_BY_INDUSTRY[industry] || ROLES_BY_INDUSTRY.trades, [industry]);
+  const industryRoles = useMemo(() => {
+    const list = ROLES_BY_INDUSTRY[industry] || ROLES_BY_INDUSTRY.trades;
+    // Normalise: backend roles config uses {id, label} — expose as {value, label}
+    return list.map((r) => ({ value: r.id || r.value, label: r.label }));
+  }, [industry]);
 
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
   const [upsellOpen, setUpsellOpen] = useState(false);
   const [form, setForm] = useState({
     name: "", email: "", phone: "",
-    role_value: industryRoles[0]?.value || "tradesperson",
-    role: industryRoles[0]?.label || "Tradesperson",
+    role_value: "",
+    role: "",
     trade: "",
   });
   const [customRole, setCustomRole] = useState("");
   const { isEnterprise } = useTier();
+
+  // Initialise role with first industry option once roles are resolved
+  useEffect(() => {
+    if (industryRoles[0] && !form.role_value) {
+      setForm((f) => ({ ...f, role_value: industryRoles[0].value, role: industryRoles[0].label }));
+    }
+  }, [industryRoles, form.role_value]);
 
   const handleAddClick = () => {
     if (!isEnterprise && items.length >= GROWING_USER_CAP) {

@@ -24,6 +24,31 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 64 — 8-item ship + Phase 3 academy seed started (Feb 28, 2026)
+
+Eight cross-cutting product items shipped + Phase 3 academy content seed kicked off in background.
+
+**Ship items I–VIII** (all verified pass via testing_agent_v3_fork iter_59 — 17/17 backend, 8/8 frontend ship items, zero functional bugs):
+
+I. **Worker role gets full web access** — confirmed no role gate on `/dashboard` routes.
+II. **Desktop top-right bar** — `data-testid='desktop-top-bar'` with Settings + Notifications + user chip on lg+ viewports.
+III. **Worker role dropdown** — `Workers.jsx` rewrite uses `ROLES_BY_INDUSTRY` (industry-aware) + "Custom…" escape hatch. Normalises `id` → `value` to fix React-key warning surfaced by testing agent.
+IV. **`risk_owner_acknowledgement` → PeoplePicker** in RiskForm.
+V. **AddressAutocomplete** component (`/app/frontend/src/components/AddressAutocomplete.jsx`) — Google Places JS API loader, AU-biased, graceful fallback to plain Input. Wired into the generic `SafetyModulePage` via new `type: 'address'` field type. `REACT_APP_GOOGLE_PLACES_API_KEY` is set.
+VI. **Clickable register rows** — Risk Register reference + title now `<Link>` to `/dashboard/risk-register/{id}`. Same for Incident Register (`/dashboard/incidents/{id}`) and CAPA (when linked to a risk/incident).
+VII. **"Incident Resolution" removed** from `WORKFLOW_NAV` in `DashboardLayout.jsx`. Route still resolves (no broken bookmarks).
+VIII. **Hazard Library** — new `/api/hazard-library` (industry-locked, 403 on cross-industry; 12 trades hazards seeded plus 10 hospitality, 9 transport, 10 healthcare, 8 retail = 49 system hazards across all 5). New `/dashboard/hazards` register page with category groups, search, detail modal. Sidebar nav entry added between Risk Register and Risk Reviews.
+
+**Phase 3 academy content seed** (background, in progress):
+- `/app/backend/seed_academy_content.py` — generates `learning_objectives` (3-5), `sections` (4-6 with inline SVG diagrams), and `quiz_questions` (6-10) per module via Claude Sonnet 4.5.
+- Persists to `academy_module_content` collection, idempotent on `(industry, slug)`.
+- Currently 5/88 modules complete; will continue churning for ~3h more.
+- Started in this iter. Safe to leave; resumable.
+
+**Non-blocking design notes flagged by testing agent**:
+- Sidebar has grown to 40+ items — grouping/collapsing would aid scannability (P2 future).
+- A few shadcn DialogContent missing `aria-describedby` (a11y warning, non-blocking).
+
 ### Iteration 63 — "Mentioned me" inbox + Phase 2 doc library seed (Feb 28, 2026)
 
 **Mentioned me inbox** (complete):
