@@ -566,6 +566,14 @@ def register_academy_routes(api_router: APIRouter, *, db, get_current_user_dep,
     async def get_catalogue(industry: Optional[str] = None,
                              current_user=Depends(get_current_user_dep)):
         target = (industry or getattr(current_user, "industry", None) or "trades").lower()
+        # Industry 403: if caller explicitly requests another industry, deny.
+        if industry:
+            user_ind = (getattr(current_user, "industry", None) or "trades").lower()
+            if industry.lower() != user_ind:
+                raise HTTPException(
+                    403,
+                    f"Industry mismatch: account is '{user_ind}', requested '{industry}'",
+                )
         return _industry_payload(target)
 
     @api_router.get("/academy/modules/{module_slug}")

@@ -1,0 +1,45 @@
+{
+  "summary": "Iter 56 Phase 1 testing: industry 403 gates, account-wide visibility (implicit via API surface), library activity/task create-new, server-side Me resolution for CAPA + Risks, and custom doc templates (propose/persist/list/delete). 19/21 backend tests pass. 2 failures are caused by a single critical route-shadowing bug: GET /api/documents/custom is matched by GET /api/documents/{document_id} declared earlier in server.py:512, returning 404. POST and DELETE for custom docs work because their HTTP verbs aren't shadowed. Frontend RiskForm new inline create UI renders correctly with the four required data-testids and proper disabled state.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/documents/custom",
+        "issue": "Route shadowed by GET /api/documents/{document_id} (server.py:512) which is registered BEFORE ai_docs_module routes (server.py:2355). Request resolves to get_document() with document_id='custom' and returns 404. Both list_custom_docs and the cross-account isolation test fail because of this. POST /documents/custom and DELETE /documents/custom/{id} work because their verbs are not shadowed.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter56_phase1.py",
+    "/app/test_reports/pytest/iter56.xml"
+  ],
+  "action_items": [
+    "Fix GET /api/documents/custom route shadowing. Easiest fix: in ai_docs_module.register_ai_docs_routes, the GET /documents/custom is currently overridden by /documents/{document_id} in server.py. Either (a) move the custom GET/list route registration BEFORE the server.py /documents/{document_id} route (e.g. include it as a sub-router added before line 507), or (b) rename the endpoint path to /custom-documents (and update the front-end caller), or (c) in get_document() at server.py:513, short-circuit when document_id == 'custom' and delegate to the custom-list handler. Option (a) is the cleanest."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 2667 lines; >700-line threshold significantly exceeded. The Phase-1 changes are correctly modularised into risk_module/ai_docs_module/academy_module/routes/capa, but the parent file should still be split.",
+    "Route ordering bug for /documents/custom — defensive recommendation: when adding catch-all path-param routes (/{document_id}), explicitly list the literal sub-paths above them, OR refactor to use a sub-router for the resource so literal children are matched first.",
+    "_normalise_assignee server-side override is working correctly and securely (CAPA + Risk owner + Risk additional_actions[].assigned_to all override spoofed user_id/email/role to caller's JWT identity).",
+    "Industry 403 gates are uniformly applied across /library/process, /risks, /academy/catalogue, /ai-docs/types — good defence-in-depth.",
+    "RiskForm.jsx: activity-create-btn correctly disabled until a parent process is selected; task-create-btn disabled until parent activity selected. Good UX. data-testids present."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter56_phase1.py"
+  ],
+  "success_rate": {
+    "backend": "90% (19/21)",
+    "frontend": "100% (testids present, disabled-state UX correct)"
+  },
+  "test_credentials": "trades.demo@safebase.com.au / Demo@1234 (owner, trades); hospitality.demo@safebase.com.au / Demo@1234 (owner, hospitality). Both confirmed working via /api/auth/login.",
+  "seed_data_creation": "Created via tests (auto-cleaned by template_id where applicable): TEST_iter56_activity (library_activity), TEST_iter56_task (library_task), one TEST_iter56 CAPA, one TEST_iter56 risk, custom_ template TEST_iter56_ladder_checklist (deleted at end of run).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "After main agent fixes the route shadowing for GET /api/documents/custom, re-run /app/backend/tests/test_iter56_phase1.py — expect 21/21. Also worth verifying via curl that list returns the same shape as the persist response. Phase 2/3/4 not yet in scope.",
+  "rca of the issue": "FastAPI matches routes in registration order. server.py registers GET /documents/{document_id} at module load (line 512). ai_docs_module.register_ai_docs_routes is called near line 2355 which adds GET /documents/custom AFTER the path-param route. When a request for GET /api/documents/custom arrives, FastAPI iterates the routes in order; the first match is /documents/{document_id} with document_id='custom', returning the standard 'Document not found' 404 from the legacy handler. Reproduction: curl -H 'Authorization: Bearer <tok>' $URL/api/documents/custom -> 404 {'detail':'Document not found'}. Mitigation options listed under action_items; option (a) preferred."
+}

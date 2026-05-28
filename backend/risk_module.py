@@ -17,7 +17,11 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+# Account-wide visibility (C7 in spec): risk register entries should be
+# visible to ALL members of the account, not just the creator. We import
+# the helper lazily inside the request handlers to avoid a circular import.
 
 # These imports resolve from server.py when this module is imported into it.
 # We intentionally keep this file self-contained (no side effects at import).
@@ -265,11 +269,41 @@ def _coll(db: Any, kind: str):
 def register_library_routes(app_db, get_current_user):
     """Factory so server.py can register these with its DB + auth dependency."""
 
+    def _account_filter(current_user) -> dict:
+        """Account-wide visibility: see system seed (account_id null) AND
+        anything created by anyone in this account. Falls back to user_id
+        for legacy single-user records."""
+        try:
+            from data_isolation import account_id_for  # local to avoid cycle
+            account_id = account_id_for(current_user)
+        except Exception:
+            account_id = current_user.user_id
+        return {"$or": [
+            {"account_id": account_id},
+            {"user_id": current_user.user_id},
+        ]}
+
+    def _industry_403(current_user, requested_industry: str | None) -> None:
+        """Defence-in-depth: if a query param explicitly asks for a
+        different industry than the caller's, hard-403. Caller-defaults
+        (None) are always OK."""
+        if not requested_industry:
+            return
+        user_ind = (getattr(current_user, "industry", None) or "trades").lower()
+        if requested_industry.lower() != user_ind:
+            raise HTTPException(
+                403,
+                f"Industry mismatch: account is '{user_ind}', requested '{requested_industry}'",
+            )
+
     @risk_router.get("/library/{kind}")
-    async def list_library(kind: str, current_user=Depends(get_current_user)):
+    async def list_library(kind: str,
+                            industry: str | None = Query(None),
+                            current_user=Depends(get_current_user)):
+        _industry_403(current_user, industry)
         await _ensure_seed(app_db, current_user.user_id)
         rows = await _coll(app_db, kind).find(
-            {"user_id": current_user.user_id}, {"_id": 0}
+            _account_filter(current_user), {"_id": 0}
         ).sort("name", 1).to_list(2000)
         return rows
 
@@ -279,9 +313,15 @@ def register_library_routes(app_db, get_current_user):
         if not body.get("name"):
             raise HTTPException(400, "name required")
         now = datetime.now(timezone.utc).isoformat()
+        try:
+            from data_isolation import account_id_for  # local to avoid cycle
+            account_id = account_id_for(current_user)
+        except Exception:
+            account_id = current_user.user_id
         doc = {
             "id": f"{kind[:4]}_{uuid.uuid4().hex[:10]}",
             "user_id": current_user.user_id,
+            "account_id": account_id,
             "kind": kind,
             "name": body.get("name"),
             "description": body.get("description", ""),
@@ -407,15 +447,19 @@ def register_library_routes(app_db, get_current_user):
         }
 
     @risk_router.get("/risks")
-    async def list_risks(current_user=Depends(get_current_user)):
+    async def list_risks(industry: str | None = Query(None),
+                          current_user=Depends(get_current_user)):
+        _industry_403(current_user, industry)
         rows = await app_db.risks.find(
-            {"user_id": current_user.user_id}, {"_id": 0}
+            _account_filter(current_user), {"_id": 0}
         ).sort("residual_score", -1).to_list(5000)
         return rows
 
     @risk_router.get("/risks/{risk_id}")
     async def get_risk(risk_id: str, current_user=Depends(get_current_user)):
-        doc = await app_db.risks.find_one({"risk_id": risk_id, "user_id": current_user.user_id}, {"_id": 0})
+        doc = await app_db.risks.find_one(
+            {"risk_id": risk_id, **_account_filter(current_user)}, {"_id": 0}
+        )
         if not doc:
             raise HTTPException(404, "risk not found")
         return doc
@@ -426,8 +470,22 @@ def register_library_routes(app_db, get_current_user):
         rid = await _next_risk_id(current_user.user_id)
         review_days = _parse_review_days(body.get("review_frequency"))
         next_review = (datetime.now(timezone.utc) + timedelta(days=review_days)).isoformat()
+        try:
+            from data_isolation import account_id_for  # local to avoid cycle
+            account_id = account_id_for(current_user)
+        except Exception:
+            account_id = current_user.user_id
+        # Server-side "Me" resolution for PeoplePicker fields
+        from routes.capa import _normalise_assignee as _normalise_person
+        risk_owner = _normalise_person(body.get("risk_owner"), current_user)
+        additional_actions = []
+        for a in (body.get("additional_actions") or []):
+            a_copy = dict(a)
+            a_copy["assigned_to"] = _normalise_person(a_copy.get("assigned_to"), current_user)
+            additional_actions.append(a_copy)
         doc = {
             "user_id": current_user.user_id,
+            "account_id": account_id,
             "risk_id": rid,
             "title": body.get("title", ""),
             "status": body.get("status", "active"),
@@ -442,7 +500,7 @@ def register_library_routes(app_db, get_current_user):
             "hazard_description": body.get("hazard_description", ""),
             "at_risk": body.get("at_risk", []),
             "description": body.get("description", ""),
-            "risk_owner": body.get("risk_owner"),
+            "risk_owner": risk_owner,
             "sites": body.get("sites", []),
             "date_identified": body.get("date_identified") or now,
             "source": body.get("source"),
@@ -457,7 +515,7 @@ def register_library_routes(app_db, get_current_user):
             "residual_consequence": body.get("residual_consequence"),
             "residual_acceptable": body.get("residual_acceptable"),
             "residual_conditions": body.get("residual_conditions", ""),
-            "additional_actions": body.get("additional_actions", []),
+            "additional_actions": additional_actions,
             "review_frequency": body.get("review_frequency", "quarterly"),
             "next_review_date": body.get("next_review_date") or next_review,
             "notify_days_before": body.get("notify_days_before", 14),
@@ -482,7 +540,7 @@ def register_library_routes(app_db, get_current_user):
 
     @risk_router.patch("/risks/{risk_id}")
     async def update_risk(risk_id: str, body: dict, current_user=Depends(get_current_user)):
-        existing = await app_db.risks.find_one({"risk_id": risk_id, "user_id": current_user.user_id})
+        existing = await app_db.risks.find_one({"risk_id": risk_id, **_account_filter(current_user)})
         if not existing:
             raise HTTPException(404, "not found")
         body.pop("_id", None); body.pop("user_id", None); body.pop("risk_id", None); body.pop("audit_log", None)
@@ -502,13 +560,13 @@ def register_library_routes(app_db, get_current_user):
         if log_entries:
             merged["audit_log"] = (existing.get("audit_log") or []) + log_entries
         merged.pop("_id", None)
-        await app_db.risks.update_one({"risk_id": risk_id, "user_id": current_user.user_id}, {"$set": merged})
+        await app_db.risks.update_one({"risk_id": risk_id, **_account_filter(current_user)}, {"$set": merged})
         return merged
 
     @risk_router.delete("/risks/{risk_id}")
     async def archive_risk(risk_id: str, current_user=Depends(get_current_user)):
         res = await app_db.risks.update_one(
-            {"risk_id": risk_id, "user_id": current_user.user_id},
+            {"risk_id": risk_id, **_account_filter(current_user)},
             {"$set": {"status": "archived", "updated_at": datetime.now(timezone.utc).isoformat()}},
         )
         if res.matched_count == 0:
@@ -517,7 +575,7 @@ def register_library_routes(app_db, get_current_user):
 
     @risk_router.get("/risks/{risk_id}/linked")
     async def risk_linked_records(risk_id: str, current_user=Depends(get_current_user)):
-        r = await app_db.risks.find_one({"risk_id": risk_id, "user_id": current_user.user_id}, {"_id": 0})
+        r = await app_db.risks.find_one({"risk_id": risk_id, **_account_filter(current_user)}, {"_id": 0})
         if not r:
             raise HTTPException(404, "not found")
         # Pull from other collections where IDs were linked on creation

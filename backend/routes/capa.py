@@ -46,11 +46,27 @@ STATUSES = {"open", "in_progress", "closed", "archived"}
 PRIORITIES = {"low", "medium", "high", "critical"}
 
 
-def _normalise_assignee(v):
-    """Accept either a plain string (legacy) or a PeoplePicker object."""
+def _normalise_assignee(v, current_user=None):
+    """Accept either a plain string (legacy) or a PeoplePicker object.
+
+    Server-side "Me" resolution: if the incoming value claims source_type
+    'me' (or has no user_id but display_name starts with 'Me'), we resolve
+    it against the JWT's current_user — never trust the client.
+    """
     if not v:
         return None
     if isinstance(v, dict):
+        source_type = (v.get("source_type") or "").lower()
+        # Server-side Me resolution
+        if source_type == "me" and current_user is not None:
+            return {
+                "user_id": getattr(current_user, "user_id", None),
+                "worker_id": None,
+                "display_name": getattr(current_user, "name", "") or "",
+                "email": getattr(current_user, "email", "") or "",
+                "role": getattr(current_user, "role", "owner") or "",
+                "source_type": "user",
+            }
         return {
             "user_id": v.get("user_id"),
             "worker_id": v.get("worker_id"),
@@ -86,7 +102,7 @@ async def create_capa_internal(db, *, current_user, account_id, payload: dict):
         "description": payload.get("description") or "",
         "action_type": action_type,
         "status": "open",
-        "assigned_to": _normalise_assignee(payload.get("assigned_to")),
+        "assigned_to": _normalise_assignee(payload.get("assigned_to"), current_user),
         "due_date": payload.get("due_date"),
         "priority": priority,
         "source": payload.get("source") or "manual",
@@ -194,7 +210,7 @@ def register_capa_routes(api_router: APIRouter, *, db, get_current_user_dep,
         body.pop("capa_id", None)
         body.pop("account_id", None)
         if "assigned_to" in body:
-            body["assigned_to"] = _normalise_assignee(body["assigned_to"])
+            body["assigned_to"] = _normalise_assignee(body["assigned_to"], current_user)
         if "status" in body and body["status"] not in STATUSES:
             raise HTTPException(400, f"status must be one of {sorted(STATUSES)}")
         if "action_type" in body and body["action_type"] not in ACTION_TYPES:

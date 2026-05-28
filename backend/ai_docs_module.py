@@ -207,7 +207,14 @@ def register_ai_docs_routes(api_router: APIRouter, *, db, get_current_user_dep,
     @api_router.get("/ai-docs/types")
     async def list_ai_doc_types(industry: Optional[str] = None,
                                  current_user=Depends(get_current_user_dep)):
-        target = (industry or getattr(current_user, "industry", None) or "trades").lower()
+        user_industry = (getattr(current_user, "industry", None) or "trades").lower()
+        # Industry 403: explicitly requesting another industry is denied.
+        if industry and industry.lower() != user_industry:
+            raise HTTPException(
+                403,
+                f"Industry mismatch: account is '{user_industry}', requested '{industry}'",
+            )
+        target = (industry or user_industry).lower()
         if target not in AI_DOC_REGISTRY:
             return {"industry": target, "types": []}
         out = []
@@ -298,3 +305,150 @@ def register_ai_docs_routes(api_router: APIRouter, *, db, get_current_user_dep,
                            record_type="compliance_doc", record_id=doc_id,
                            request=request, detail={"doc_type": doc_type, "industry": industry, "reference": ref})
         return {k: v for k, v in record.items() if k != "_id"}
+
+    # --------------------- Custom document templates ---------------------
+    # Owner/safety_manager only. Two-step AI propose → confirm flow.
+    def _require_owner_or_safety_manager(current_user):
+        role = (getattr(current_user, "role", "") or "").lower()
+        if role not in ("owner", "safety_manager", "admin", "super_admin"):
+            raise HTTPException(
+                403,
+                "Only the account owner or safety manager can create custom documents.",
+            )
+
+    @api_router.post("/documents/custom/propose")
+    async def propose_custom_document(body: dict, request: Request,
+                                       current_user=Depends(get_current_user_dep)):
+        """User provides a plain-language description; Claude proposes a
+        structured custom-document template (name, category, regulation,
+        fields_schema, ai_prompt_template). The user reviews + confirms via
+        POST /api/documents/custom."""
+        _require_owner_or_safety_manager(current_user)
+        description = (body.get("description") or "").strip()
+        if not description:
+            raise HTTPException(400, "description is required")
+        industry = (getattr(current_user, "industry", None) or "trades").lower()
+
+        system = (
+            "You are a SafeBase compliance documentation expert. Given a "
+            "plain-language description of a document a business needs, you "
+            "propose a structured template. Return ONLY a JSON object with "
+            "keys: suggested_name (string), suggested_category (string — "
+            "an existing SafeBase doc-library category for this industry), "
+            "suggested_regulation (string — the specific Act/Reg/COP/Std "
+            "this document satisfies in Australia), fields_schema (array of "
+            "{key, label, type: text|textarea|date|select|person, "
+            "required: bool, options?: [strings]} — these are the inputs the "
+            "user must fill in for the AI to generate the document), "
+            "ai_prompt_template (string — instruction for the LLM that uses "
+            "{field_values} substitution; explicit reference to the "
+            "regulation; hierarchy-of-controls preference where relevant; "
+            "plain English grade-8 reading level). Do not output prose."
+        )
+        prompt = (
+            f"Industry: {industry}\n"
+            f"User's description of the document needed:\n{description}\n\n"
+            "Return the JSON object only."
+        )
+        try:
+            chat = llm_chat_cls(
+                api_key=llm_key,
+                session_id=f"customdoc_{uuid.uuid4().hex[:8]}",
+                system_message=system,
+            ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+
+            def _run_llm():
+                return asyncio.run(chat.send_message(user_message_cls(text=prompt)))
+
+            raw = await asyncio.wait_for(asyncio.to_thread(_run_llm), timeout=40.0)
+        except asyncio.TimeoutError:
+            raise HTTPException(503, "AI provider slow — please retry")
+        except Exception as e:
+            logger.exception("Custom doc propose failed")
+            raise HTTPException(502, f"AI propose failed: {str(e)[:160]}")
+
+        # Be lenient — strip code fences and locate the first JSON object.
+        import json as _json_lib
+        import re as _re_lib
+        cleaned = _re_lib.sub(r"^```(?:json)?|```$", "", (raw or "").strip(), flags=_re_lib.MULTILINE).strip()
+        try:
+            proposal = _json_lib.loads(cleaned)
+        except Exception:
+            m = _re_lib.search(r"\{.*\}", cleaned, flags=_re_lib.DOTALL)
+            if not m:
+                raise HTTPException(502, "AI did not return JSON")
+            proposal = _json_lib.loads(m.group(0))
+
+        return {
+            "industry": industry,
+            "description": description,
+            "proposal": proposal,
+        }
+
+    @api_router.post("/documents/custom")
+    async def create_custom_document(body: dict, request: Request,
+                                      current_user=Depends(get_current_user_dep)):
+        """Persist a confirmed custom document template. After this, it
+        appears in /ai-docs/types for this account's industry alongside
+        system templates."""
+        _require_owner_or_safety_manager(current_user)
+        industry = (getattr(current_user, "industry", None) or "trades").lower()
+        name = (body.get("name") or "").strip()
+        if not name:
+            raise HTTPException(400, "name is required")
+        category = (body.get("category") or "").strip() or "Custom"
+        regulation = (body.get("regulation") or "").strip()
+        fields_schema = body.get("fields_schema") or []
+        ai_prompt_template = (body.get("ai_prompt_template") or "").strip()
+        if not ai_prompt_template:
+            raise HTTPException(400, "ai_prompt_template is required")
+
+        slug = "custom_" + uuid.uuid4().hex[:8]
+        now = datetime.now(timezone.utc).isoformat()
+        doc = {
+            "template_id": slug,
+            "industry": industry,
+            "category": category,
+            "name": name,
+            "regulation": regulation,
+            "status_requirement": body.get("status_requirement", "optional"),
+            "fields_schema": fields_schema,
+            "ai_prompt_template": ai_prompt_template,
+            "is_custom": True,
+            "account_id": account_id_for_fn(current_user),
+            "created_by": current_user.user_id,
+            "created_at": now,
+            "updated_at": now,
+        }
+        await db.document_templates.insert_one({**doc})
+        await log_audit_fn(db, user=current_user, action="create",
+                           record_type="document_template", record_id=slug,
+                           request=request,
+                           detail={"name": name, "industry": industry, "custom": True})
+        doc.pop("_id", None)
+        return doc
+
+    @api_router.get("/documents/custom")
+    async def list_custom_documents(current_user=Depends(get_current_user_dep)):
+        """List all custom templates for this account."""
+        rows = await db.document_templates.find(
+            {"account_id": account_id_for_fn(current_user), "is_custom": True},
+            {"_id": 0},
+        ).sort("created_at", -1).to_list(500)
+        return rows
+
+    @api_router.delete("/documents/custom/{template_id}")
+    async def delete_custom_document(template_id: str, request: Request,
+                                      current_user=Depends(get_current_user_dep)):
+        _require_owner_or_safety_manager(current_user)
+        res = await db.document_templates.delete_one(
+            {"template_id": template_id,
+             "account_id": account_id_for_fn(current_user),
+             "is_custom": True},
+        )
+        if not res.deleted_count:
+            raise HTTPException(404, "Custom template not found")
+        await log_audit_fn(db, user=current_user, action="delete",
+                           record_type="document_template", record_id=template_id,
+                           request=request)
+        return {"deleted": True, "template_id": template_id}

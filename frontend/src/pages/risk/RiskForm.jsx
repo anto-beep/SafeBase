@@ -168,6 +168,53 @@ export default function RiskForm() {
     patch("task_ids", next); patch("task_names", names);
   };
 
+  // C5 — inline create-new activity
+  const [newActivity, setNewActivity] = useState("");
+  const [creatingActivity, setCreatingActivity] = useState(false);
+  const createActivity = async () => {
+    const name = newActivity.trim();
+    if (!name || !form.process_id) return;
+    setCreatingActivity(true);
+    try {
+      const r = await api.post("/library/activity", {
+        name, parent_process_id: form.process_id,
+      });
+      setActivities((a) => [...a, r.data]);
+      setActivity(r.data.id);
+      setNewActivity("");
+      toast.success(`Activity "${name}" created`);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not create activity");
+    } finally {
+      setCreatingActivity(false);
+    }
+  };
+
+  // C5 — inline create-new task
+  const [newTask, setNewTask] = useState("");
+  const [creatingTask, setCreatingTask] = useState(false);
+  const createTask = async () => {
+    const name = newTask.trim();
+    if (!name || !form.activity_id) return;
+    setCreatingTask(true);
+    try {
+      const r = await api.post("/library/task", {
+        name, parent_activity_id: form.activity_id,
+      });
+      setTasks((t) => [...t, r.data]);
+      // auto-select the new task
+      const next = [...form.task_ids, r.data.id];
+      patch("task_ids", next);
+      patch("task_names", next.map((tid) => (tid === r.data.id ? name : tasks.find((t) => t.id === tid)?.name)).filter(Boolean));
+      setNewTask("");
+      toast.success(`Task "${name}" created`);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not create task");
+    } finally {
+      setCreatingTask(false);
+    }
+  };
+
   const runAiRisks = async () => {
     if (!form.process_name || !form.activity_name) return toast.error("Select a process and activity first");
     setAiBusy(true);
@@ -307,18 +354,57 @@ export default function RiskForm() {
               <SelectTrigger className="mt-2 h-11 rounded-none border-ink" data-testid="f-activity"><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent><SelectItem value="__none__">—</SelectItem>{filteredActivities.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
             </Select>
-            <Link to="/dashboard/library/activities" className="text-xs underline">Can't find it? Add to library +</Link>
+            <div className="flex gap-1 mt-2" data-testid="activity-create-row">
+              <Input
+                value={newActivity}
+                onChange={(e) => setNewActivity(e.target.value)}
+                placeholder="Or type a new activity name…"
+                disabled={!form.process_id}
+                className="h-8 rounded-none border-ink text-xs"
+                data-testid="activity-create-input"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={createActivity}
+                disabled={!form.process_id || !newActivity.trim() || creatingActivity}
+                className="btn-sharp bg-ink text-white hover:opacity-90 h-8 text-[10px] uppercase tracking-widest"
+                data-testid="activity-create-btn"
+              >
+                {creatingActivity ? "…" : `+ Create${newActivity.trim() ? ` "${newActivity.trim().slice(0, 18)}"` : ""}`}
+              </Button>
+            </div>
           </div>
           <div>
             <Label className="label-eyebrow">Tasks (multi-select)</Label>
             <div className="mt-2 border border-ink p-2 max-h-40 overflow-y-auto">
-              {filteredTasks.length === 0 && <div className="text-xs text-muted-foreground p-2">No tasks for this activity yet. <Link to="/dashboard/library/tasks" className="underline">Add one →</Link></div>}
+              {filteredTasks.length === 0 && <div className="text-xs text-muted-foreground p-2">No tasks for this activity yet.</div>}
               {filteredTasks.map((t) => (
                 <label key={t.id} className="flex items-center gap-2 text-sm py-0.5">
                   <input type="checkbox" checked={form.task_ids.includes(t.id)} onChange={() => toggleTask(t.id)} />
                   <span>{t.name}</span>
                 </label>
               ))}
+            </div>
+            <div className="flex gap-1 mt-2" data-testid="task-create-row">
+              <Input
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Or type a new task…"
+                disabled={!form.activity_id}
+                className="h-8 rounded-none border-ink text-xs"
+                data-testid="task-create-input"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={createTask}
+                disabled={!form.activity_id || !newTask.trim() || creatingTask}
+                className="btn-sharp bg-ink text-white hover:opacity-90 h-8 text-[10px] uppercase tracking-widest"
+                data-testid="task-create-btn"
+              >
+                {creatingTask ? "…" : "+ Create"}
+              </Button>
             </div>
           </div>
         </div>
