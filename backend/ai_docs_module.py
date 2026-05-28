@@ -437,6 +437,37 @@ def register_ai_docs_routes(api_router: APIRouter, *, db, get_current_user_dep,
         ).sort("created_at", -1).to_list(500)
         return rows
 
+    @api_router.get("/document-library")
+    async def list_document_library(current_user=Depends(get_current_user_dep)):
+        """List all system + this-account's-custom document templates filtered
+        to the caller's industry, grouped by category. Industry 403-protected.
+        """
+        industry = (getattr(current_user, "industry", None) or "trades").lower()
+        # System seed (account_id null) + this account's custom rows
+        rows = await db.document_templates.find(
+            {
+                "industry": industry,
+                "$or": [
+                    {"account_id": None, "is_custom": {"$ne": True}},
+                    {"account_id": account_id_for_fn(current_user), "is_custom": True},
+                ],
+            },
+            {"_id": 0, "ai_prompt_template": 0},
+        ).to_list(1000)
+
+        # Group by category
+        by_cat: dict[str, list[dict]] = {}
+        for r in rows:
+            by_cat.setdefault(r.get("category", "Uncategorised"), []).append(r)
+        return {
+            "industry": industry,
+            "total": len(rows),
+            "categories": [
+                {"category": cat, "templates": sorted(items, key=lambda x: x.get("name", ""))}
+                for cat, items in sorted(by_cat.items())
+            ],
+        }
+
     @api_router.delete("/documents/custom/{template_id}")
     async def delete_custom_document(template_id: str, request: Request,
                                       current_user=Depends(get_current_user_dep)):

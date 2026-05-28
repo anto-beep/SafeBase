@@ -24,6 +24,22 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 63 — "Mentioned me" inbox + Phase 2 doc library seed (Feb 28, 2026)
+
+**Mentioned me inbox** (complete):
+- `GET /api/me/inbox` — aggregates everything assigned to the calling user across CAPA, risks (owner + additional_actions), and incidents (corrective/preventive action assignees). Returns normalised rows: `{kind, id, title, status, priority, due_date, linked_entity_label, assigned_to, open_url}`. Worker_id-aware too (matches when the assignee is a worker tied to the caller).
+- `GET /api/me/inbox/summary` — `{total, open, overdue, by_kind}` for sidebar badge / dashboard tile use.
+- New page `/dashboard/inbox` (`MyInbox.jsx`): stats row, 6 filter pills (All / Overdue / CAPA / Risks I own / Risk actions / Incident actions), one-line rows with overdue highlighting + kind icon + direct Open link.
+- Sidebar nav: "My Inbox" placed as the 2nd entry (right after Overview).
+- Verified via `testing_agent_v3_fork` (iter_58): **9/9 backend pass**, frontend end-to-end verified, multi-tenant + multi-user isolation confirmed, zero bugs.
+
+**Phase 2 doc library seed** (✅ COMPLETE in this iter):
+- `/app/backend/doc_library_catalogue.py` — master catalogue of **251 system document templates** across 5 industries × 7–10 categories each. Each row: `{name, status_requirement, regulation, industry, category}`.
+  - Trades: 60 · Hospitality: 45 · Transport: 48 · Healthcare: 58 · Retail: 40.
+- `/app/backend/seed_doc_library.py` — batched (6 rows/call) async Claude (Sonnet 4.5) seeding script. For each batch Claude returns `fields_schema` + `ai_prompt_template`. Fully idempotent on `(industry, slug)`; resumable.
+- Seed completed in this iter: **251/251 inserted, 0 fallback rows** (every template got a real Claude-generated prompt + fields_schema). Total elapsed: ~51 minutes.
+- New `GET /api/document-library` endpoint exposes the seeded library (industry-locked, returns categories with their templates and `fields_schema`; `ai_prompt_template` is stripped from the list response for safety). Renamed from `/api/documents/library` to avoid route shadowing.
+
 ### Iteration 62 — Phase 1 of Academy Research Report spec (Feb 28, 2026)
 Implements the 5 net-new pieces from the SafeBase spec phase 1:
 
