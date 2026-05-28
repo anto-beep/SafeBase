@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,6 +96,7 @@ function ControlsPyramid({ controls }) {
 export default function RiskForm() {
   const { risk_id } = useParams();
   const nav = useNavigate();
+  const location = useLocation();
   const editing = !!risk_id;
 
   const [processes, setProcesses] = useState([]);
