@@ -24,6 +24,20 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 62 — Phase 1 of Academy Research Report spec (Feb 28, 2026)
+Implements the 5 net-new pieces from the SafeBase spec phase 1:
+
+- **Industry 403 defence-in-depth** — `GET /api/library/{kind}`, `/api/risks`, `/api/academy/catalogue`, `/api/ai-docs/types` now return **403** if `?industry=` is set to anything other than the caller's account industry. Default (no query param) returns the caller's industry.
+- **Account-wide visibility for Risk Register (C7)** — `list_risks`, `get_risk`, `update_risk`, `archive_risk`, `risk_linked_records`, `list_library` all now filter on **account_id** (with legacy `user_id` fallback). Account members see each other's draft/submitted risks. `create_risk` and `create_library_item` stamp `account_id`.
+- **Server-side "Me" resolution** — `_normalise_assignee(v, current_user)` now accepts a PeoplePicker payload with `source_type='me'` and overrides spoofed `user_id`/`email`/`role` with the JWT-derived current user. Applied in `routes/capa.py` (CAPA assignees) and `risk_module.py create_risk` (risk_owner + additional_actions[].assigned_to). Verified: a payload with `user_id:'FAKE-attempt'`, `email:'hacker@evil.com'`, `role:'super_admin'` is rejected and overwritten with the real JWT user.
+- **Custom AI document templates (B5)** — owner/safety_manager/admin/super_admin only:
+  - `POST /api/documents/custom/propose` — user supplies plain-language description; Claude returns `{suggested_name, suggested_category, suggested_regulation, fields_schema, ai_prompt_template}`.
+  - `POST /api/documents/custom` — persists the confirmed template into `document_templates` collection with `is_custom=True`, `industry` locked to caller's, `account_id` set.
+  - `GET /api/documents/custom/list` (renamed from `/documents/custom` to avoid shadowing by `/documents/{document_id}`).
+  - `DELETE /api/documents/custom/{template_id}` — hard-deletes a custom template.
+- **Inline "Create activity" / "Create task" in RiskForm (C5)** — when the desired activity/task isn't in the list, the user types it and clicks `+ Create` (data-testids: `activity-create-btn`, `task-create-btn`). The new row is created via `POST /api/library/activity|task` and immediately selected.
+- Verified via `testing_agent_v3_fork` (iter_56 + retest iter_57): **22/22 backend pytest pass**, frontend create-activity/create-task UI verified, multi-tenant isolation confirmed, zero bugs.
+
 ### Iteration 61 — Idempotency + PeoplePicker rollout + control guidance (Feb 27, 2026)
 - **Offline-replay idempotency** (`/app/backend/idempotency.py`) — POSTs accept a `client_event_id` (UUID v4); same key + same endpoint within an account returns the original record instead of creating a duplicate. Wired into `POST /api/incidents` (key stripped before persisting; field added to `IncidentIn` Pydantic model) and `POST /api/retail/lone-worker/checkin`. New `idempotency_keys` collection + unique compound index `(account_id, client_event_id, endpoint)` created on startup.
 - **PeoplePicker rollout** to remaining major forms:
