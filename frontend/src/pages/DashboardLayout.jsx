@@ -4,12 +4,13 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books, Plug, Shield, ListChecks } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books, Plug, Shield, ListChecks, Tray as Inbox } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 import IndustrySwitcher from "@/components/IndustrySwitcher";
 
 const NAV = [
   { to: "/dashboard", end: true, label: "Overview", icon: House },
+  { to: "/dashboard/inbox", label: "My Inbox", icon: Inbox },
   { to: "/dashboard/compliance-inbox", label: "Compliance Inbox", icon: Bell, feature: "compliance_dashboard" },
   { to: "/dashboard/swms", labelKey: "primary_safety_module", label: "SWMS Library", icon: FileText, feature: "swms_generator", industries: ["trades"] },
   // Industry-specific primary modules — hard-gated to their owning industries

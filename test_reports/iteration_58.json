@@ -1,0 +1,38 @@
+{
+  "summary": "Iter58 — 'Mentioned me' inbox feature tested end-to-end. 9/9 backend tests pass on /api/me/inbox + /api/me/inbox/summary including row-shape, kind coverage, status filter, open_url routing, summary shape, total matching, and multi-tenant isolation between trades.demo and hospitality.demo. Frontend /dashboard/inbox renders correctly for trades.demo with 9 items (7 open / 0 overdue / 4 risk actions), all three required testids (inbox-stats, inbox-filters, inbox-list) present, CAPA filter narrows from 9 → 5 CAPA-only rows, Overdue filter narrows to 0, Open links correctly point to /dashboard/capa and /dashboard/risk-register/{id}. Sidebar 'My Inbox' is the 2nd nav entry right after Overview (verified by enumerating sidebar links).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter58_inbox.py",
+    "/app/test_reports/pytest/iter58_inbox.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes/inbox.py:163 calls my_inbox(...) directly inside my_inbox_summary instead of going through FastAPI's dependency-resolution path. It works because Depends is only evaluated at the route boundary, but if a future maintainer wires extra middleware/depends to /me/inbox, the summary endpoint will silently skip them. Consider extracting a shared `_collect_inbox_items(account_id, user_id, ...)` helper and having both endpoints call it.",
+    "routes/inbox.py:104-127 fetches the risks collection twice (once for owner, once again for additional_actions). For accounts with many risks this is wasteful — both passes could merge into a single risks.find() with one in-memory bucketing loop.",
+    "routes/inbox.py:117 builds the synthetic risk_action id by slicing description to 24 chars. Two actions on the same risk whose descriptions share the first 24 chars will collide and cause React key warnings + duplicate rows. Use the action's index or a uuid stored on the sub-doc.",
+    "routes/inbox.py:54-58 always uses $or in the CAPA query, even when worker_id is None — the $or list has only one clause until worker_id is appended on line 60-61, which works but reads oddly. Minor nit.",
+    "MyInbox.jsx:27 silently swallows fetch errors (catch with empty body). On API failure the page just shows an empty list with no error state — recommend setting an error flag and rendering a retry banner.",
+    "server.py is still 2675 lines (slightly grown from iter57's 2667). The recommendation to split it stands."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter58_inbox.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9)",
+    "frontend": "100% (all data-testids present, filters & links verified)"
+  },
+  "test_credentials": "trades.demo@safebase.com.au / Demo@1234 (primary, 9 inbox items) and hospitality.demo@safebase.com.au / Demo@1234 (isolation peer). Note: backend login response uses key 'token', not 'access_token' — captured in fixture.",
+  "seed_data_creation": "None new. Reused the iter56 seed (TEST_iter56 me-resolution CAPA + risk + risk-actions + the legacy 'server-side Me check' / 'Inbox test capa' / 'Update SWMS for new tools' CAPAs).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Inbox aggregator endpoints (/api/me/inbox, /api/me/inbox/summary) are stable. The login response shape across this codebase returns {token, user}, NOT {access_token}. Multi-user-within-same-account isolation is enforced by routes/inbox.py:_is_mine() which strictly compares person_field['user_id'] == current_user.user_id — there is no broader 'all account assignees' fallback, so logic is sound; the tenant-isolation pytest covers the user-id boundary. Phase 2 (doc library seed) is a separate background job — check db.document_templates count later.",
+  "rca of the issue": "N/A — no bugs found."
+}

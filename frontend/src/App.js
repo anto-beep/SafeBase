@@ -71,6 +71,7 @@ import Automations from "@/pages/Automations";
 import LibraryPage from "@/pages/risk/LibraryPage";
 import RiskRegisterPage from "@/pages/risk/RiskRegisterPage";
 import CapaRegister from "@/pages/capa/CapaRegister";
+import MyInbox from "@/pages/MyInbox";
 import RiskForm from "@/pages/risk/RiskForm";
 import RiskDetail from "@/pages/risk/RiskDetail";
 import ReviewForm from "@/pages/risk/ReviewForm";
@@ -213,6 +214,7 @@ function AppRouter() {
         <Route path="risk-register/:risk_id" element={<RiskDetail />} />
         <Route path="risk-register/:risk_id/edit" element={<RiskForm />} />
         <Route path="capa" element={<CapaRegister />} />
+        <Route path="inbox" element={<MyInbox />} />
         <Route path="swms-revisions" element={<SwmsRevisionsPage />} />
         <Route path="competency-matrix" element={<CompetencyMatrix />} />
         <Route path="swms" element={<SwmsLibraryPage />} />
