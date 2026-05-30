@@ -66,6 +66,11 @@ export default function Register() {
 
   // Hydrate from query params (?industry=healthcare&tier=2&team=15&locations=3)
   // or from localStorage saved by the Plan Right-sizer wizard.
+  //
+  // NOTE: We intentionally always land the user on step 1 (industry select) so
+  // every "Start Free Trial" CTA across the marketing site is a consistent
+  // experience. The hint values are still captured and shown as a soft
+  // recommendation on step 2 once the user confirms their industry pick.
   useEffect(() => {
     const qpIndustry = searchParams.get("industry");
     const qpTier = searchParams.get("tier");
@@ -73,7 +78,7 @@ export default function Register() {
     const qpLoc = searchParams.get("locations");
     if (qpIndustry && ["trades", "hospitality", "transport", "healthcare", "retail"].includes(qpIndustry)) {
       setIndustry(qpIndustry);
-      setStep(2); // Skip industry-pick step
+      // Stay on step 1 — user must confirm industry choice.
       setRightsizerHint({
         industry: qpIndustry,
         tier: qpTier,
@@ -90,7 +95,7 @@ export default function Register() {
         const saved = JSON.parse(raw);
         if (saved && saved.industry && Date.now() - (saved.savedAt || 0) < 7 * 24 * 3600 * 1000) {
           setIndustry(saved.industry);
-          setStep(2);
+          // Stay on step 1 — user must confirm industry choice.
           setRightsizerHint({ ...saved, source: "localstorage" });
         }
       }

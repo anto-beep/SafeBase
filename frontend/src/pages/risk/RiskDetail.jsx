@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { PencilSimple, Archive, ArrowRight, FileText, Sparkle, ShieldWarning, ClockCounterClockwise, Link as LinkIcon, ListChecks } from "@phosphor-icons/react";
+import { PencilSimple, Archive, ArrowRight, FileText, Sparkle, ShieldWarning, ClockCounterClockwise, Link as LinkIcon, ListChecks, DownloadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { riskLevel, HIERARCHY_MAP } from "./constants";
 import { personLabel } from "@/components/PeoplePicker";
@@ -38,6 +38,28 @@ export default function RiskDetail() {
     nav("/dashboard/risk-register");
   };
 
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const downloadAuditPack = async () => {
+    setGeneratingPdf(true);
+    try {
+      const res = await api.get(`/risks/${risk_id}/audit-pack`, { responseType: "blob" });
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `audit-pack-${risk_id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Audit pack downloaded");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not generate audit pack");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   if (!risk) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
   const il = riskLevel(risk.inherent_score);
   const rl = riskLevel(risk.residual_score);
@@ -65,6 +87,16 @@ export default function RiskDetail() {
             <div className="text-sm text-muted-foreground mt-1">Owner {personLabel(risk.risk_owner)} · Next review {risk.next_review_date ? new Date(risk.next_review_date).toLocaleDateString("en-AU") : "—"}</div>
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={downloadAuditPack}
+              disabled={generatingPdf}
+              variant="outline"
+              className="btn-sharp border-ink h-11"
+              data-testid="download-audit-pack-btn"
+            >
+              <DownloadSimple className="mr-2" weight="bold" />
+              {generatingPdf ? "Generating…" : "Audit pack PDF"}
+            </Button>
             <Link to={`/dashboard/risk-register/${risk_id}/edit`}><Button variant="outline" className="btn-sharp border-ink h-11" data-testid="edit-risk-btn"><PencilSimple className="mr-2" />Edit</Button></Link>
             <Button onClick={startReview} className="btn-sharp bg-ink text-white hover:bg-authority h-11" data-testid="initiate-review-btn">Initiate review <ArrowRight className="ml-2" /></Button>
             <Button variant="outline" className="btn-sharp border-ink h-11 text-destructive" onClick={archive}><Archive className="mr-2" />Archive</Button>

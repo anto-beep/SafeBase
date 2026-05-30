@@ -184,6 +184,12 @@ export default function RiskForm() {
       ].filter(Boolean).join("\n\n"),
       source: "Hazard Report",
       controls: prefilledControls.length ? prefilledControls : f.controls,
+      hazard_source: {
+        code: h.code,
+        name: h.name,
+        category: h.category,
+        regulation: h.regulation || null,
+      },
     }));
     toast.success(`Prefilled from Hazard Library: ${h.name}`);
     // clear location.state so a refresh doesn't re-prefill

@@ -17,7 +17,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 # Account-wide visibility (C7 in spec): risk register entries should be
 # visible to ALL members of the account, not just the creator. We import
@@ -498,6 +498,7 @@ def register_library_routes(app_db, get_current_user):
             "primary_hazard": body.get("primary_hazard"),
             "secondary_hazard": body.get("secondary_hazard"),
             "hazard_description": body.get("hazard_description", ""),
+            "hazard_source": body.get("hazard_source"),
             "at_risk": body.get("at_risk", []),
             "description": body.get("description", ""),
             "risk_owner": risk_owner,
@@ -562,6 +563,405 @@ def register_library_routes(app_db, get_current_user):
         merged.pop("_id", None)
         await app_db.risks.update_one({"risk_id": risk_id, **_account_filter(current_user)}, {"$set": merged})
         return merged
+
+    @risk_router.get("/risks/{risk_id}/audit-pack")
+    async def audit_pack_pdf(risk_id: str, current_user=Depends(get_current_user)):
+        """
+        Generate a one-click audit-defensible PDF that captures the full risk
+        chain: process → activity → tasks → hazard (with regulation) → typical
+        controls → implemented controls → residual score → linked incidents/
+        SWMS → review history → audit log. Designed to be the artefact a
+        WHS inspector asks for during a site visit.
+        """
+        r = await app_db.risks.find_one(
+            {"risk_id": risk_id, **_account_filter(current_user)}, {"_id": 0}
+        )
+        if not r:
+            raise HTTPException(404, "risk not found")
+
+        # Pull linked records (mirrors GET /linked but inlined to avoid a
+        # second DB round-trip and unify error handling)
+        incidents = []
+        if r.get("linked_incident_ids"):
+            incidents = await app_db.incidents.find(
+                {"user_id": current_user.user_id,
+                 "incident_id": {"$in": r["linked_incident_ids"]}},
+                {"_id": 0},
+            ).to_list(100)
+        swms_docs = []
+        if r.get("linked_swms_ids"):
+            swms_docs = await app_db.documents.find(
+                {"user_id": current_user.user_id,
+                 "document_id": {"$in": r["linked_swms_ids"]}},
+                {"_id": 0},
+            ).to_list(100)
+        reviews = await app_db.risk_reviews.find(
+            {"risk_id": risk_id, **_account_filter(current_user)}, {"_id": 0},
+        ).sort("created_at", -1).to_list(100)
+
+        # Account / company name for header
+        company_name = None
+        try:
+            owner_doc = await app_db.users.find_one(
+                {"user_id": r.get("user_id")}, {"_id": 0, "company_name": 1, "name": 1},
+            )
+            if owner_doc:
+                company_name = owner_doc.get("company_name") or owner_doc.get("name")
+        except Exception:
+            pass
+        company_name = company_name or "SafeBase Account"
+
+        # Build the PDF
+        from io import BytesIO
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import mm
+        from reportlab.lib import colors
+        from reportlab.platypus import (
+            SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+            PageBreak, KeepTogether,
+        )
+        from reportlab.lib.enums import TA_LEFT
+
+        buf = BytesIO()
+        doc = SimpleDocTemplate(
+            buf, pagesize=A4,
+            leftMargin=18 * mm, rightMargin=18 * mm,
+            topMargin=18 * mm, bottomMargin=18 * mm,
+            title=f"Risk Audit Pack — {risk_id}",
+            author="SafeBase",
+        )
+        ss = getSampleStyleSheet()
+        h1 = ParagraphStyle("h1", parent=ss["Heading1"], fontName="Helvetica-Bold",
+                            fontSize=18, leading=22, spaceAfter=6, textColor=colors.HexColor("#0A0A0A"))
+        h2 = ParagraphStyle("h2", parent=ss["Heading2"], fontName="Helvetica-Bold",
+                            fontSize=11, leading=14, spaceBefore=10, spaceAfter=4,
+                            textColor=colors.HexColor("#0A0A0A"))
+        eyebrow = ParagraphStyle("eyebrow", parent=ss["Normal"], fontName="Helvetica-Bold",
+                                  fontSize=7, leading=9, spaceAfter=2,
+                                  textColor=colors.HexColor("#6B7280"))
+        body = ParagraphStyle("body", parent=ss["Normal"], fontName="Helvetica",
+                              fontSize=9, leading=12, alignment=TA_LEFT,
+                              textColor=colors.HexColor("#1F2937"))
+        small = ParagraphStyle("small", parent=ss["Normal"], fontName="Helvetica",
+                                fontSize=8, leading=10, textColor=colors.HexColor("#374151"))
+
+        # Risk level → colour
+        level_colors = {
+            "low": colors.HexColor("#059669"),
+            "medium": colors.HexColor("#F59E0B"),
+            "high": colors.HexColor("#F97316"),
+            "extreme": colors.HexColor("#B91C1C"),
+        }
+
+        def risk_level_for(score: int | None) -> str:
+            if not score:
+                return ""
+            if score >= 15:
+                return "extreme"
+            if score >= 8:
+                return "high"
+            if score >= 4:
+                return "medium"
+            return "low"
+
+        story: list = []
+
+        # --- HEADER ---
+        story.append(Paragraph("RISK AUDIT PACK", eyebrow))
+        story.append(Paragraph(
+            f"{(r.get('title') or 'Untitled risk')[:120]}", h1,
+        ))
+        meta = (
+            f"<b>{r.get('risk_id')}</b> &nbsp;·&nbsp; "
+            f"{company_name} &nbsp;·&nbsp; "
+            f"Generated {datetime.now(timezone.utc).strftime('%d %b %Y %H:%M UTC')}"
+        )
+        story.append(Paragraph(meta, small))
+        story.append(Spacer(1, 6))
+
+        # --- 1. PROVENANCE CHAIN ---
+        story.append(Paragraph("1. Provenance chain", h2))
+        chain_rows = [
+            ["Process", r.get("process_name") or "—"],
+            ["Activity", r.get("activity_name") or "—"],
+            ["Tasks", ", ".join(r.get("task_names") or []) or "—"],
+            ["Hazard category", r.get("primary_hazard") or "—"],
+        ]
+        if r.get("secondary_hazard"):
+            chain_rows.append(["Secondary hazard", r.get("secondary_hazard")])
+        hs = r.get("hazard_source") or {}
+        if hs.get("name"):
+            chain_rows.append(["Sourced from Hazard Library", hs.get("name") or ""])
+            if hs.get("regulation"):
+                chain_rows.append(["Regulation reference", hs["regulation"]])
+        chain_rows.append(["Date identified", (r.get("date_identified") or "—")[:10]])
+        chain_rows.append(["Source", r.get("source") or "—"])
+        tbl = Table(chain_rows, colWidths=[42 * mm, 130 * mm])
+        tbl.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#6B7280")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LINEBELOW", (0, 0), (-1, -2), 0.4, colors.HexColor("#E5E7EB")),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        story.append(tbl)
+
+        # --- 2. HAZARD DESCRIPTION ---
+        story.append(Paragraph("2. Hazard description", h2))
+        story.append(Paragraph(
+            (r.get("hazard_description") or "—").replace("\n", "<br/>"), body,
+        ))
+        if r.get("description"):
+            story.append(Spacer(1, 4))
+            story.append(Paragraph("Risk description", eyebrow))
+            story.append(Paragraph(r["description"].replace("\n", "<br/>"), body))
+
+        # --- 3. INHERENT vs RESIDUAL ---
+        story.append(Paragraph("3. Risk rating", h2))
+        il = risk_level_for(r.get("inherent_score"))
+        rl = risk_level_for(r.get("residual_score"))
+        score_rows = [[
+            Paragraph("<b>Inherent (no controls)</b>", body),
+            Paragraph("<b>Residual (with controls)</b>", body),
+        ], [
+            Paragraph(
+                f"L{r.get('inherent_likelihood') or '—'} × "
+                f"C{r.get('inherent_consequence') or '—'} = "
+                f"<b>{r.get('inherent_score') or '—'}</b><br/>"
+                f"<font color='{level_colors.get(il, colors.black).hexval() if il else '#374151'}'>"
+                f"<b>{il.upper() or '—'}</b></font>", body),
+            Paragraph(
+                f"L{r.get('residual_likelihood') or '—'} × "
+                f"C{r.get('residual_consequence') or '—'} = "
+                f"<b>{r.get('residual_score') or '—'}</b><br/>"
+                f"<font color='{level_colors.get(rl, colors.black).hexval() if rl else '#374151'}'>"
+                f"<b>{rl.upper() or '—'}</b></font>", body),
+        ]]
+        tbl = Table(score_rows, colWidths=[86 * mm, 86 * mm])
+        tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F3F4F6")),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
+            ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#E5E7EB")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ]))
+        story.append(tbl)
+        if r.get("residual_acceptable") is not None:
+            accept_txt = "Yes" if r.get("residual_acceptable") in (True, "yes", "Yes") else "No"
+            story.append(Spacer(1, 4))
+            story.append(Paragraph(
+                f"<b>Residual acceptable:</b> {accept_txt}" +
+                (f" — {r['residual_conditions']}" if r.get("residual_conditions") else ""),
+                small,
+            ))
+
+        # --- 4. TYPICAL CONTROLS (from Hazard Library) ---
+        if hs.get("name"):
+            # Re-resolve the source hazard from the library to pull typical_controls
+            try:
+                from routes.hazard_library import HAZARDS  # type: ignore
+                industry = (
+                    getattr(current_user, "industry", None)
+                    or r.get("industry")
+                    or "trades"
+                )
+                typical = []
+                consequences = []
+                for h in HAZARDS.get(industry, []):
+                    if h.get("code") == hs.get("code") or h.get("name") == hs.get("name"):
+                        typical = h.get("typical_controls", []) or []
+                        consequences = h.get("typical_consequences", []) or []
+                        break
+                if typical or consequences:
+                    story.append(Paragraph("4. Typical controls (from regulation/COP)", h2))
+                    if consequences:
+                        story.append(Paragraph("<b>Typical consequences:</b>", small))
+                        for c in consequences:
+                            story.append(Paragraph(f"• {c}", body))
+                        story.append(Spacer(1, 4))
+                    if typical:
+                        story.append(Paragraph("<b>Industry-typical controls:</b>", small))
+                        for c in typical:
+                            story.append(Paragraph(f"• {c}", body))
+            except Exception:
+                pass
+
+        # --- 5. IMPLEMENTED CONTROLS ---
+        controls = r.get("controls") or []
+        story.append(Paragraph(
+            f"5. Implemented controls ({len(controls)})", h2,
+        ))
+        if not controls:
+            story.append(Paragraph("<i>No controls recorded.</i>", body))
+        else:
+            ctrl_header = ["Hierarchy", "Control", "Status", "Effectiveness", "Owner / Due"]
+            ctrl_rows = [ctrl_header]
+            for c in controls:
+                resp = c.get("responsible") or {}
+                if isinstance(resp, dict):
+                    owner = resp.get("label") or resp.get("name") or resp.get("user_id") or ""
+                else:
+                    owner = str(resp or "")
+                due = (c.get("implementation_date") or "")[:10]
+                owner_due = f"{owner}<br/><font color='#6B7280' size='7'>{due}</font>" if (owner or due) else "—"
+                ctrl_rows.append([
+                    Paragraph((c.get("hierarchy_level") or "").title(), body),
+                    Paragraph(
+                        f"<b>{c.get('name') or '—'}</b>"
+                        + (f"<br/><font size='8' color='#6B7280'>{c.get('description')}</font>" if c.get("description") else ""),
+                        body,
+                    ),
+                    Paragraph((c.get("status") or "").title(), body),
+                    Paragraph((c.get("effectiveness") or "").title(), body),
+                    Paragraph(owner_due, body),
+                ])
+            tbl = Table(ctrl_rows, colWidths=[26 * mm, 70 * mm, 22 * mm, 22 * mm, 32 * mm], repeatRows=1)
+            tbl.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0A0A0A")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#FFFFFF")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#E5E7EB")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            story.append(tbl)
+
+        # --- 6. ADDITIONAL ACTIONS ---
+        actions = r.get("additional_actions") or []
+        if actions:
+            story.append(Paragraph(
+                f"6. Additional actions / treatments ({len(actions)})", h2,
+            ))
+            act_rows = [["Action", "Assigned to", "Due", "Priority", "Status"]]
+            for a in actions:
+                at = a.get("assigned_to") or {}
+                who = at.get("label") if isinstance(at, dict) else str(at or "")
+                act_rows.append([
+                    Paragraph(a.get("description") or "—", body),
+                    Paragraph(who or "—", body),
+                    Paragraph((a.get("due_date") or "")[:10] or "—", body),
+                    Paragraph((a.get("priority") or "").title(), body),
+                    Paragraph((a.get("status") or "").title(), body),
+                ])
+            tbl = Table(act_rows, colWidths=[70 * mm, 32 * mm, 22 * mm, 22 * mm, 26 * mm], repeatRows=1)
+            tbl.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0A0A0A")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#FFFFFF")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#E5E7EB")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ]))
+            story.append(tbl)
+
+        # --- 7. LINKED RECORDS ---
+        if incidents or swms_docs:
+            story.append(PageBreak())
+            story.append(Paragraph("7. Linked records", h2))
+            if incidents:
+                story.append(Paragraph(f"<b>Incidents ({len(incidents)})</b>", small))
+                for inc in incidents:
+                    story.append(Paragraph(
+                        f"• <b>{inc.get('incident_id', '')}</b> · "
+                        f"{(inc.get('description') or '')[:140]} · "
+                        f"{(inc.get('severity') or '').title()} · "
+                        f"{(inc.get('date_occurred') or '')[:10]}", body,
+                    ))
+                story.append(Spacer(1, 4))
+            if swms_docs:
+                story.append(Paragraph(f"<b>SWMS / Documents ({len(swms_docs)})</b>", small))
+                for d in swms_docs:
+                    story.append(Paragraph(
+                        f"• <b>{d.get('document_id', '')}</b> · "
+                        f"{(d.get('title') or '')[:140]}", body,
+                    ))
+
+        # --- 8. REVIEW HISTORY ---
+        if reviews:
+            story.append(Paragraph(f"8. Review history ({len(reviews)})", h2))
+            rev_rows = [["Review ID", "Status", "Reasons", "Target completion", "Approved by"]]
+            for rv in reviews:
+                rev_rows.append([
+                    Paragraph(rv.get("review_id") or "", body),
+                    Paragraph((rv.get("status") or "").replace("_", " ").title(), body),
+                    Paragraph(", ".join((rv.get("reasons") or [])[:3]) or "—", body),
+                    Paragraph((rv.get("target_completion_date") or "")[:10] or "—", body),
+                    Paragraph((rv.get("approved_by_name") or rv.get("approved_by") or "—"), body),
+                ])
+            tbl = Table(rev_rows, colWidths=[26 * mm, 26 * mm, 60 * mm, 30 * mm, 30 * mm], repeatRows=1)
+            tbl.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0A0A0A")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#FFFFFF")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#E5E7EB")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ]))
+            story.append(tbl)
+
+        # --- 9. AUDIT LOG ---
+        log = r.get("audit_log") or []
+        if log:
+            story.append(Paragraph(f"9. Audit log ({len(log)} changes)", h2))
+            log_rows = [["Timestamp", "User", "Field", "Old → New"]]
+            for entry in log[-25:]:  # cap at last 25 to keep PDF compact
+                old = (entry.get("old") or "—")
+                new = (entry.get("new") or "—")
+                log_rows.append([
+                    Paragraph((entry.get("at") or "")[:19].replace("T", " "), small),
+                    Paragraph(entry.get("user_name") or "—", small),
+                    Paragraph(entry.get("field") or "—", small),
+                    Paragraph(f"{old[:60]} → <b>{new[:60]}</b>", small),
+                ])
+            tbl = Table(log_rows, colWidths=[34 * mm, 28 * mm, 30 * mm, 80 * mm], repeatRows=1)
+            tbl.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0A0A0A")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#FFFFFF")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#E5E7EB")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            story.append(tbl)
+
+        # --- FOOTER ---
+        story.append(Spacer(1, 12))
+        footer = (
+            f"Generated by SafeBase · {company_name} · "
+            f"{datetime.now(timezone.utc).strftime('%d %b %Y %H:%M UTC')} · "
+            f"Risk ID {r.get('risk_id')} · "
+            f"This audit pack reflects the state of the risk record at the time of generation."
+        )
+        story.append(Paragraph(footer, small))
+
+        doc.build(story)
+        pdf_bytes = buf.getvalue()
+        filename = f"audit-pack-{r.get('risk_id') or risk_id}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        )
 
     @risk_router.delete("/risks/{risk_id}")
     async def archive_risk(risk_id: str, current_user=Depends(get_current_user)):

@@ -232,6 +232,16 @@ function RegisterTab() {
                   </td>
                   <td className="px-4 py-3 max-w-xs">
                     <Link to={`/dashboard/risk-register/${r.risk_id}`} className="font-bold line-clamp-2 hover:underline" data-testid={`risk-link-title-${r.risk_id}`}>{r.title}</Link>
+                    {r.hazard_source?.name && (
+                      <div
+                        className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-warning/15 border border-warning/40 text-[9px] font-bold tracking-widest uppercase text-ink/80"
+                        title={r.hazard_source.regulation ? `${r.hazard_source.regulation}` : "Sourced from Hazard Library"}
+                        data-testid={`risk-source-badge-${r.risk_id}`}
+                      >
+                        <span aria-hidden="true">⚠</span>
+                        From Hazard Library · {r.hazard_source.name}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-xs">{r.process_name || "—"}<div className="text-muted-foreground">{r.activity_name || "—"}</div></td>
                   <td className="px-4 py-3"><span className={`${il.color} px-2 py-0.5 text-[10px] font-bold tracking-widest`}>{il.label}</span> <span className="text-xs text-muted-foreground">{r.inherent_score || ""}</span></td>

@@ -24,10 +24,34 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
-### Iteration 65 — Hazard → Risk one-click conversion (May 30, 2026)
+### Iteration 66 — Risk Audit Pack PDF generator (May 30, 2026)
 
-Closed out the P0 task carried over from iter64.
+Added a one-click audit-defensible PDF export to the Risk Detail page that captures the full risk chain in a single artefact suitable for WorkSafe inspections.
 
+**Backend**
+- `GET /api/risks/{risk_id}/audit-pack` (in `risk_module.py`): builds a multi-page A4 PDF using reportlab Platypus. Sections rendered:
+  1. **Provenance chain** — Process → Activity → Tasks → Hazard category → Sourced from Hazard Library (name) → Regulation reference → Date identified → Source
+  2. **Hazard description** (+ risk description)
+  3. **Risk rating** — Inherent (L × C = score, label) vs Residual side-by-side, plus residual_acceptable + conditions
+  4. **Typical controls from regulation/COP** — re-resolved live from `routes.hazard_library.HAZARDS` so the PDF includes the industry-typical controls and consequences that the risk was sourced from
+  5. **Implemented controls** — table with hierarchy, name, description, status, effectiveness, owner + due date
+  6. **Additional actions / treatments** — table with description, assignee, due, priority, status (only when present)
+  7. **Linked records** — Incidents + SWMS documents (only when present, on a new page)
+  8. **Review history** — all `risk_reviews` for this risk_id with status/reasons/target completion/approver
+  9. **Audit log** — last 25 field-level change entries with timestamp, user, field, old → new
+- Returns `application/pdf` with `Content-Disposition: inline; filename="audit-pack-{risk_id}.pdf"` so it streams direct to the browser.
+- Uses `_account_filter(current_user)` for tenant isolation; throws 404 if risk doesn't belong to the caller's account.
+
+**Frontend**
+- `pages/risk/RiskDetail.jsx`: added "Audit pack PDF" button (testid `download-audit-pack-btn`) to the action row, ahead of Edit/Initiate review/Archive. Uses axios `responseType: "blob"`, creates an object URL, triggers a programmatic download, then revokes the URL. Disabled + "Generating…" label while in flight, sonner toast on success/failure.
+
+**Verified**: PDF generated for RISK-006 (sourced from Hazard Library asbestos disturbance) renders 2 pages, 5119 bytes, valid `%PDF-1.4` header + `%%EOF`. pypdf text extraction shows all sections populated correctly.
+
+### Iteration 65 — Hazard → Risk one-click conversion + Source Badge + Sign-up reset + Mobile prompt (May 30, 2026)
+
+Closed out the P0 task carried over from iter64 and shipped two follow-on enhancements requested by the user.
+
+**1. Hazard → Risk one-click conversion** (carried over from iter64)
 - **`HazardLibrary.jsx`** (`/dashboard/hazards` detail modal): added new "Add to Risk Register" primary button. Closes the modal and navigates to `/dashboard/risk-register/new` with `state: { hazard: detail }`.
 - **`risk/RiskForm.jsx`**: new `useEffect` (runs when `editing` flips) reads `location.state.hazard` and prefills:
   - `title` ← hazard name
@@ -35,9 +59,21 @@ Closed out the P0 task carried over from iter64.
   - `hazard_description` ← description + regulation + typical consequences (joined)
   - `source` ← "Hazard Report"
   - `controls[]` ← one Administrative control per `typical_controls` entry (status `planned`, effectiveness `medium`)
+  - `hazard_source` ← `{ code, name, category, regulation }` (NEW — feeds the source badge below)
   - Calls `nav(".", { replace: true, state: {} })` to clear `location.state` so refresh doesn't re-prefill
   - Auto-scrolls to section 2 ("Hazard") and fires a success toast
-- Lint: 0 issues. E2E screenshot test confirmed the full flow with `trades.demo@safebase.com.au`.
+
+**2. Source badge on Risk Register list rows**
+- **`risk_module.py` `POST /risks`**: persists new field `hazard_source` (pass-through from body); PATCH already accepted it via `{**existing, **body}`.
+- **`risk/RiskRegisterPage.jsx`**: under the risk title in the list table, render a small warning-coloured pill `⚠ FROM HAZARD LIBRARY · <name>` when `r.hazard_source?.name` is present. `title` attribute shows the regulation reference (e.g. "WHS Reg 425-434; Asbestos COP") on hover for audit defensibility. `data-testid="risk-source-badge-{risk_id}"`.
+
+**3. "Start Free Trial" always lands on Step 1 (industry select)**
+- **`pages/Register.jsx`**: removed the `setStep(2)` calls in both the query-param and localStorage hydration branches. Industry hint is still pre-selected (warm-start UX) but the user must explicitly confirm by clicking Continue. Applies to every "Start Free Trial" CTA across the marketing site (top nav x2, mobile drawer, HomeMultiIndustry hero+footer, Compare, Academy/TradeCheck/TradeInduct product pages, IndustryResourcesPage, PlanRightsizer result, SeoLandingPage recommendation card).
+
+**4. Mobile sign-up prompt** (drop-in for the mobile coding agent)
+- Wrote `/app/memory/mobile_prompts/01_signup_industry_roles.md` containing the full `ROLES_BY_INDUSTRY` constant (matches web 1:1), a 3-step wizard spec, the `/api/auth/register` contract, variant→screen routing rules, and acceptance criteria. User can copy-paste this into their mobile builder.
+
+E2E verified with Playwright (login as `trades.demo@safebase.com.au` → Hazards → Asbestos → Add to Risk Register → fill inherent/residual → Save → badge visible as "FROM HAZARD LIBRARY · ASBESTOS DISTURBANCE" on the new RISK-006 row; `/register` w/ localStorage hint → Step 1 with Healthcare pre-selected; `/register?industry=transport&tier=2` → Step 1 with Transport pre-selected). All lint passes.
 
 ### Iteration 64 — 8-item ship + Phase 3 academy seed started (Feb 28, 2026)
 
