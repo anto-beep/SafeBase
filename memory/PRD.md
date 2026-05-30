@@ -24,9 +24,28 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 65 — Hazard → Risk one-click conversion (May 30, 2026)
+
+Closed out the P0 task carried over from iter64.
+
+- **`HazardLibrary.jsx`** (`/dashboard/hazards` detail modal): added new "Add to Risk Register" primary button. Closes the modal and navigates to `/dashboard/risk-register/new` with `state: { hazard: detail }`.
+- **`risk/RiskForm.jsx`**: new `useEffect` (runs when `editing` flips) reads `location.state.hazard` and prefills:
+  - `title` ← hazard name
+  - `primary_hazard` ← Hazard Library category → Risk Register HAZARD_CATEGORIES (Chemical → "Chemical / Hazardous Substance", Ergonomic/Physical → "Physical / Ergonomic", Operational → "Other", etc.)
+  - `hazard_description` ← description + regulation + typical consequences (joined)
+  - `source` ← "Hazard Report"
+  - `controls[]` ← one Administrative control per `typical_controls` entry (status `planned`, effectiveness `medium`)
+  - Calls `nav(".", { replace: true, state: {} })` to clear `location.state` so refresh doesn't re-prefill
+  - Auto-scrolls to section 2 ("Hazard") and fires a success toast
+- Lint: 0 issues. E2E screenshot test confirmed the full flow with `trades.demo@safebase.com.au`.
+
+### Iteration 64 — 8-item ship + Phase 3 academy seed started (Feb 28, 2026)
+
+
 ### Iteration 64 — 8-item ship + Phase 3 academy seed started (Feb 28, 2026)
 
 Eight cross-cutting product items shipped + Phase 3 academy content seed kicked off in background.
+**Update (iter65)**: Academy seeder reached 7/88 modules then halted on Emergent LLM key budget exceeded ($21.45 / $21.36). Background process terminated; awaiting key top-up to resume.
 
 **Ship items I–VIII** (all verified pass via testing_agent_v3_fork iter_59 — 17/17 backend, 8/8 frontend ship items, zero functional bugs):
 

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
-import { Warning, MagnifyingGlass, ShieldWarning } from "@phosphor-icons/react";
+import { Warning, MagnifyingGlass, ShieldWarning, Plus } from "@phosphor-icons/react";
 
 /**
  * Hazard Library — industry-specific catalogue of common workplace hazards.
  * Read-only browsable register that feeds Risk Register risk creation.
  */
 export default function HazardLibrary() {
+  const nav = useNavigate();
   const [data, setData] = useState({ industry: "", total: 0, categories: [], hazards: [] });
   const [q, setQ] = useState("");
   const [openCode, setOpenCode] = useState(null);
@@ -117,7 +119,15 @@ export default function HazardLibrary() {
                 </ul>
               </div>
             </div>
-            <div className="flex justify-end mt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-6 pt-4 border-t border-border">
+              <button
+                onClick={() => nav("/dashboard/risk-register/new", { state: { hazard: detail } })}
+                className="inline-flex items-center gap-2 text-xs uppercase tracking-widest bg-ink text-white px-4 py-2 hover:bg-ink/90"
+                data-testid="hazard-add-to-risk-register"
+              >
+                <Plus size={14} weight="bold" />
+                Add to Risk Register
+              </button>
               <button
                 onClick={() => setOpenCode(null)}
                 className="text-xs uppercase tracking-widest border border-ink px-4 py-2 hover:bg-ink hover:text-white"

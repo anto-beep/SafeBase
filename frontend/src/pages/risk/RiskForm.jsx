@@ -146,6 +146,52 @@ export default function RiskForm() {
     // eslint-disable-next-line
   }, [risk_id]);
 
+  // Hazard → Risk one-click prefill: when navigated from Hazard Library with state.hazard
+  useEffect(() => {
+    if (editing) return;
+    const h = location.state?.hazard;
+    if (!h) return;
+    // Map Hazard Library categories → Risk Register HAZARD_CATEGORIES
+    const CAT_MAP = {
+      Chemical: "Chemical / Hazardous Substance",
+      Ergonomic: "Physical / Ergonomic",
+      Physical: "Physical / Ergonomic",
+      Operational: "Other",
+      Biological: "Biological",
+      Environmental: "Environmental",
+      Psychosocial: "Psychosocial",
+    };
+    const mappedCat = CAT_MAP[h.category] || "Other";
+    const prefilledControls = (h.typical_controls || []).map((c) => ({
+      name: c,
+      description: "",
+      hierarchy_level: "administrative",
+      implementation_guidance: "",
+      status: "planned",
+      responsible: "",
+      implementation_date: "",
+      effectiveness: "medium",
+      evidence: "",
+    }));
+    setForm((f) => ({
+      ...f,
+      title: h.name || f.title,
+      primary_hazard: mappedCat,
+      hazard_description: [
+        h.description,
+        h.regulation ? `Regulation: ${h.regulation}` : null,
+        h.typical_consequences?.length ? `Typical consequences: ${h.typical_consequences.join("; ")}` : null,
+      ].filter(Boolean).join("\n\n"),
+      source: "Hazard Report",
+      controls: prefilledControls.length ? prefilledControls : f.controls,
+    }));
+    toast.success(`Prefilled from Hazard Library: ${h.name}`);
+    // clear location.state so a refresh doesn't re-prefill
+    nav(".", { replace: true, state: {} });
+    setTimeout(() => document.getElementById("sec2")?.scrollIntoView({ behavior: "smooth" }), 200);
+    // eslint-disable-next-line
+  }, [editing]);
+
   const filteredActivities = useMemo(() => activities.filter((a) => !form.process_id || a.parent_process_id === form.process_id), [activities, form.process_id]);
   const filteredTasks = useMemo(() => tasks.filter((t) => !form.activity_id || t.parent_activity_id === form.activity_id), [tasks, form.activity_id]);
 
