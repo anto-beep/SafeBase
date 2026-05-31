@@ -7,10 +7,12 @@ import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { CheckCircle, ArrowRight, Star, ShieldCheck } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { INDUSTRY_PRICING, INDUSTRY_LIST } from "@/data/pricing.config";
+import { usePricingTick } from "@/lib/pricingService";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function Pricing() {
+  usePricingTick(); // re-render once the backend pricing catalogue arrives
   const { isAuthenticated } = useAuthState();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialIndustry = INDUSTRY_LIST.includes(searchParams.get("industry"))

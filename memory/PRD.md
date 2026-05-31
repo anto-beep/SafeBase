@@ -24,6 +24,28 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 67 — Backend-canonical pricing catalogue + Mobile prompt #2 (May 31, 2026)
+
+Made the backend the single source of truth for plans/prices/features/ROI/addons. Any edit to `PRICING` in `/app/backend/routes/iter39_aux.py` now reaches **both web and mobile** on next page load — no redeploys.
+
+**Backend**
+- Expanded `PRICING` dict in `iter39_aux.py` to include the rich data the web previously bundled: `accent`, `annual_equivalent_monthly`, `annual_saving`, `slugs_monthly`, `slugs_annual`, `roi_headline`, `roi_body`, `value_callout`, and per-tier `features` (1..4). Also added `INDUSTRY_LIST`, `INDUSTRY_ENTRY_PRICES`, and `ADDON_PRICING` constants.
+- New endpoint **`GET /api/pricing/catalogue`** (public, no auth). Returns `{version, currency, tax_note, trial_days, industries, entry_prices, addons, risk_anchors, plans}`. The existing `GET /api/plan-rightsizer/recommend?industry=&team=&locations=` continues to be the recommendation oracle.
+
+**Web — live overlay loader**
+- New `lib/pricingService.js`: `loadPricingCatalogue()` fetches the catalogue and **mutates the bundled `INDUSTRY_PRICING` / `INDUSTRY_LIST` / `INDUSTRY_ENTRY_PRICES` / `ADDON_PRICING` objects in place**, then dispatches a `pricing:updated` window event. `usePricingTick()` hook subscribes pages to that event for re-render.
+- `App.js`: calls `loadPricingCatalogue()` once at module load so the overlay starts the moment the SPA mounts.
+- `Pricing.jsx` + `PlanRightsizer.jsx`: each call `usePricingTick()` to re-render with backend values once they arrive (bundled bootstrap covers first paint).
+- The bundled `pricing.config.js` is now a bootstrap-only fallback; the backend wins on every load.
+
+**Mobile prompt**
+- `/app/memory/mobile_prompts/02_pricing_and_rightsizer.md`: drop-in prompt for the mobile coding agent. Specifies (a) call `GET /api/pricing/catalogue` at cold start, cache 24h in AsyncStorage with stale-while-revalidate; (b) build a Plans screen with industry switcher, monthly/annual toggle, 4 plan cards using `plan_names/user_limits/monthly/annual/annual_equivalent_monthly/annual_saving/features`, ROI band, value callout, addon chips; (c) build a 3-step Plan Right-sizer wizard that calls `GET /api/plan-rightsizer/recommend?industry=&team=&locations=` for the recommendation — never re-implement the tier logic locally; (d) acceptance criteria locking in tier outputs (`trades/8u/2loc → Growing Business idx 2`, `hospitality/4u/1loc → Small Venue idx 0`, etc.); (e) explicit non-bundling rule.
+
+**Verified**
+- `curl /api/pricing/catalogue` returns iter67 payload with all 5 industries, accents, feature lists (9 trades features in tier 1), addons, risk anchors.
+- Playwright test confirms the web requests `/api/pricing/catalogue` on first load and the Trades pricing page renders Solo Tradie / Small Team / Growing Business / Enterprise from backend values.
+- `/api/plan-rightsizer/recommend?industry=trades&team=8&locations=2` → tier 2 "Growing Business" A$24,990/yr. `/api/plan-rightsizer/recommend?industry=hospitality&team=4&locations=1` → tier 1 "Small Group" A$29,990/yr.
+
 ### Iteration 66 — Risk Audit Pack PDF generator (May 30, 2026)
 
 Added a one-click audit-defensible PDF export to the Risk Detail page that captures the full risk chain in a single artefact suitable for WorkSafe inspections.

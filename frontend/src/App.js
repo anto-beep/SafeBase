@@ -6,6 +6,14 @@ import InternalAdminApp from "@/internal-admin/InternalAdminApp";
 import AccessibilityWidget from "@/components/AccessibilityWidget";
 import ChatWidget from "@/components/ChatWidget";
 import ScrollToTop from "@/components/ScrollToTop";
+import { loadPricingCatalogue } from "@/lib/pricingService";
+
+// Kick off the live pricing catalogue fetch at app boot so the bundled
+// fallback gets overlaid with backend values before users hit /pricing or
+// the Plan Right-sizer.
+if (typeof window !== "undefined") {
+  loadPricingCatalogue();
+}
 import Landing from "@/pages/HomeMultiIndustry";
 import IndustriesOverview from "@/pages/industries/IndustriesOverview";
 import IndustryTrades from "@/pages/industries/IndustryTrades";

@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MarketingNav, MarketingFooter } from "@/components/marketing/Layout";
 import { INDUSTRY_PRICING } from "@/data/pricing.config";
+import { usePricingTick } from "@/lib/pricingService";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Compass, CheckCircle } from "@phosphor-icons/react";
 
@@ -104,6 +105,7 @@ function recommendTier(industrySlug, team, locations) {
 }
 
 export default function PlanRightsizer() {
+  usePricingTick(); // re-render once the backend pricing catalogue arrives
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [industry, setIndustry] = useState("");
