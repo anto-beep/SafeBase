@@ -74,7 +74,7 @@ export default function IncidentRegister() {
         <div>
           <div className="label-eyebrow">/ Safety</div>
           <h1 className="font-display text-4xl font-black tracking-tighter mt-1">Incidents</h1>
-          <p className="text-muted-foreground mt-2 max-w-xl">Five-stage workflow: Reported → Triage → Investigation → Actions → Closed. AI-assisted notifiability detection, root cause analysis, and lessons learned.</p>
+          <p className="text-muted-foreground mt-2 max-w-xl">Five-stage workflow: Lodgement → Triage → Investigation → Actions → Closed. AI-assisted notifiability detection, root cause analysis, and lessons learned.</p>
         </div>
         <Link to="/dashboard/incidents/new">
           <Button className="btn-sharp bg-red-700 text-white hover:bg-red-800 h-12" data-testid="report-incident-btn">

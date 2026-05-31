@@ -21,6 +21,7 @@ const NAV_GROUPS = [
   ]},
   { label: "Billing", items: [
     { to: "/internal-admin/subscriptions", icon: Receipt, label: "Subscriptions", testid: "admin-nav-subscriptions" },
+    { to: "/internal-admin/plans", icon: Receipt, label: "View Plans", testid: "admin-nav-plans" },
   ]},
   { label: "Platform", items: [
     { to: "/internal-admin/feature-flags", icon: Flag, label: "Feature Flags", testid: "admin-nav-flags" },

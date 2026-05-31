@@ -2514,6 +2514,13 @@ register_iter39_routes(
     account_id_for_fn=account_id_for, logger=logger,
 )
 
+# ----------- ITER68: Site / Location Register -----------
+from routes.sites import register_sites_routes  # noqa: E402
+register_sites_routes(
+    api_router, db=db, get_current_user_dep=get_current_user,
+    account_id_for_fn=account_id_for, logger=logger,
+)
+
 # ----------- ITER40: credential-driven scheduling block -----------
 from routes.scheduling import register_scheduling_routes  # noqa: E402
 register_scheduling_routes(

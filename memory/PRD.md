@@ -24,6 +24,47 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 68 — Incident workflow polish, Site Register, Admin View Plans, Mobile fix prompt (May 31, 2026)
+
+Seven user-requested items shipped in a single batch.
+
+**1. Risk Register — default filter "All"**
+- `pages/risk/RiskRegisterPage.jsx`: changed `useState("active")` → `useState("all")` so the register now shows every entry on load.
+
+**2. Stage rename: "Reported" → "Lodgement"**
+- `pages/incident/constants.js`: `label` swapped (key `"reported"` left untouched for DB compat with 100+ historical incidents).
+- `pages/incident/IncidentRegister.jsx`: blurb updated.
+- `pages/incident/SubmitIncident.jsx`: success toast updated ("Lodged. Reference: ...").
+
+**3. Reopen submitted stage**
+- `incident_workflow.py`: new `POST /api/incident-workflow/{incident_id}/stages/{stage}/reopen`. Resets `stage` to `{stage}`, trims `stages_done` to entries before it, sets `reopened: True`. Permission: incident creator OR `owner / safety_lead / supervisor` variant. Writes an audit log entry with the user-supplied reason.
+- `pages/incident/IncidentDetail.jsx`: new `ReopenStageBtn` component renders on every completed-stage panel (Triage/Investigation/Actions). Prompts for a reason, calls the new endpoint, refreshes the doc.
+
+**4. "Where and when" refactor + Site picker**
+- `pages/incident/SubmitIncident.jsx`: replaced the 7-option `location_type` Select with 3 large tap-tiles: **Site / Map / Work from home** (icons: Buildings / MapPin / House). Conditional rendering by tile:
+  - Site → `Select` of registered sites (live from `/api/sites`) + "Manage sites →" link + free-text fallback.
+  - Map → `<AddressAutocomplete>` Google-Places input → persists `map_address / map_lat / map_lng`.
+  - WFH → static block referencing the worker's home + a "specific location" input.
+- Review summary updated to reflect the new shape.
+
+**5. Site / Location Register**
+- Backend `routes/sites.py`: new `sites` Mongo collection. CRUD endpoints `GET/POST/PATCH/DELETE /api/sites` with tenant isolation (`account_id`). Site shape: `{site_id, name, address, lat, lng, place_id, geofence_radius_m, site_contact_name/phone/email, notes, status}`.
+- Frontend `pages/Sites.jsx`: new page mounted at `/dashboard/sites`. Top-of-page Add Site button → inline form with `AddressAutocomplete`, geofence radius, site contact, notes. Table of existing sites with edit + archive actions. Sidebar nav entry added (icon: Buildings).
+
+**6. Internal-admin "View Plans"**
+- `internal-admin/pages/AdminPlans.jsx`: new route `/internal-admin/plans` ("BILLING → VIEW PLANS"). Pulls live from `GET /api/pricing/catalogue` and renders the same per-industry pricing UI as the public Pricing page (4 cards, monthly/annual toggle, MOST POPULAR pill on tier 3, ROI block, value callout, risk anchor, add-ons strip, plan slugs). Read-only — super-admins see exactly what customers see across all 5 industries without leaving the admin app.
+- `internal-admin/AdminLayout.jsx`: nav updated under Billing.
+
+**7. Mobile fix prompt — missing first tier**
+- `/app/memory/mobile_prompts/02b_pricing_missing_first_tier_fix.md`: diagnostic + fix prompt for the mobile coding agent explaining the 0-indexed `plan_names/user_limits/monthly/annual` arrays vs the 1-indexed `features` object keys, plus copy-paste pseudocode and acceptance criteria for all 5 industries.
+
+**Verified**
+- `curl POST /api/sites` creates "Botany Bay Depot" with lat/lng + geofence_radius_m 150. `GET /api/sites` returns it.
+- `curl POST /api/incident-workflow/{id}/stages/triage/reopen` on a closed incident moves stage to `triage`, trims `stages_done` to `["reported"]`, sets `reopened: True`.
+- Playwright: Sites page renders, Risk Register shows 6 rows (default "All"), Where & When step shows Site/Map/WFH tiles (each clickable to swap inner fields), Internal-admin View Plans shows 4 cards for both Trades (Solo Tradie → Enterprise) and Healthcare (Solo Practice → Enterprise).
+
+**Pricing "Manage subscription" link** — user confirmed (a): keep current `/dashboard/billing` behaviour (customer-side). No change needed.
+
 ### Iteration 67 — Backend-canonical pricing catalogue + Mobile prompt #2 (May 31, 2026)
 
 Made the backend the single source of truth for plans/prices/features/ROI/addons. Any edit to `PRICING` in `/app/backend/routes/iter39_aux.py` now reaches **both web and mobile** on next page load — no redeploys.

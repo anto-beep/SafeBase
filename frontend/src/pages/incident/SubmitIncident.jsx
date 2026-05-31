@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkle, ArrowRight, ArrowLeft, CheckCircle, User, UsersThree, Buildings, Warning } from "@phosphor-icons/react";
+import { Sparkle, ArrowRight, ArrowLeft, CheckCircle, User, UsersThree, Buildings, Warning, MapPin, House } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import BodyMap from "./BodyMap";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { INCIDENT_CATEGORIES, INJURY_NATURES, TREATMENT_OPTIONS } from "./constants";
 
 const INVOLVED = [
@@ -25,7 +26,7 @@ export default function SubmitIncident() {
   const [step, setStep] = useState(1);
   const [aiBusy, setAiBusy] = useState(false);
   const [workers, setWorkers] = useState([]);
-  const [sites, setSites] = useState(["Main Site"]);
+  const [sites, setSites] = useState([]);
   const [sub, setSub] = useState({
     involved_type: "", // me / other / property / near_miss
     involved_people: [],
@@ -43,8 +44,12 @@ export default function SubmitIncident() {
     first_aider: "",
     treatment_notes: "",
     site: "",
+    site_id: "",
     site_location: "",
-    location_type: "on_site",
+    location_type: "site", // site / map / wfh
+    map_address: "",
+    map_lat: null,
+    map_lng: null,
     state: "NSW",
     date: new Date().toISOString().slice(0, 10),
     time: new Date().toTimeString().slice(0, 5),
@@ -57,6 +62,7 @@ export default function SubmitIncident() {
 
   useEffect(() => {
     api.get("/workers").then((r) => setWorkers(r.data || []));
+    api.get("/sites").then((r) => setSites(r.data || [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -91,7 +97,7 @@ export default function SubmitIncident() {
         submission: sub,
       };
       const r = await api.post("/incident-workflow", payload);
-      toast.success(`Reported. Reference: ${r.data.reference}`);
+      toast.success(`Lodged. Reference: ${r.data.reference}`);
 
       // AUTO-TRIAGE: run the incident against SIRS / NDIS / NHVR matrices.
       // If any pipeline fires, create a draft regulator case so the 24h clock starts
@@ -308,30 +314,111 @@ export default function SubmitIncident() {
       {step === 5 && (
         <section className="space-y-4">
           <h2 className="font-display text-2xl font-black">Where and when</h2>
+
+          {/* Location type — 3 large tiles: Site / Map / Work from home */}
+          <div>
+            <Label className="label-eyebrow">Where did it happen?</Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+              {[
+                { v: "site", label: "Site", desc: "A registered site / location from your Site Register.", icon: Buildings },
+                { v: "map",  label: "Map",  desc: "Anywhere else — pick an address (Google Places).", icon: MapPin },
+                { v: "wfh",  label: "Work from home", desc: "The worker's home workplace.", icon: House },
+              ].map((opt) => {
+                const Icon = opt.icon;
+                const active = sub.location_type === opt.v;
+                return (
+                  <button
+                    type="button"
+                    key={opt.v}
+                    onClick={() => patch("location_type", opt.v)}
+                    className={`text-left border-2 p-3 flex gap-3 items-start ${active ? "border-ink bg-ink text-white" : "border-border hover:border-ink"}`}
+                    data-testid={`f-location-type-${opt.v}`}
+                  >
+                    <Icon size={22} weight="bold" />
+                    <div>
+                      <div className="font-bold tracking-widest text-sm">{opt.label.toUpperCase()}</div>
+                      <div className="text-xs opacity-80 mt-1">{opt.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Conditional fields based on location_type */}
+          {sub.location_type === "site" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="label-eyebrow">Site</Label>
+                <Select
+                  value={sub.site_id || "__none__"}
+                  onValueChange={(v) => {
+                    if (v === "__none__") { patch("site_id", ""); patch("site", ""); return; }
+                    const s = sites.find((x) => x.site_id === v);
+                    patch("site_id", v); patch("site", s?.name || "");
+                  }}
+                >
+                  <SelectTrigger className="mt-1 h-11 rounded-none border-ink" data-testid="f-site-id"><SelectValue placeholder="Pick a site from your register" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— None / not in register —</SelectItem>
+                    {sites.map((s) => <SelectItem key={s.site_id} value={s.site_id}>{s.name}{s.address ? ` · ${s.address.slice(0, 40)}` : ""}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <a href="/dashboard/sites" target="_blank" rel="noreferrer" className="text-[11px] underline text-muted-foreground mt-1 inline-block">Manage sites →</a>
+              </div>
+              <div>
+                <Label className="label-eyebrow">Site free-text (if not in register)</Label>
+                <Input
+                  value={sub.site}
+                  onChange={(e) => patch("site", e.target.value)}
+                  placeholder="Site name or description"
+                  className="mt-1 h-11 rounded-none border-ink"
+                  data-testid="f-site"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label className="label-eyebrow">Specific location on site</Label>
+                <Input value={sub.site_location} onChange={(e) => patch("site_location", e.target.value)} placeholder="e.g. Ground floor bathroom" className="mt-1 h-11 rounded-none border-ink" />
+              </div>
+            </div>
+          )}
+
+          {sub.location_type === "map" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="md:col-span-2">
+                <Label className="label-eyebrow">Address (Google search)</Label>
+                <AddressAutocomplete
+                  value={sub.map_address}
+                  onChange={(v) => patch("map_address", v)}
+                  onSelect={(place) => {
+                    patch("map_address", place.formatted_address || place.name || "");
+                    const loc = place.geometry?.location;
+                    patch("map_lat", loc?.lat ? loc.lat() : null);
+                    patch("map_lng", loc?.lng ? loc.lng() : null);
+                  }}
+                  placeholder="Start typing an address…"
+                  data-testid="f-map-address"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label className="label-eyebrow">Specific location detail (optional)</Label>
+                <Input value={sub.site_location} onChange={(e) => patch("site_location", e.target.value)} placeholder="e.g. Footpath outside main entrance" className="mt-1 h-11 rounded-none border-ink" />
+              </div>
+            </div>
+          )}
+
+          {sub.location_type === "wfh" && (
+            <div className="bg-muted border border-border p-4 text-sm space-y-2">
+              <div className="font-bold">Work from home</div>
+              <p className="text-muted-foreground">The incident occurred at the worker's home workplace. The worker's address on file will be used as the location reference.</p>
+              <div>
+                <Label className="label-eyebrow">Specific location (e.g. home office, garage)</Label>
+                <Input value={sub.site_location} onChange={(e) => patch("site_location", e.target.value)} placeholder="e.g. Home office desk" className="mt-1 h-11 rounded-none border-ink" />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label className="label-eyebrow">Site</Label>
-              <Input value={sub.site} onChange={(e) => patch("site", e.target.value)} placeholder="Site name or description" className="mt-1 h-11 rounded-none border-ink" data-testid="f-site" />
-            </div>
-            <div>
-              <Label className="label-eyebrow">Specific location on site</Label>
-              <Input value={sub.site_location} onChange={(e) => patch("site_location", e.target.value)} placeholder="e.g. Ground floor bathroom" className="mt-1 h-11 rounded-none border-ink" />
-            </div>
-            <div>
-              <Label className="label-eyebrow">Location type</Label>
-              <Select value={sub.location_type} onValueChange={(v) => patch("location_type", v)}>
-                <SelectTrigger className="mt-1 h-11 rounded-none border-ink"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="on_site">On site — at work location</SelectItem>
-                  <SelectItem value="travel_vehicle">Travelling — work vehicle</SelectItem>
-                  <SelectItem value="travel_foot">Travelling — on foot</SelectItem>
-                  <SelectItem value="client">Client premises</SelectItem>
-                  <SelectItem value="public">Public area / road</SelectItem>
-                  <SelectItem value="offsite">Off site — other</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div>
               <Label className="label-eyebrow">State / Territory</Label>
               <Select value={sub.state} onValueChange={(v) => patch("state", v)}>
@@ -359,7 +446,7 @@ export default function SubmitIncident() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="md:col-span-2">
               <Label className="label-eyebrow">Shift duration when it happened</Label>
               <Select value={sub.shift_duration || "__none__"} onValueChange={(v) => patch("shift_duration", v === "__none__" ? "" : v)}>
                 <SelectTrigger className="mt-1 h-11 rounded-none border-ink"><SelectValue placeholder="Optional" /></SelectTrigger>
@@ -413,7 +500,7 @@ export default function SubmitIncident() {
             <div><strong>Category:</strong> {sub.category || "—"}</div>
             <div><strong>Description:</strong> {(sub.description || "").slice(0, 120)}{sub.description.length > 120 ? "…" : ""}</div>
             <div><strong>When:</strong> {sub.date} {sub.time}</div>
-            <div><strong>Where:</strong> {sub.site || "—"} ({sub.state})</div>
+            <div><strong>Where:</strong> {sub.location_type === "map" ? (sub.map_address || "Map location") : sub.location_type === "wfh" ? "Work from home" : (sub.site || "—")} ({sub.state})</div>
           </div>
         </section>
       )}

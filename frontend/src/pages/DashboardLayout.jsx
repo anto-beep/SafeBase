@@ -4,7 +4,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
-import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books, Plug, Shield, ListChecks, Tray as Inbox } from "@phosphor-icons/react";
+import { HardHat, House, FileText, Warning, Users, IdentificationBadge, SignOut, Bell, Gear, ChatCircleText, Truck, Flask, ClipboardText, FirstAidKit, ChartLineUp, UserPlus, Calendar, Handshake, FlowArrow, QrCode, ShieldCheck, GraduationCap, Briefcase, DeviceMobile, Lightning, MagicWand, ShieldWarning, Books, Plug, Shield, ListChecks, Buildings, Tray as Inbox } from "@phosphor-icons/react";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 import IndustrySwitcher from "@/components/IndustrySwitcher";
 
@@ -23,6 +23,7 @@ const NAV = [
   { to: "/dashboard/incidents", label: "Incidents", icon: Warning, feature: "incident_management" },
   { to: "/dashboard/risk-register", label: "Risk Register", icon: ShieldWarning, feature: "risk_register" },
   { to: "/dashboard/hazards", label: "Hazard Library", icon: Warning, feature: "risk_register" },
+  { to: "/dashboard/sites", label: "Sites", icon: Buildings, feature: "incident_management" },
   { to: "/dashboard/risk-register?tab=reviews", label: "Risk Reviews", icon: ClipboardText, feature: "risk_register" },
   { to: "/dashboard/capa", label: "CAPA Register", icon: ListChecks, feature: "risk_register" },
   { to: "/dashboard/workers", labelKey: "workers", label: "Workers", icon: Users, feature: "workers" },

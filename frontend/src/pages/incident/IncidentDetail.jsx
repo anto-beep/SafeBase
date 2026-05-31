@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Sparkle, CheckCircle, Warning, FileText, Phone, ArrowRight, Link as LinkIcon,
-  ChatsCircle, Plus, Trash, ShieldWarning, X,
+  ChatsCircle, Plus, Trash, ShieldWarning, X, ArrowCounterClockwise,
 } from "@phosphor-icons/react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -24,6 +24,38 @@ import {
   CONTRIBUTING_FACTORS, SHORT_TERM_ACTION_TYPES, LONG_TERM_ACTION_TYPES,
   CLOSE_CHECKLIST,
 } from "./constants";
+
+function ReopenStageBtn({ incident_id, stage, onReopened }) {
+  const [busy, setBusy] = useState(false);
+  const reopen = async () => {
+    const reason = window.prompt(`Reopen the ${stage} stage for editing?\n\nReason (will be logged):`);
+    if (!reason || !reason.trim()) return;
+    setBusy(true);
+    try {
+      const r = await api.post(`/incident-workflow/${incident_id}/stages/${stage}/reopen`, { reason: reason.trim() });
+      toast.success(`${stage[0].toUpperCase()}${stage.slice(1)} reopened`);
+      onReopened && onReopened(r.data);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not reopen stage");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      onClick={reopen}
+      disabled={busy}
+      className="btn-sharp border-ink h-8 text-[10px] tracking-widest"
+      data-testid={`reopen-stage-${stage}-btn`}
+    >
+      <ArrowCounterClockwise className="mr-1" weight="bold" size={12} />
+      {busy ? "Reopening…" : "Reopen for editing"}
+    </Button>
+  );
+}
 
 function StageBadge({ stage }) {
   const colors = {
@@ -991,7 +1023,10 @@ export default function IncidentDetail() {
           {doc.stage === "reported" && <TriageForm doc={doc} regulators={regulators} onSaved={setDoc} />}
           {doc.stage !== "reported" && (
             <div className="bg-background border border-border p-5 text-sm space-y-2">
-              <div className="label-eyebrow">Triage (completed)</div>
+              <div className="flex items-center justify-between">
+                <div className="label-eyebrow">Triage (completed)</div>
+                <ReopenStageBtn incident_id={doc.incident_id} stage="triage" onReopened={setDoc} />
+              </div>
               <pre className="text-xs whitespace-pre-wrap font-mono bg-muted p-3">{JSON.stringify(doc.triage, null, 2)}</pre>
             </div>
           )}
@@ -1002,7 +1037,10 @@ export default function IncidentDetail() {
           {doc.stage === "reported" || doc.stage === "triage" ? <div className="p-5 text-sm text-muted-foreground">Complete triage first.</div> : null}
           {["actions", "closed"].includes(doc.stage) && (
             <div className="bg-background border border-border p-5 text-sm">
-              <div className="label-eyebrow">Investigation (completed)</div>
+              <div className="flex items-center justify-between">
+                <div className="label-eyebrow">Investigation (completed)</div>
+                <ReopenStageBtn incident_id={doc.incident_id} stage="investigation" onReopened={setDoc} />
+              </div>
               <pre className="text-xs whitespace-pre-wrap font-mono bg-muted p-3 mt-2">{JSON.stringify(doc.investigation, null, 2)}</pre>
             </div>
           )}
@@ -1013,6 +1051,10 @@ export default function IncidentDetail() {
           {["reported", "triage", "investigation"].includes(doc.stage) && <div className="p-5 text-sm text-muted-foreground">Complete investigation first.</div>}
           {doc.stage === "closed" && (
             <div className="bg-background border border-border p-5 text-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="label-eyebrow">Actions (completed)</div>
+                <ReopenStageBtn incident_id={doc.incident_id} stage="actions" onReopened={setDoc} />
+              </div>
               <pre className="text-xs whitespace-pre-wrap font-mono bg-muted p-3">{JSON.stringify(doc.actions, null, 2)}</pre>
             </div>
           )}

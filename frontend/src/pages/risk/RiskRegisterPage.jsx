@@ -69,7 +69,7 @@ function RegisterTab() {
   const [intel, setIntel] = useState(null);
   const [q, setQ] = useState("");
   const [level, setLevel] = useState("__all__");
-  const [status, setStatus] = useState("active");
+  const [status, setStatus] = useState("all");
   const [processFilter, setProcessFilter] = useState("__all__");
   const [showHeat, setShowHeat] = useState(false);
   const [heatView, setHeatView] = useState("residual");

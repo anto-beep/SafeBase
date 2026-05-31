@@ -504,6 +504,48 @@ def register_incident_workflow(app_db, get_current_user):
         _compute_lifecycle(doc)
         return doc
 
+    @inc_router.post("/incident-workflow/{incident_id}/stages/{stage}/reopen")
+    async def reopen_stage(incident_id: str, stage: str, body: dict | None = None,
+                            current_user=Depends(get_current_user)):
+        """
+        Reopen a specific stage of an incident for re-editing. The incident's
+        current stage is reset to {stage} and any stages after {stage} are
+        removed from `stages_done` so the existing stage forms render
+        normally. Permission: the original incident creator, or any user with
+        owner / safety_lead / supervisor variant. Action is audit-logged.
+        """
+        if stage not in STAGES:
+            raise HTTPException(400, f"unknown stage; must be one of {STAGES}")
+        existing = await app_db.incident_workflow.find_one(
+            {"incident_id": incident_id, "user_id": current_user.user_id}
+        )
+        if not existing:
+            raise HTTPException(404, "not found")
+        # Permission check — creator OR elevated variant
+        variant = (getattr(current_user, "role_variant", "owner") or "owner").lower()
+        is_creator = existing.get("created_by") == current_user.user_id
+        if not is_creator and variant not in {"owner", "safety_lead", "supervisor"}:
+            raise HTTPException(403, "Only the creator or an owner/safety_lead/supervisor can reopen a stage")
+        idx = STAGES.index(stage)
+        kept_done = [s for s in (existing.get("stages_done") or []) if STAGES.index(s) < idx]
+        reason = (body or {}).get("reason") or "Stage reopened for editing"
+        audit = existing.get("audit_log") or []
+        audit.append(_audit_entry(current_user, f"reopen_stage:{stage}", existing.get("stage"), reason))
+        await app_db.incident_workflow.update_one(
+            {"incident_id": incident_id, "user_id": current_user.user_id},
+            {"$set": {
+                "stage": stage,
+                "stages_done": kept_done,
+                "reopened": True,
+                "audit_log": audit,
+                "updated_at": _now_iso(),
+            }},
+        )
+        merged = await app_db.incident_workflow.find_one(
+            {"incident_id": incident_id, "user_id": current_user.user_id}, {"_id": 0}
+        )
+        return _compute_lifecycle(merged or {})
+
     @inc_router.post("/incident-workflow/{incident_id}/reopen")
     async def reopen_incident(incident_id: str, body: dict, current_user=Depends(get_current_user)):
         reason = (body or {}).get("reason")

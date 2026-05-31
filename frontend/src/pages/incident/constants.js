@@ -1,6 +1,10 @@
 // Shared constants for the 5-stage Incident Workflow module.
+// Stage `key` is the persisted DB value (kept stable across renames to avoid
+// breaking existing incidents). `label` is the user-facing string and can be
+// renamed freely. Iter68: "Reported" was renamed to "Lodgement" — the key
+// stays "reported" so all historical data continues to work.
 export const STAGES = [
-  { key: "reported", label: "Reported", sla_hours: 24 },
+  { key: "reported", label: "Lodgement", sla_hours: 24 },
   { key: "triage", label: "Triage", sla_hours: 48 },
   { key: "investigation", label: "Investigation", sla_days: 7 },
   { key: "actions", label: "Actions", sla_days: 30 },
