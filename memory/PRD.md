@@ -24,6 +24,32 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 69 — Analytics & Reporting Phase 1 (June 1, 2026)
+
+Shipped Phase 1 of the new Analytics & Reporting dashboard at `/dashboard/reports`. The old report-generator page lives on at `/dashboard/report-register` (renamed `ReportRegister.jsx`) and is linked from the new header.
+
+**Backend** — new `routes/analytics.py` with `GET /api/analytics/kpi-strip`:
+- Accepts `period` (`fytd|overall|cal_ytd|last_90d|custom`), `from`/`to` (custom only), `site_id`, `compare_to` (`off|mom|qoq|yoy`).
+- Computes AU Financial-Year start (Jul 1 / previous Jul 1 if `today < Jul 1`).
+- Returns 6 cards: Compliance Score, Total Incidents (with 30-day sparkline), Open Actions / CAPA (with sparkline), Credentials Expiring ≤30d (with sparkline), Training Completion %, and an **industry-specific 6th card**:
+  - trades → Active SWMS Coverage
+  - hospitality → FSS Shift Coverage
+  - transport → Fleet Availability
+  - healthcare → AHPRA Currency
+  - retail → Lone-Worker Check-in Compliance
+- Each card includes `value`, `unit`, `delta_pct` (against the previous period when comparison active), `trend` (`up_good/down_good/up_bad/down_bad/flat`), `tone` (`good/warn/bad`), and `sparkline` (30 daily counts where applicable).
+- Tenant-isolated via `account_id_for_fn` with legacy `user_id` fallback for older collections.
+
+**Frontend** — fresh `pages/Reports.jsx` (the old Reports.jsx renamed to ReportRegister.jsx, registered at `/dashboard/report-register`):
+- Header + "Report Register →" deep-link button.
+- Tabs (FYTD Dashboard / Overall Dashboard) — switching the tab auto-resets the period selector.
+- Toolbar (sticky-ish): segmented Period control (FYTD / Overall / Calendar YTD / Last 90 days / Custom + from-to date inputs when Custom), Compare dropdown (Off/MoM/QoQ/YoY), Site filter (live from `/api/sites` + "All Sites" default), "Export Full Report" button (Phase 1 stub → `window.print()`; Phase 5 will replace with server-side reportlab).
+- Period summary line under the toolbar showing the active range, comparison range (when on), industry, and selected site.
+- 6-card KPI strip rendered with `Recharts` `LineChart` sparkline + `TrendArrow` (ArrowUp / ArrowDown / ArrowRight) coloured by improvement direction. Empty-state "no data yet" italics on cards with no sparkline data.
+- "More charts coming" placeholder for Phase 2.
+
+**Verified end-to-end** — curl `/api/analytics/kpi-strip?period=fytd` returns the correct FYTD window (2025-07-01 → 2026-06-01) with all 6 cards including `swms_coverage` (trades industry). `compare_to=yoy` returns previous window (2024-07-01 → 2025-06-01). Playwright confirms all 4 tab/period combinations + YoY toggle render correctly with the live data (compliance 47/100 red, credentials_expiring 2 amber, total_incidents sparkline shows the 6 May incidents).
+
 ### Iteration 68 — Incident workflow polish, Site Register, Admin View Plans, Mobile fix prompt (May 31, 2026)
 
 Seven user-requested items shipped in a single batch.

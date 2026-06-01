@@ -45,6 +45,7 @@ import Inspections from "@/pages/safety/Inspections";
 import RiskRegister from "@/pages/safety/RiskRegister";
 import FirstAidPpe from "@/pages/safety/FirstAidPpe";
 import Reports from "@/pages/Reports";
+import ReportRegister from "@/pages/ReportRegister";
 import NewEmployee from "@/pages/workflows/NewEmployee";
 import IncidentResolution from "@/pages/workflows/IncidentResolution";  // (legacy — link removed from nav)
 import SwmsJobStart from "@/pages/workflows/SwmsJobStart";
@@ -203,6 +204,7 @@ function AppRouter() {
         <Route path="risks" element={<RiskRegister />} />
         <Route path="first-aid-ppe" element={<FirstAidPpe />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="report-register" element={<ReportRegister />} />
         <Route path="workflows/new-employee" element={<NewEmployee />} />
         <Route path="workflows/incident-resolution" element={<IncidentResolution />} />
         <Route path="workflows/swms-job-start" element={<SwmsJobStart />} />
