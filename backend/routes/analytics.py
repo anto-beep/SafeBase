@@ -439,3 +439,490 @@ def register_analytics_routes(api_router: APIRouter, *, db, get_current_user_dep
             "site_id": site_id or "all",
             "cards": cards,
         }
+
+    # ============================================================
+    # PHASE 2 — Incident analytics (12 chart types) + drill-down
+    # ============================================================
+
+    async def _all_incidents(current_user, site_id, start, end):
+        """Tenant-isolated incident fetch with legacy fallback. Used by
+        every chart computer below so logic stays consistent."""
+        flt = {"account_id": account_id_for_fn(current_user)}
+        if site_id and site_id != "all":
+            flt["site_id"] = site_id
+        rows = await db.incidents.find(flt, {"_id": 0}).to_list(5000)
+        if not rows:
+            rows = await db.incidents.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(5000)
+
+        def _in_period(r):
+            if start is None:
+                return True
+            key = r.get("date_occurred") or r.get("occurred_at") or r.get("created_at") or ""
+            try:
+                d = datetime.fromisoformat(key.replace("Z", "+00:00")).date()
+            except Exception:
+                return False
+            return (start is None or d >= start) and (d <= end)
+
+        return [r for r in rows if _in_period(r)]
+
+    def _month_key(iso: str) -> str:
+        try:
+            return datetime.fromisoformat(iso.replace("Z", "+00:00")).date().strftime("%Y-%m")
+        except Exception:
+            return "unknown"
+
+    def _week_key(iso: str) -> str:
+        try:
+            d = datetime.fromisoformat(iso.replace("Z", "+00:00")).date()
+            iso_year, iso_week, _ = d.isocalendar()
+            return f"{iso_year}-W{iso_week:02d}"
+        except Exception:
+            return "unknown"
+
+    def _bucket_keys(start: Optional[date], end: date, granularity: str) -> list[str]:
+        """Return ordered list of week or month keys spanning [start..end]."""
+        if start is None:
+            start = end - timedelta(days=365)
+        keys: list[str] = []
+        if granularity == "month":
+            cur = date(start.year, start.month, 1)
+            while cur <= end:
+                keys.append(cur.strftime("%Y-%m"))
+                cur = date(cur.year + (1 if cur.month == 12 else 0),
+                           1 if cur.month == 12 else cur.month + 1, 1)
+        else:  # week
+            cur = start - timedelta(days=start.weekday())  # Monday
+            while cur <= end:
+                iso_year, iso_week, _ = cur.isocalendar()
+                keys.append(f"{iso_year}-W{iso_week:02d}")
+                cur = cur + timedelta(days=7)
+        return keys
+
+    # ---- chart computers ----
+
+    def _volume_over_time(incidents, start, end):
+        # Auto-granularity: if range > 120 days use months, else weeks
+        rng = (end - (start or (end - timedelta(days=120)))).days
+        gran = "month" if rng > 120 else "week"
+        keys = _bucket_keys(start, end, gran)
+        bucket = {k: {"bucket": k, "incidents": 0, "near_miss": 0} for k in keys}
+        for r in incidents:
+            k = _month_key(r.get("created_at") or "") if gran == "month" else _week_key(r.get("created_at") or "")
+            if k in bucket:
+                if (r.get("incident_type") or "") == "near_miss":
+                    bucket[k]["near_miss"] += 1
+                else:
+                    bucket[k]["incidents"] += 1
+        return {"granularity": gran, "series": list(bucket.values())}
+
+    def _by_type(incidents):
+        counts: dict[str, int] = {}
+        for r in incidents:
+            t = (r.get("incident_type") or "other").replace("_", " ").title()
+            counts[t] = counts.get(t, 0) + 1
+        return [{"type": k, "count": v} for k, v in sorted(counts.items(), key=lambda x: -x[1])]
+
+    def _by_severity_stacked(incidents, start, end):
+        SEV_ORDER = ["minor", "moderate", "significant", "major", "critical"]
+        keys = _bucket_keys(start, end, "month")
+        bucket: dict[str, dict] = {k: {"bucket": k, **{s: 0 for s in SEV_ORDER}} for k in keys}
+        for r in incidents:
+            k = _month_key(r.get("created_at") or "")
+            s = (r.get("severity") or "minor").lower()
+            if s not in SEV_ORDER:
+                # map legacy labels
+                s = {"serious": "major", "low": "minor", "medium": "moderate", "high": "major"}.get(s, "minor")
+            if k in bucket:
+                bucket[k][s] += 1
+        return {"severities": SEV_ORDER, "series": list(bucket.values())}
+
+    def _notifiable(incidents):
+        notifiable = [r for r in incidents if r.get("notify_regulator") or r.get("notifiable")]
+        by_reg: dict[str, int] = {}
+        for r in notifiable:
+            reg = (r.get("regulator") or r.get("notifiable_category") or "WorkSafe (default)")
+            reg = str(reg).split(":")[0]
+            by_reg[reg] = by_reg.get(reg, 0) + 1
+        return {
+            "total": len(notifiable),
+            "by_regulator": [{"regulator": k, "count": v} for k, v in sorted(by_reg.items(), key=lambda x: -x[1])],
+        }
+
+    async def _time_between_stages(current_user, start, end, site_id):
+        # Pull from incident_workflow.stage_timestamps; SLA defaults per spec.
+        flt = {"user_id": current_user.user_id}
+        rows = await db.incident_workflow.find(flt, {"_id": 0}).to_list(5000)
+        SLA_HOURS = {"reported_to_triage": 24, "triage_to_investigation": 72,
+                      "investigation_to_actions": 7 * 24,
+                      "actions_to_closed": 30 * 24, "lifecycle_total": 45 * 24}
+        sums: dict[str, list[float]] = {k: [] for k in SLA_HOURS}
+        for r in rows:
+            ts = r.get("stage_timestamps") or {}
+            def _h(a, b):
+                try:
+                    ta = datetime.fromisoformat((ts.get(a) or "").replace("Z", "+00:00"))
+                    tb = datetime.fromisoformat((ts.get(b) or "").replace("Z", "+00:00"))
+                    return (tb - ta).total_seconds() / 3600.0
+                except Exception:
+                    return None
+            for tag, (a, b) in {
+                "reported_to_triage": ("reported", "triage"),
+                "triage_to_investigation": ("triage", "investigation"),
+                "investigation_to_actions": ("investigation", "actions"),
+                "actions_to_closed": ("actions", "closed"),
+            }.items():
+                h = _h(a, b)
+                if h is not None and h >= 0:
+                    sums[tag].append(h)
+        out = []
+        for k, v in sums.items():
+            if k == "lifecycle_total":
+                continue
+            avg = (sum(v) / len(v)) if v else 0
+            out.append({
+                "stage": k.replace("_", " ").replace(" to ", " → ").title(),
+                "stage_key": k,
+                "avg_hours": round(avg, 1),
+                "avg_days": round(avg / 24, 1),
+                "sla_hours": SLA_HOURS[k],
+                "breached": avg > SLA_HOURS[k] and avg > 0,
+                "count": len(v),
+            })
+        return out
+
+    def _by_site(incidents):
+        counts: dict[str, dict[str, int]] = {}
+        SEV = ["minor", "moderate", "significant", "major", "critical"]
+        for r in incidents:
+            s = r.get("site") or r.get("site_id") or "Unassigned"
+            if isinstance(s, dict):
+                s = s.get("name") or s.get("site_id") or "Unassigned"
+            sev = (r.get("severity") or "minor").lower()
+            if sev not in SEV:
+                sev = {"serious": "major", "low": "minor", "medium": "moderate", "high": "major"}.get(sev, "minor")
+            counts.setdefault(s, {x: 0 for x in SEV})
+            counts[s][sev] += 1
+        return [{"site": k, **v, "total": sum(v.values())} for k, v in sorted(counts.items(), key=lambda x: -sum(x[1].values()))]
+
+    def _bhd_donut(incidents):
+        TAGS = ["Bullying", "Harassment (sexual)", "Harassment (non-sexual)",
+                 "Discrimination", "Other Psychosocial"]
+        counts = {t: 0 for t in TAGS}
+        for r in incidents:
+            tags = (r.get("tags") or []) + ([r.get("psychosocial_subtype")] if r.get("psychosocial_subtype") else [])
+            cat = (r.get("category") or "").lower()
+            desc = (r.get("description") or "").lower()
+            if "bully" in cat or "bully" in desc:
+                counts["Bullying"] += 1
+            elif "sexual" in cat or "sexual" in desc:
+                counts["Harassment (sexual)"] += 1
+            elif "harass" in cat or "harass" in desc:
+                counts["Harassment (non-sexual)"] += 1
+            elif "discrim" in cat or "discrim" in desc:
+                counts["Discrimination"] += 1
+            elif "psych" in cat or "psych" in desc or any("psych" in str(t).lower() for t in tags):
+                counts["Other Psychosocial"] += 1
+        total = sum(counts.values())
+        return {"total": total, "segments": [{"label": k, "count": v} for k, v in counts.items() if v > 0]}
+
+    def _mechanism(incidents):
+        MECH = {
+            "Body stressing (manual handling)": ["manual", "lift", "carry", "push", "pull", "back"],
+            "Falls / trips / slips": ["fall", "slip", "trip", "fell"],
+            "Hit by moving object": ["hit", "struck", "moving"],
+            "Being trapped": ["trap", "crush", "pinch"],
+            "Contact with substance": ["chemical", "burn", "acid", "splash"],
+            "Vehicle": ["vehicle", "car", "truck", "forklift", "machinery"],
+            "Mental stress": ["stress", "psychological", "psych"],
+            "Other": [],
+        }
+        counts = {k: 0 for k in MECH}
+        for r in incidents:
+            text = f"{r.get('description', '')} {r.get('mechanism', '')} {r.get('category', '')}".lower()
+            assigned = False
+            for cat, kws in MECH.items():
+                if cat == "Other":
+                    continue
+                if any(k in text for k in kws):
+                    counts[cat] += 1
+                    assigned = True
+                    break
+            if not assigned:
+                counts["Other"] += 1
+        return [{"category": k, "count": v} for k, v in counts.items() if v > 0]
+
+    def _body_part(incidents):
+        BODY = ["Head/face", "Neck", "Shoulder/arm", "Hand/wrist/finger",
+                 "Trunk/back", "Hip/leg", "Knee", "Ankle/foot", "Multiple",
+                 "Psychological", "Not specified"]
+        counts = {b: 0 for b in BODY}
+        for r in incidents:
+            parts = r.get("body_parts") or []
+            if not parts:
+                counts["Not specified"] += 1
+                continue
+            if len(parts) > 1:
+                counts["Multiple"] += 1
+                continue
+            p = (parts[0] or "").lower()
+            if "head" in p or "face" in p:
+                counts["Head/face"] += 1
+            elif "neck" in p:
+                counts["Neck"] += 1
+            elif "shoulder" in p or "arm" in p or "elbow" in p:
+                counts["Shoulder/arm"] += 1
+            elif "hand" in p or "wrist" in p or "finger" in p:
+                counts["Hand/wrist/finger"] += 1
+            elif "back" in p or "trunk" in p or "torso" in p or "chest" in p:
+                counts["Trunk/back"] += 1
+            elif "knee" in p:
+                counts["Knee"] += 1
+            elif "ankle" in p or "foot" in p:
+                counts["Ankle/foot"] += 1
+            elif "hip" in p or "leg" in p:
+                counts["Hip/leg"] += 1
+            elif "psych" in p:
+                counts["Psychological"] += 1
+            else:
+                counts["Not specified"] += 1
+        return [{"part": k, "count": v} for k, v in counts.items() if v > 0]
+
+    def _primary_secondary(incidents):
+        SECONDARY = ["Lost Time", "Medical Treatment", "No Treatment", "First Aid Only"]
+        groups: dict[str, dict] = {}
+        for r in incidents:
+            cat = (r.get("category") or r.get("incident_type") or "other").replace("_", " ").title()
+            sec = (r.get("treatment_given") or r.get("treatment") or "").lower()
+            if "lost" in sec or "ltifr" in sec:
+                key = "Lost Time"
+            elif "medical" in sec or "hospital" in sec:
+                key = "Medical Treatment"
+            elif "first" in sec or "aid" in sec:
+                key = "First Aid Only"
+            else:
+                key = "No Treatment"
+            groups.setdefault(cat, {x: 0 for x in SECONDARY})
+            groups[cat][key] += 1
+        return {"secondary_options": SECONDARY,
+                 "series": [{"category": k, **v} for k, v in sorted(groups.items())]}
+
+    async def _capa_status(current_user, site_id):
+        flt = {"account_id": account_id_for_fn(current_user)}
+        if site_id and site_id != "all":
+            flt["site_id"] = site_id
+        rows = await db.corrective_actions.find(flt, {"_id": 0}).to_list(5000)
+        if not rows:
+            rows = await db.corrective_actions.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(5000)
+        today = datetime.now(timezone.utc).date()
+        counts = {"Open": 0, "In Progress": 0, "Overdue": 0, "Completed": 0}
+        for r in rows:
+            st = (r.get("status") or "open").lower()
+            due = r.get("due_date") or r.get("target_date") or ""
+            try:
+                due_d = datetime.fromisoformat(due).date() if due else None
+            except Exception:
+                due_d = None
+            if st in ("closed", "completed", "complete", "done"):
+                counts["Completed"] += 1
+            elif due_d and due_d < today and st not in ("closed", "completed"):
+                counts["Overdue"] += 1
+            elif st in ("in_progress", "in-progress", "wip"):
+                counts["In Progress"] += 1
+            else:
+                counts["Open"] += 1
+        total = sum(counts.values()) or 1
+        return [{"status": k, "count": v, "pct": round(v / total * 100, 1)} for k, v in counts.items()]
+
+    def _root_cause(incidents):
+        ROOT = ["Human factors", "Equipment/plant", "Environmental", "Procedural/SOP",
+                 "Training gap", "Supervision", "Design", "Communication", "Other"]
+        counts = {r: 0 for r in ROOT}
+        for r in incidents:
+            rc = (r.get("root_cause") or r.get("primary_cause") or "").lower()
+            if "human" in rc or "behaviour" in rc:
+                counts["Human factors"] += 1
+            elif "equip" in rc or "plant" in rc or "machinery" in rc:
+                counts["Equipment/plant"] += 1
+            elif "environ" in rc or "weather" in rc:
+                counts["Environmental"] += 1
+            elif "procedure" in rc or "sop" in rc or "process" in rc:
+                counts["Procedural/SOP"] += 1
+            elif "train" in rc:
+                counts["Training gap"] += 1
+            elif "superv" in rc:
+                counts["Supervision"] += 1
+            elif "design" in rc:
+                counts["Design"] += 1
+            elif "communi" in rc:
+                counts["Communication"] += 1
+            elif rc:
+                counts["Other"] += 1
+        return [{"category": k, "count": v} for k, v in counts.items() if v > 0]
+
+    @api_router.get("/analytics/incidents")
+    async def incident_analytics(
+        chart: str = Query("volume_over_time"),
+        period: str = Query("fytd"),
+        site_id: Optional[str] = Query(None),
+        compare_to: str = Query("off"),
+        from_: Optional[str] = Query(None, alias="from"),
+        to: Optional[str] = Query(None),
+        current_user=Depends(get_current_user_dep),
+    ):
+        start, end = _resolve_period(period, from_, to)
+        incidents = await _all_incidents(current_user, site_id, start, end)
+
+        if chart == "volume_over_time":
+            current = _volume_over_time(incidents, start, end)
+            previous = None
+            if compare_to != "off":
+                ps, pe = _previous_period(start, end, compare_to)
+                if ps:
+                    prev_inc = await _all_incidents(current_user, site_id, ps, pe)
+                    previous = _volume_over_time(prev_inc, ps, pe)
+            return {"chart": chart, "current": current, "previous": previous}
+        if chart == "by_type":
+            return {"chart": chart, "data": _by_type(incidents)}
+        if chart == "by_severity":
+            return {"chart": chart, **_by_severity_stacked(incidents, start, end)}
+        if chart == "notifiable":
+            return {"chart": chart, **_notifiable(incidents)}
+        if chart == "time_between_stages":
+            return {"chart": chart, "data": await _time_between_stages(current_user, start, end, site_id)}
+        if chart == "by_site":
+            return {"chart": chart, "data": _by_site(incidents)}
+        if chart == "bhd_donut":
+            return {"chart": chart, **_bhd_donut(incidents)}
+        if chart == "mechanism":
+            return {"chart": chart, "data": _mechanism(incidents)}
+        if chart == "body_part":
+            return {"chart": chart, "data": _body_part(incidents)}
+        if chart == "primary_secondary":
+            return {"chart": chart, **_primary_secondary(incidents)}
+        if chart == "capa_status":
+            return {"chart": chart, "data": await _capa_status(current_user, site_id)}
+        if chart == "root_cause":
+            return {"chart": chart, "data": _root_cause(incidents)}
+        raise HTTPException(400, f"unknown chart '{chart}'")
+
+    @api_router.get("/analytics/incidents/list")
+    async def incident_drilldown(
+        chart: str = Query(...),
+        bucket: str = Query(""),
+        period: str = Query("fytd"),
+        site_id: Optional[str] = Query(None),
+        from_: Optional[str] = Query(None, alias="from"),
+        to: Optional[str] = Query(None),
+        current_user=Depends(get_current_user_dep),
+    ):
+        """Drill-down endpoint: returns the underlying incident list for a
+        clicked chart bucket. `bucket` semantics are chart-specific:
+          volume_over_time → YYYY-MM or YYYY-Www
+          by_type          → incident_type string
+          by_severity      → "<YYYY-MM>|<severity>" or just "<severity>"
+          notifiable       → regulator name (or "all")
+          by_site          → site name
+          mechanism        → category string
+          body_part        → body-part string
+          root_cause       → category string
+          bhd_donut        → subtype string
+          capa_status      → status string (then returns linked CAPA rows)
+          time_between_stages → stage_key
+        """
+        start, end = _resolve_period(period, from_, to)
+        incidents = await _all_incidents(current_user, site_id, start, end)
+
+        def _match(r) -> bool:
+            sev_norm = lambda s: {"serious": "major", "low": "minor", "medium": "moderate", "high": "major"}.get(s, s)
+            if chart == "volume_over_time":
+                ck = _month_key(r.get("created_at") or "")
+                wk = _week_key(r.get("created_at") or "")
+                return bucket in (ck, wk)
+            if chart == "by_type":
+                return ((r.get("incident_type") or "other").replace("_", " ").title()) == bucket
+            if chart == "by_severity":
+                if "|" in bucket:
+                    bk, sev = bucket.split("|", 1)
+                    return _month_key(r.get("created_at") or "") == bk and sev_norm((r.get("severity") or "minor").lower()) == sev
+                return sev_norm((r.get("severity") or "minor").lower()) == bucket
+            if chart == "notifiable":
+                if not (r.get("notify_regulator") or r.get("notifiable")):
+                    return False
+                if bucket in ("", "all"):
+                    return True
+                reg = str(r.get("regulator") or r.get("notifiable_category") or "WorkSafe (default)").split(":")[0]
+                return reg == bucket
+            if chart == "by_site":
+                s = r.get("site") or r.get("site_id") or "Unassigned"
+                if isinstance(s, dict):
+                    s = s.get("name") or s.get("site_id") or "Unassigned"
+                return s == bucket
+            if chart == "mechanism":
+                text = f"{r.get('description', '')} {r.get('mechanism', '')} {r.get('category', '')}".lower()
+                MAP = {"Body stressing (manual handling)": ["manual", "lift", "carry", "push", "pull", "back"],
+                        "Falls / trips / slips": ["fall", "slip", "trip", "fell"],
+                        "Hit by moving object": ["hit", "struck", "moving"],
+                        "Being trapped": ["trap", "crush", "pinch"],
+                        "Contact with substance": ["chemical", "burn", "acid", "splash"],
+                        "Vehicle": ["vehicle", "car", "truck", "forklift", "machinery"],
+                        "Mental stress": ["stress", "psychological", "psych"]}
+                if bucket in MAP:
+                    return any(k in text for k in MAP[bucket])
+                if bucket == "Other":
+                    return not any(any(k in text for k in v) for v in MAP.values())
+                return False
+            if chart == "body_part":
+                parts = [p.lower() for p in (r.get("body_parts") or [])]
+                if bucket == "Not specified":
+                    return not parts
+                if bucket == "Multiple":
+                    return len(parts) > 1
+                MAP = {"Head/face": ["head", "face"], "Neck": ["neck"],
+                        "Shoulder/arm": ["shoulder", "arm", "elbow"],
+                        "Hand/wrist/finger": ["hand", "wrist", "finger"],
+                        "Trunk/back": ["back", "trunk", "torso", "chest"],
+                        "Hip/leg": ["hip", "leg"], "Knee": ["knee"],
+                        "Ankle/foot": ["ankle", "foot"], "Psychological": ["psych"]}
+                kws = MAP.get(bucket, [])
+                return any(any(k in p for k in kws) for p in parts)
+            if chart == "root_cause":
+                rc = (r.get("root_cause") or r.get("primary_cause") or "").lower()
+                MAP = {"Human factors": ["human", "behaviour"], "Equipment/plant": ["equip", "plant", "machinery"],
+                        "Environmental": ["environ", "weather"], "Procedural/SOP": ["procedure", "sop", "process"],
+                        "Training gap": ["train"], "Supervision": ["superv"], "Design": ["design"],
+                        "Communication": ["communi"]}
+                if bucket == "Other":
+                    return rc and not any(any(k in rc for k in v) for v in MAP.values())
+                return any(k in rc for k in MAP.get(bucket, []))
+            if chart == "bhd_donut":
+                cat = (r.get("category") or "").lower()
+                desc = (r.get("description") or "").lower()
+                text = f"{cat} {desc}"
+                if bucket == "Bullying":
+                    return "bully" in text
+                if bucket == "Harassment (sexual)":
+                    return "sexual" in text
+                if bucket == "Harassment (non-sexual)":
+                    return "harass" in text and "sexual" not in text
+                if bucket == "Discrimination":
+                    return "discrim" in text
+                if bucket == "Other Psychosocial":
+                    return "psych" in text
+                return False
+            return True
+
+        matched = [r for r in incidents if _match(r)]
+        # Trim each row to a compact list shape for the drawer
+        def _slim(r):
+            return {
+                "incident_id": r.get("incident_id"),
+                "title": r.get("title") or r.get("description", "")[:80],
+                "severity": r.get("severity"),
+                "incident_type": r.get("incident_type"),
+                "status": r.get("status"),
+                "site": (r.get("site") or {}).get("name") if isinstance(r.get("site"), dict) else r.get("site"),
+                "created_at": r.get("created_at"),
+                "notifiable": bool(r.get("notify_regulator") or r.get("notifiable")),
+            }
+        return {"chart": chart, "bucket": bucket, "count": len(matched), "incidents": [_slim(r) for r in matched]}

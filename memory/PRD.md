@@ -24,6 +24,22 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 70 — Analytics Phase 2: 12 universal incident charts + drill-down (June 1, 2026)
+
+Shipped Phase 2 of the analytics dashboard. All 12 universal incident charts (C1.1–C1.12) live at `/dashboard/reports` under "Section C1 · Incident analytics" with per-chart drill-down to the underlying incident list.
+
+**Backend** — extended `routes/analytics.py`:
+- New `GET /api/analytics/incidents?chart=...&period=...&site_id=...&compare_to=...` with 12 chart computers: `volume_over_time` (auto week/month granularity + previous-period overlay), `by_type`, `by_severity` (stacked by month, 5 levels), `notifiable` (total + by-regulator), `time_between_stages` (avg hours per stage from `incident_workflow.stage_timestamps` with SLA breach flagging), `by_site` (stacked by severity), `bhd_donut` (Bullying / Harassment-sexual / Harassment-non-sexual / Discrimination / Other Psychosocial), `mechanism` (TOOCS-aligned 8 categories), `body_part` (11 buckets), `primary_secondary` (grouped bar: Lost Time / Medical / First Aid / No Treatment), `capa_status` (Open / In Progress / Overdue / Completed with overdue detection by `due_date`), `root_cause` (9 categories).
+- New `GET /api/analytics/incidents/list?chart=...&bucket=...&period=...&site_id=...` drill-down endpoint. Replays the same bucketing logic in reverse so the slide-over drawer shows exactly the incidents that produced the clicked chart segment. Returns slim incident shape (`incident_id, title, severity, type, status, site, created_at, notifiable`) for fast drawer rendering.
+- All endpoints tenant-isolated with legacy `user_id` fallback.
+
+**Frontend** — three new files:
+- `pages/reports/IncidentCharts.jsx`: 12 chart components using Recharts (`AreaChart`, `BarChart` horizontal+vertical+stacked, `PieChart` donut for BHD, manual hand-rolled stacked bar for CAPA status). Each chart accepts `period, compareTo, siteId, customFrom, customTo, onDrill` and forwards `onDrill(chartKey, bucket, label)` from chart-segment clicks. Empty states render "No data for this period." italics. YoY/MoM/QoQ overlay rendered as dashed grey `Line` on the volume chart.
+- `pages/reports/IncidentDrillDownDrawer.jsx`: slide-over panel (`fixed inset-0 z-50`, dark backdrop, right-aligned `max-w-xl` panel) that loads the drill-down list on open and renders each incident as a clickable `Link` to `/dashboard/incidents/{id}`. Closes when the row is clicked so users land on the detail page.
+- `pages/Reports.jsx`: drops the Phase 2 placeholder, mounts all 12 charts in a 2-col grid, wires the shared `openDrill` callback into a single `IncidentDrillDownDrawer`.
+
+**Verified** — curl returns valid payload for all 12 charts; the drill-down `chart=by_type&bucket=Near Miss` returns 6 matching incidents. Playwright: all 12 chart testids render on the page, the C1.2 bar click opens the drawer with the 6 expected near-misses (each row clickable to the detail page), and empty-state charts (BHD donut, CAPA, root cause) render "No data for this period." gracefully.
+
 ### Iteration 69 — Analytics & Reporting Phase 1 (June 1, 2026)
 
 Shipped Phase 1 of the new Analytics & Reporting dashboard at `/dashboard/reports`. The old report-generator page lives on at `/dashboard/report-register` (renamed `ReportRegister.jsx`) and is linked from the new header.

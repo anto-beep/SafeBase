@@ -23,6 +23,12 @@ import {
 } from "@phosphor-icons/react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
+import IncidentDrillDownDrawer from "@/pages/reports/IncidentDrillDownDrawer";
+import {
+  VolumeOverTime, IncidentsByType, IncidentsBySeverity, NotifiableIncidents,
+  TimeBetweenStages, IncidentsBySite, BHDDonut, MechanismOfInjury,
+  BodyPartAffected, PrimaryVsSecondary, CapaStatus, RootCauseAnalysis,
+} from "@/pages/reports/IncidentCharts";
 
 const PERIOD_LABELS = {
   fytd: "FYTD",
@@ -171,7 +177,16 @@ export default function Reports() {
   const [kpi, setKpi] = useState(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [drill, setDrill] = useState({ open: false });
   const stripRef = useRef(null);
+
+  const openDrill = useCallback((chart, bucket, label) => {
+    setDrill({ open: true, chart, bucket, label });
+  }, []);
+
+  const chartProps = useMemo(() => ({
+    period, compareTo, siteId, customFrom, customTo, onDrill: openDrill,
+  }), [period, compareTo, siteId, customFrom, customTo, openDrill]);
 
   // When tab changes, reset the period to its default
   const switchTab = (t) => {
@@ -278,11 +293,42 @@ export default function Reports() {
         {kpi?.cards?.map((c) => <KpiCard key={c.key} card={c} />)}
       </div>
 
-      {/* Phase 2+ charts will go here */}
-      <div className="bg-muted/40 border-2 border-dashed border-border p-8 text-center" data-testid="phase2-placeholder">
-        <ChartLineUp size={32} className="mx-auto text-muted-foreground" weight="bold" />
-        <div className="font-bold mt-2">More charts coming</div>
-        <p className="text-sm text-muted-foreground mt-1 max-w-xl mx-auto">Phase 1 ships the toolbar, tabs, and KPI strip. Phase 2 adds the 12 universal incident charts (volume over time, by type, by severity, notifiable, by site, body-part, root cause, etc.) with comparison overlays.</p>
+      {/* Phase 2 — Universal incident charts (C1.1 – C1.12) */}
+      <div className="pt-2">
+        <div className="label-eyebrow text-[10px] mb-3">Section C1 · Incident analytics</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <VolumeOverTime {...chartProps} />
+          <IncidentsByType {...chartProps} />
+          <IncidentsBySeverity {...chartProps} />
+          <NotifiableIncidents {...chartProps} />
+          <TimeBetweenStages {...chartProps} />
+          <IncidentsBySite {...chartProps} />
+          <BHDDonut {...chartProps} />
+          <MechanismOfInjury {...chartProps} />
+          <BodyPartAffected {...chartProps} />
+          <PrimaryVsSecondary {...chartProps} />
+          <CapaStatus {...chartProps} />
+          <RootCauseAnalysis {...chartProps} />
+        </div>
+      </div>
+
+      {/* Drill-down side drawer */}
+      <IncidentDrillDownDrawer
+        open={drill.open}
+        onClose={() => setDrill({ open: false })}
+        chart={drill.chart}
+        bucket={drill.bucket}
+        label={drill.label}
+        period={period}
+        siteId={siteId}
+        customFrom={customFrom}
+        customTo={customTo}
+      />
+
+      {/* Phase 3+ placeholder */}
+      <div className="bg-muted/40 border-2 border-dashed border-border p-6 text-center" data-testid="phase3-placeholder">
+        <ChartLineUp size={28} className="mx-auto text-muted-foreground" weight="bold" />
+        <div className="font-bold mt-2 text-sm">Phase 3 coming: credentials, training, risk, documents, audits, compliance</div>
       </div>
     </div>
   );
