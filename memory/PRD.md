@@ -24,6 +24,26 @@ Franchise per-location: A$229 (1-49) · A$199 (50-199) · A$169 (200+). Network 
 
 ## Implemented
 
+### Iteration 71 — Analytics Phase 3: C2–C7 universal charts + AI "This Week's Headline" (June 1, 2026)
+
+Shipped 24 universal charts (C2–C7) across Credentials, Training, Risk, Documents, Audits, and Compliance Score; plus an AI-generated single-sentence weekly headline at the top of `/dashboard/reports`.
+
+**Backend** — `routes/analytics.py` extended:
+- **`GET /api/analytics/credentials?chart=`**: `status_overview` (4-segment Current/Expiring30/Expiring90/Expired), `by_type` (current+expired stacked), `expiry_forecast` (next 6 months), `by_site_heatmap` (site × licence-type grid with RAG % current).
+- **`GET /api/analytics/training?chart=`**: `module_completion`, `completion_over_time` (cumulative), `overdue_mandatory` (worker × module × days), `quiz_pass_rates` (with avg attempts), `hours_per_worker` (top 15).
+- **`GET /api/analytics/risks?chart=&view=residual|inherent`**: `matrix_heatmap` (5×5 grid with switchable view), `by_rating` (Low/Medium/High/Extreme donut), `by_process`, `overdue_reviews`, `controls_effectiveness` (inherent vs residual for high/extreme).
+- **`GET /api/analytics/documents?chart=`**: `generated_over_time`, `by_status` (Draft/Final/Archived donut), `top_types`, `due_for_review` (>12 months since last review).
+- **`GET /api/analytics/audits?chart=`**: `completion_rate` (gauge), `scores_over_time`, `open_findings` (stacked by severity).
+- **`GET /api/analytics/compliance-score?chart=`**: `trend` with current score, `breakdown` (5-axis radar: Credentials/Incidents/Documents/Training/Risk-Audit), `by_site` (RAG bars).
+- **`GET /api/analytics/headline`**: pulls this-week-vs-last-week deltas + top site + primary mechanism + credentials + CAPA + compliance score, then calls **Claude Sonnet via `emergentintegrations`** to write one Australian-English sentence (20–35 words, no markdown, no greetings). Cached 24h per `account_id::site_id` in `analytics_headline_cache`. `?force=true` skips cache. Deterministic fallback if LLM fails so the strip is never blank.
+
+**Frontend** — two new chart files + the headline strip + wiring:
+- `pages/reports/UniversalCharts.jsx` — **24 Recharts components** covering all C2–C7 spec sections. Shared `useEndpoint` hook + `ChartFrame` wrapper for consistent empty states. Notable: hand-rolled 5×5 heatmap with inherent/residual toggle (`RiskMatrixHeatmap`), gradient-coloured RAG cells in the credential heatmap (`CredentialBySiteHeatmap`), Radar via Recharts `RadarChart` (`ComplianceBreakdownRadar`), audit completion gauge via plain SVG `circle strokeDasharray`.
+- `pages/reports/HeadlineStrip.jsx` — black-on-yellow strip at top of Reports page. Shows sparkle + AI-generated sentence + "Cached … timestamp" + Refresh button (`?force=true`).
+- `pages/Reports.jsx` — drops Phase 3 placeholder, mounts the headline strip above the KPI strip, then renders sections C2, C3, C4, C5, C6, C7 in order with section headers.
+
+**Verified end-to-end** — curl confirms all 24 chart endpoints return 200; AI headline endpoint returns "Six incidents recorded this week after zero last week, compliance score sits at 47 percent, and two credentials expire within 30 days requiring immediate attention." (real Claude Sonnet output, 3-second latency, cached). Playwright finds 27/27 expected testids (headline strip, KPI strip, all 12 incident charts + 24 new charts). Risk Matrix and Controls Effectiveness charts beautifully show the Asbestos Disturbance risk that was added in iter65 (inherent 12 → residual 6).
+
 ### Iteration 70 — Analytics Phase 2: 12 universal incident charts + drill-down (June 1, 2026)
 
 Shipped Phase 2 of the analytics dashboard. All 12 universal incident charts (C1.1–C1.12) live at `/dashboard/reports` under "Section C1 · Incident analytics" with per-chart drill-down to the underlying incident list.

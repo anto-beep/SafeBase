@@ -20,6 +20,7 @@ Industry-specific 6th KPI card varies per the account's industry:
 """
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -926,3 +927,530 @@ def register_analytics_routes(api_router: APIRouter, *, db, get_current_user_dep
                 "notifiable": bool(r.get("notify_regulator") or r.get("notifiable")),
             }
         return {"chart": chart, "bucket": bucket, "count": len(matched), "incidents": [_slim(r) for r in matched]}
+
+    # ============================================================
+    # PHASE 3 — Credentials / Training / Risk / Docs / Audits /
+    # Compliance Score charts (C2–C7)
+    # ============================================================
+
+    async def _all_licences(current_user, site_id):
+        rows = await db.licences.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(5000)
+        if site_id and site_id != "all":
+            rows = [r for r in rows if (r.get("site_id") == site_id)]
+        return rows
+
+    def _lic_status(lic, today):
+        try:
+            exp = datetime.fromisoformat((lic.get("expiry_date") or "")).date()
+        except Exception:
+            return "unknown"
+        days = (exp - today).days
+        if days < 0:
+            return "expired"
+        if days <= 30:
+            return "expiring_30"
+        if days <= 90:
+            return "expiring_90"
+        return "current"
+
+    @api_router.get("/analytics/credentials")
+    async def credential_analytics(
+        chart: str = Query("status_overview"),
+        period: str = Query("fytd"),
+        site_id: Optional[str] = Query(None),
+        current_user=Depends(get_current_user_dep),
+    ):
+        licences = await _all_licences(current_user, site_id)
+        today = datetime.now(timezone.utc).date()
+        if chart == "status_overview":
+            buckets = {"current": 0, "expiring_30": 0, "expiring_90": 0, "expired": 0}
+            for lic in licences:
+                st = _lic_status(lic, today)
+                if st in buckets:
+                    buckets[st] += 1
+            return {"chart": chart, "data": [
+                {"status": "Current", "key": "current", "count": buckets["current"]},
+                {"status": "Expiring ≤30d", "key": "expiring_30", "count": buckets["expiring_30"]},
+                {"status": "Expiring 31–90d", "key": "expiring_90", "count": buckets["expiring_90"]},
+                {"status": "Expired", "key": "expired", "count": buckets["expired"]},
+            ]}
+        if chart == "by_type":
+            by_type: dict[str, dict[str, int]] = {}
+            for lic in licences:
+                t = (lic.get("licence_type") or "Other").title()
+                by_type.setdefault(t, {"current": 0, "expired": 0})
+                st = _lic_status(lic, today)
+                by_type[t]["expired" if st == "expired" else "current"] += 1
+            return {"chart": chart, "data": [{"type": k, **v} for k, v in sorted(by_type.items(), key=lambda x: -(x[1]["current"] + x[1]["expired"]))]}
+        if chart == "expiry_forecast":
+            keys = []
+            cur = date(today.year, today.month, 1)
+            for _ in range(6):
+                keys.append(cur)
+                cur = date(cur.year + (1 if cur.month == 12 else 0), 1 if cur.month == 12 else cur.month + 1, 1)
+            buckets = {k.strftime("%Y-%m"): 0 for k in keys}
+            for lic in licences:
+                try:
+                    exp = datetime.fromisoformat((lic.get("expiry_date") or "")).date()
+                    k = exp.strftime("%Y-%m")
+                    if k in buckets:
+                        buckets[k] += 1
+                except Exception:
+                    pass
+            return {"chart": chart, "data": [{"month": k, "expiring": v} for k, v in buckets.items()]}
+        if chart == "by_site_heatmap":
+            sites = await db.sites.find({"account_id": account_id_for_fn(current_user)}, {"_id": 0}).to_list(200)
+            site_names = {s["site_id"]: s["name"] for s in sites}
+            grid: dict[str, dict[str, dict]] = {}
+            types_seen: set = set()
+            for lic in licences:
+                sid = lic.get("site_id") or "_unassigned"
+                site_name = site_names.get(sid, "Unassigned" if sid == "_unassigned" else sid)
+                ltype = (lic.get("licence_type") or "Other").title()
+                types_seen.add(ltype)
+                grid.setdefault(site_name, {}).setdefault(ltype, {"current": 0, "total": 0})
+                grid[site_name][ltype]["total"] += 1
+                if _lic_status(lic, today) == "current":
+                    grid[site_name][ltype]["current"] += 1
+            rows = []
+            for s, by_t in grid.items():
+                cells = []
+                for t in sorted(types_seen):
+                    cell = by_t.get(t, {"current": 0, "total": 0})
+                    pct = round((cell["current"] / cell["total"]) * 100) if cell["total"] else None
+                    cells.append({"type": t, "pct": pct, "current": cell["current"], "total": cell["total"]})
+                rows.append({"site": s, "cells": cells})
+            return {"chart": chart, "types": sorted(types_seen), "rows": rows}
+        raise HTTPException(400, f"unknown chart '{chart}'")
+
+    @api_router.get("/analytics/training")
+    async def training_analytics(
+        chart: str = Query("module_completion"),
+        period: str = Query("fytd"),
+        site_id: Optional[str] = Query(None),
+        current_user=Depends(get_current_user_dep),
+    ):
+        rows = await db.academy_progress.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(5000)
+        if not rows:
+            rows = await db.academy_progress.find({"account_id": account_id_for_fn(current_user)}, {"_id": 0}).to_list(5000)
+        if chart == "module_completion":
+            by_mod: dict[str, dict[str, int]] = {}
+            for r in rows:
+                m = r.get("module_title") or r.get("module_id") or "Unknown"
+                by_mod.setdefault(m, {"completed": 0, "total": 0})
+                by_mod[m]["total"] += 1
+                if (r.get("status") or "") == "completed":
+                    by_mod[m]["completed"] += 1
+            return {"chart": chart, "data": [
+                {"module": k, "completed": v["completed"], "total": v["total"],
+                 "pct": round((v["completed"] / v["total"]) * 100) if v["total"] else 0}
+                for k, v in sorted(by_mod.items(), key=lambda x: -x[1]["completed"])
+            ][:25]}
+        if chart == "completion_over_time":
+            start, end = _resolve_period(period, None, None)
+            keys = _bucket_keys(start, end, "month")
+            bucket = {k: {"bucket": k, "completed": 0, "cumulative": 0} for k in keys}
+            cumulative = 0
+            for k in keys:
+                for r in rows:
+                    iso = r.get("completed_at") or ""
+                    if _month_key(iso) == k and (r.get("status") or "") == "completed":
+                        bucket[k]["completed"] += 1
+                cumulative += bucket[k]["completed"]
+                bucket[k]["cumulative"] = cumulative
+            return {"chart": chart, "data": list(bucket.values())}
+        if chart == "overdue_mandatory":
+            today_d = datetime.now(timezone.utc).date()
+            overdue = []
+            for r in rows:
+                if not r.get("mandatory"):
+                    continue
+                if (r.get("status") or "") == "completed":
+                    continue
+                due = r.get("due_date") or ""
+                try:
+                    d = datetime.fromisoformat(due).date()
+                    if d < today_d:
+                        overdue.append({
+                            "worker": r.get("worker_name") or r.get("user_name") or "Unknown",
+                            "module": r.get("module_title") or r.get("module_id") or "—",
+                            "days_overdue": (today_d - d).days,
+                        })
+                except Exception:
+                    pass
+            return {"chart": chart, "count": len(overdue),
+                     "rows": sorted(overdue, key=lambda x: -x["days_overdue"])[:50]}
+        if chart == "quiz_pass_rates":
+            by_mod: dict[str, dict[str, int]] = {}
+            for r in rows:
+                m = r.get("module_title") or r.get("module_id") or "Unknown"
+                attempts = r.get("quiz_attempts") or 0
+                pass_score = r.get("quiz_passed")
+                if attempts == 0 and pass_score is None:
+                    continue
+                by_mod.setdefault(m, {"passed": 0, "total": 0, "attempts": 0})
+                by_mod[m]["total"] += 1
+                by_mod[m]["attempts"] += int(attempts or 0)
+                if pass_score:
+                    by_mod[m]["passed"] += 1
+            return {"chart": chart, "data": [
+                {"module": k,
+                 "pct": round((v["passed"] / v["total"]) * 100) if v["total"] else 0,
+                 "avg_attempts": round(v["attempts"] / v["total"], 1) if v["total"] else 0}
+                for k, v in sorted(by_mod.items(), key=lambda x: -((x[1]["passed"] / x[1]["total"]) if x[1]["total"] else 0))
+            ][:20]}
+        if chart == "hours_per_worker":
+            by_worker: dict[str, float] = {}
+            for r in rows:
+                name = r.get("worker_name") or r.get("user_name") or "Unknown"
+                hrs = float(r.get("hours_completed") or r.get("duration_hours") or 0)
+                by_worker[name] = by_worker.get(name, 0) + hrs
+            return {"chart": chart, "data": [
+                {"worker": k, "hours": round(v, 1)}
+                for k, v in sorted(by_worker.items(), key=lambda x: -x[1])
+            ][:15]}
+        raise HTTPException(400, f"unknown chart '{chart}'")
+
+    @api_router.get("/analytics/risks")
+    async def risk_analytics(
+        chart: str = Query("matrix_heatmap"),
+        period: str = Query("fytd"),
+        site_id: Optional[str] = Query(None),
+        view: str = Query("residual"),
+        current_user=Depends(get_current_user_dep),
+    ):
+        risks = await db.risks.find(
+            {"account_id": account_id_for_fn(current_user)}, {"_id": 0}
+        ).to_list(5000)
+        if site_id and site_id != "all":
+            risks = [r for r in risks if r.get("site_id") == site_id]
+        if chart == "matrix_heatmap":
+            grid = [[0] * 5 for _ in range(5)]
+            l_key = "residual_likelihood" if view == "residual" else "inherent_likelihood"
+            c_key = "residual_consequence" if view == "residual" else "inherent_consequence"
+            for r in risks:
+                try:
+                    l = int(r.get(l_key) or 0)
+                    c = int(r.get(c_key) or 0)
+                    if 1 <= l <= 5 and 1 <= c <= 5:
+                        grid[5 - l][c - 1] += 1
+                except Exception:
+                    pass
+            return {"chart": chart, "view": view, "grid": grid}
+        if chart == "by_rating":
+            buckets = {"Low": 0, "Medium": 0, "High": 0, "Extreme": 0}
+            for r in risks:
+                s = int(r.get("residual_score") or 0)
+                if s >= 15:
+                    buckets["Extreme"] += 1
+                elif s >= 8:
+                    buckets["High"] += 1
+                elif s >= 4:
+                    buckets["Medium"] += 1
+                else:
+                    buckets["Low"] += 1
+            return {"chart": chart, "total": len(risks),
+                     "segments": [{"label": k, "count": v} for k, v in buckets.items()]}
+        if chart == "by_process":
+            by_proc: dict[str, int] = {}
+            for r in risks:
+                p = r.get("process_name") or r.get("primary_hazard") or "Other"
+                by_proc[p] = by_proc.get(p, 0) + 1
+            return {"chart": chart, "data": [{"process": k, "count": v}
+                     for k, v in sorted(by_proc.items(), key=lambda x: -x[1])][:15]}
+        if chart == "overdue_reviews":
+            today_d = datetime.now(timezone.utc).date()
+            overdue = []
+            for r in risks:
+                due = r.get("next_review_date") or r.get("review_date") or ""
+                try:
+                    d = datetime.fromisoformat(due).date()
+                    if d < today_d:
+                        overdue.append({
+                            "risk_id": r.get("risk_id"),
+                            "title": r.get("title"),
+                            "days_overdue": (today_d - d).days,
+                        })
+                except Exception:
+                    pass
+            return {"chart": chart, "count": len(overdue),
+                     "rows": sorted(overdue, key=lambda x: -x["days_overdue"])[:50]}
+        if chart == "controls_effectiveness":
+            rows = []
+            for r in risks:
+                inh = int(r.get("inherent_score") or 0)
+                res = int(r.get("residual_score") or 0)
+                if inh >= 8:
+                    rows.append({
+                        "risk_id": r.get("risk_id"),
+                        "title": (r.get("title") or "")[:50],
+                        "inherent": inh,
+                        "residual": res,
+                        "reduction": inh - res,
+                    })
+            rows.sort(key=lambda x: -x["inherent"])
+            return {"chart": chart, "data": rows[:15]}
+        raise HTTPException(400, f"unknown chart '{chart}'")
+
+    @api_router.get("/analytics/documents")
+    async def document_analytics(
+        chart: str = Query("generated_over_time"),
+        period: str = Query("fytd"),
+        site_id: Optional[str] = Query(None),
+        current_user=Depends(get_current_user_dep),
+    ):
+        docs = await db.documents.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(5000)
+        start, end = _resolve_period(period, None, None)
+        if chart == "generated_over_time":
+            keys = _bucket_keys(start, end, "month")
+            bucket = {k: {"bucket": k, "count": 0} for k in keys}
+            for d in docs:
+                k = _month_key(d.get("created_at") or "")
+                if k in bucket:
+                    bucket[k]["count"] += 1
+            return {"chart": chart, "data": list(bucket.values())}
+        if chart == "by_status":
+            buckets = {"Draft": 0, "Final": 0, "Archived": 0}
+            for d in docs:
+                s = (d.get("status") or "final").title()
+                if s in buckets:
+                    buckets[s] += 1
+                else:
+                    buckets["Final"] += 1
+            return {"chart": chart, "total": sum(buckets.values()),
+                     "segments": [{"label": k, "count": v} for k, v in buckets.items()]}
+        if chart == "top_types":
+            by_t: dict[str, int] = {}
+            for d in docs:
+                t = (d.get("type") or "Other").upper()
+                by_t[t] = by_t.get(t, 0) + 1
+            return {"chart": chart, "data": [{"type": k, "count": v}
+                     for k, v in sorted(by_t.items(), key=lambda x: -x[1])][:10]}
+        if chart == "due_for_review":
+            today_d = datetime.now(timezone.utc).date()
+            cutoff = today_d - timedelta(days=365)
+            overdue = []
+            for d in docs:
+                last = d.get("last_reviewed_at") or d.get("created_at") or ""
+                try:
+                    dt = datetime.fromisoformat((last or "").replace("Z", "+00:00")).date()
+                    if dt < cutoff:
+                        overdue.append({
+                            "document_id": d.get("document_id"),
+                            "title": d.get("title") or d.get("type"),
+                            "last_reviewed": last[:10],
+                            "days": (today_d - dt).days,
+                        })
+                except Exception:
+                    pass
+            return {"chart": chart, "count": len(overdue),
+                     "rows": sorted(overdue, key=lambda x: -x["days"])[:50]}
+        raise HTTPException(400, f"unknown chart '{chart}'")
+
+    @api_router.get("/analytics/audits")
+    async def audit_analytics(
+        chart: str = Query("completion_rate"),
+        period: str = Query("fytd"),
+        site_id: Optional[str] = Query(None),
+        current_user=Depends(get_current_user_dep),
+    ):
+        audits = await db.audits.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(5000)
+        if chart == "completion_rate":
+            scheduled = sum(1 for a in audits if a.get("scheduled_at"))
+            completed = sum(1 for a in audits if (a.get("status") or "") == "completed")
+            pct = round((completed / scheduled) * 100) if scheduled else 0
+            return {"chart": chart, "scheduled": scheduled, "completed": completed, "pct": pct}
+        if chart == "scores_over_time":
+            rows = [{
+                "date": (a.get("completed_at") or a.get("created_at") or "")[:10],
+                "score": int(a.get("score") or 0),
+                "site": a.get("site_name") or a.get("site_id") or "All",
+            } for a in audits if a.get("score") is not None]
+            rows.sort(key=lambda x: x["date"])
+            return {"chart": chart, "data": rows[-40:]}
+        if chart == "open_findings":
+            findings: dict[str, dict[str, int]] = {}
+            for a in audits:
+                for f in (a.get("findings") or []):
+                    if (f.get("status") or "open") == "closed":
+                        continue
+                    cat = f.get("category") or "Other"
+                    sev = (f.get("severity") or "minor").lower()
+                    findings.setdefault(cat, {"minor": 0, "moderate": 0, "major": 0, "critical": 0, "total": 0})
+                    if sev in findings[cat]:
+                        findings[cat][sev] += 1
+                    findings[cat]["total"] += 1
+            return {"chart": chart, "data": [{"category": k, **v}
+                     for k, v in sorted(findings.items(), key=lambda x: -x[1]["total"])][:20]}
+        raise HTTPException(400, f"unknown chart '{chart}'")
+
+    @api_router.get("/analytics/compliance-score")
+    async def compliance_analytics(
+        chart: str = Query("trend"),
+        period: str = Query("fytd"),
+        site_id: Optional[str] = Query(None),
+        current_user=Depends(get_current_user_dep),
+    ):
+        if chart == "trend":
+            start, end = _resolve_period(period, None, None)
+            keys = _bucket_keys(start, end, "month")
+            current = await _compliance_score(current_user)
+            data = [{"bucket": k, "score": current} for k in keys]
+            return {"chart": chart, "data": data, "current": current}
+        if chart == "breakdown":
+            try:
+                workers = await db.workers.count_documents({"user_id": current_user.user_id})
+                licences_list = await db.licences.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
+                incidents_list = await db.incidents.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
+                documents = await db.documents.count_documents({"user_id": current_user.user_id})
+                today_n = datetime.now(timezone.utc)
+                expired = 0
+                expiring = 0
+                for lic in licences_list:
+                    try:
+                        exp = datetime.fromisoformat(lic.get("expiry_date") or "")
+                        if exp.tzinfo is None:
+                            exp = exp.replace(tzinfo=timezone.utc)
+                        days = (exp - today_n).days
+                        if days < 0:
+                            expired += 1
+                        elif days <= 30:
+                            expiring += 1
+                    except Exception:
+                        pass
+                open_inc = sum(1 for i in incidents_list if i.get("status") == "open")
+                serious = sum(1 for i in incidents_list if i.get("severity") in ("serious", "critical"))
+                credentials_score = max(0, 100 - expired * 20 - expiring * 8)
+                incidents_score = max(0, 100 - open_inc * 8 - serious * 12)
+                documents_score = 100 if documents > 0 else 70
+                training_score = await _training_completion(current_user, site_id)
+                ra_score = 80  # placeholder until risk/audit weighted aggregator lands
+                return {"chart": chart, "data": [
+                    {"axis": "Credentials", "score": credentials_score},
+                    {"axis": "Incidents", "score": incidents_score},
+                    {"axis": "Documents", "score": documents_score},
+                    {"axis": "Training", "score": training_score},
+                    {"axis": "Risk/Audit", "score": ra_score},
+                ]}
+            except Exception:
+                return {"chart": chart, "data": []}
+        if chart == "by_site":
+            sites = await db.sites.find({"account_id": account_id_for_fn(current_user)}, {"_id": 0}).to_list(200)
+            score = await _compliance_score(current_user)
+            data = [{"site": s["name"], "score": score} for s in sites]
+            if not data:
+                data = [{"site": "All Sites", "score": score}]
+            data.sort(key=lambda x: -x["score"])
+            return {"chart": chart, "data": data}
+        raise HTTPException(400, f"unknown chart '{chart}'")
+
+    # ----------- AI "This Week's Headline" -----------
+    # Lazy import inside the handler so we don't pay the import cost on every
+    # other endpoint. Cached for 24h per (account, industry, site) in a tiny
+    # collection so the endpoint can be hit on every page load without burning
+    # the LLM key budget.
+    @api_router.get("/analytics/headline")
+    async def weekly_headline(
+        site_id: Optional[str] = Query(None),
+        force: bool = Query(False),
+        current_user=Depends(get_current_user_dep),
+    ):
+        cache_key = f"{account_id_for_fn(current_user)}::{site_id or 'all'}"
+        if not force:
+            cached = await db.analytics_headline_cache.find_one({"_key": cache_key}, {"_id": 0})
+            if cached:
+                try:
+                    age = (datetime.now(timezone.utc) - datetime.fromisoformat(cached["generated_at"].replace("Z", "+00:00"))).total_seconds()
+                    if age < 24 * 3600:
+                        return {**cached, "cached": True}
+                except Exception:
+                    pass
+
+        # Gather the deltas this week vs last week — keep this cheap; we only
+        # need a few facts for the model to write one sentence.
+        today_d = datetime.now(timezone.utc).date()
+        week_start = today_d - timedelta(days=7)
+        prev_start = today_d - timedelta(days=14)
+        cur_inc = await _all_incidents(current_user, site_id, week_start, today_d)
+        prv_inc = await _all_incidents(current_user, site_id, prev_start, week_start - timedelta(days=1))
+        creds = await _credentials_expiring(current_user, site_id, 30)
+        capa = await _open_capa(current_user, site_id)
+        industry = await _industry_of(current_user)
+        comp = await _compliance_score(current_user)
+
+        def _top_site(rows):
+            counts: dict[str, int] = {}
+            for r in rows:
+                s = r.get("site") or r.get("site_id") or "Unassigned"
+                if isinstance(s, dict):
+                    s = s.get("name") or "Unassigned"
+                counts[s] = counts.get(s, 0) + 1
+            return max(counts.items(), key=lambda x: x[1])[0] if counts else None
+
+        facts = {
+            "industry": industry,
+            "incidents_this_week": len(cur_inc),
+            "incidents_last_week": len(prv_inc),
+            "delta_pct": (round(((len(cur_inc) - len(prv_inc)) / max(len(prv_inc), 1)) * 100) if prv_inc else None),
+            "top_site_this_week": _top_site(cur_inc),
+            "credentials_expiring_30d": creds,
+            "open_capa": capa,
+            "compliance_score": comp,
+            "primary_mechanism": None,
+        }
+        # mechanism keyword scan on this week's data
+        text = " ".join((r.get("description") or "") for r in cur_inc).lower()
+        for label, kws in [("manual handling", ["manual", "lift", "carry", "back"]),
+                            ("falls/trips/slips", ["fall", "slip", "trip"]),
+                            ("vehicle", ["vehicle", "truck", "forklift"]),
+                            ("psychosocial", ["psych", "stress", "bully"])]:
+            if any(k in text for k in kws):
+                facts["primary_mechanism"] = label
+                break
+
+        # Compose the prompt — single sentence, plain Australian English, no fluff
+        prompt = (
+            "You are a WHS analyst writing the headline of a weekly compliance brief for an Australian business owner. "
+            "Write EXACTLY ONE sentence, plain Australian English, present tense, no jargon, no apologies, no greetings, no markdown. "
+            "If facts['incidents_this_week'] is 0 and there are no credential or CAPA issues, congratulate the user on a clean week. "
+            "Otherwise lead with the most operationally significant fact (large incident delta, top site, mechanism, credentials risk, or compliance gap). "
+            "Aim for 20–35 words. Do NOT prefix with 'Headline:' or any label.\n\n"
+            f"Facts: {facts}"
+        )
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage  # type: ignore
+            chat = LlmChat(
+                api_key=os.environ["EMERGENT_LLM_KEY"],
+                session_id=f"headline-{cache_key}",
+                system_message="You write concise, useful, executive-grade WHS headlines.",
+            ).with_model("anthropic", "claude-sonnet-4-5")
+            ai_text = await chat.send_message(UserMessage(text=prompt))
+        except Exception as e:
+            logger.warning(f"headline generation failed: {e}")
+            # Deterministic fallback so the strip is never blank
+            if facts["incidents_this_week"] == 0 and facts["open_capa"] == 0 and facts["credentials_expiring_30d"] == 0:
+                ai_text = "Clean week — no incidents logged, no overdue actions, and no credentials expiring in the next 30 days."
+            else:
+                bits = []
+                if facts["incidents_this_week"]:
+                    bits.append(f"{facts['incidents_this_week']} incident(s) this week")
+                if facts["top_site_this_week"]:
+                    bits.append(f"top site {facts['top_site_this_week']}")
+                if facts["primary_mechanism"]:
+                    bits.append(f"primarily {facts['primary_mechanism']}")
+                if facts["credentials_expiring_30d"]:
+                    bits.append(f"{facts['credentials_expiring_30d']} credentials expiring in ≤30 days")
+                if facts["open_capa"]:
+                    bits.append(f"{facts['open_capa']} open corrective actions")
+                ai_text = "; ".join(bits) + "." if bits else "All clear."
+
+        payload = {
+            "_key": cache_key,
+            "headline": ai_text.strip().strip('"').strip("'"),
+            "facts": facts,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.analytics_headline_cache.update_one(
+            {"_key": cache_key}, {"$set": payload}, upsert=True,
+        )
+        return {**payload, "cached": False}

@@ -24,11 +24,20 @@ import {
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 import IncidentDrillDownDrawer from "@/pages/reports/IncidentDrillDownDrawer";
+import HeadlineStrip from "@/pages/reports/HeadlineStrip";
 import {
   VolumeOverTime, IncidentsByType, IncidentsBySeverity, NotifiableIncidents,
   TimeBetweenStages, IncidentsBySite, BHDDonut, MechanismOfInjury,
   BodyPartAffected, PrimaryVsSecondary, CapaStatus, RootCauseAnalysis,
 } from "@/pages/reports/IncidentCharts";
+import {
+  CredentialStatusOverview, CredentialsByType, CredentialExpiryForecast, CredentialBySiteHeatmap,
+  ModuleCompletionRate, TrainingOverTime, OverdueMandatoryTraining, QuizPassRates, TrainingHoursPerWorker,
+  RiskMatrixHeatmap, RisksByRating, RisksByProcess, OverdueRiskReviews, ControlsEffectiveness,
+  DocumentsOverTime, DocumentsByStatus, MostGeneratedDocTypes, DocsDueForReview,
+  AuditCompletionGauge, AuditScoresOverTime, OpenAuditFindings,
+  ComplianceScoreTrend, ComplianceBreakdownRadar, ComplianceBySite,
+} from "@/pages/reports/UniversalCharts";
 
 const PERIOD_LABELS = {
   fytd: "FYTD",
@@ -285,6 +294,9 @@ export default function Reports() {
         {" · "}<span>Site: <strong className="text-ink">{siteId === "all" ? "All Sites" : (sites.find((x) => x.site_id === siteId)?.name || siteId)}</strong></span>
       </div>
 
+      {/* AI headline strip */}
+      <HeadlineStrip siteId={siteId} />
+
       {/* KPI Strip */}
       <div ref={stripRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3" data-testid="kpi-strip">
         {loading && !kpi && (
@@ -325,10 +337,76 @@ export default function Reports() {
         customTo={customTo}
       />
 
-      {/* Phase 3+ placeholder */}
-      <div className="bg-muted/40 border-2 border-dashed border-border p-6 text-center" data-testid="phase3-placeholder">
+      {/* Section C2 — Credentials */}
+      <div className="pt-2">
+        <div className="label-eyebrow text-[10px] mb-3">Section C2 · Credential analytics</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CredentialStatusOverview {...chartProps} />
+          <CredentialsByType {...chartProps} />
+          <CredentialExpiryForecast {...chartProps} />
+          <CredentialBySiteHeatmap {...chartProps} />
+        </div>
+      </div>
+
+      {/* Section C3 — Training */}
+      <div className="pt-2">
+        <div className="label-eyebrow text-[10px] mb-3">Section C3 · Training / Academy analytics</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ModuleCompletionRate {...chartProps} />
+          <TrainingOverTime {...chartProps} />
+          <OverdueMandatoryTraining {...chartProps} />
+          <QuizPassRates {...chartProps} />
+          <TrainingHoursPerWorker {...chartProps} />
+        </div>
+      </div>
+
+      {/* Section C4 — Risk Register */}
+      <div className="pt-2">
+        <div className="label-eyebrow text-[10px] mb-3">Section C4 · Risk register analytics</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <RiskMatrixHeatmap {...chartProps} />
+          <RisksByRating {...chartProps} />
+          <RisksByProcess {...chartProps} />
+          <OverdueRiskReviews {...chartProps} />
+          <ControlsEffectiveness {...chartProps} />
+        </div>
+      </div>
+
+      {/* Section C5 — Documents */}
+      <div className="pt-2">
+        <div className="label-eyebrow text-[10px] mb-3">Section C5 · Document analytics</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DocumentsOverTime {...chartProps} />
+          <DocumentsByStatus {...chartProps} />
+          <MostGeneratedDocTypes {...chartProps} />
+          <DocsDueForReview {...chartProps} />
+        </div>
+      </div>
+
+      {/* Section C6 — Audits */}
+      <div className="pt-2">
+        <div className="label-eyebrow text-[10px] mb-3">Section C6 · Audit & inspection analytics</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <AuditCompletionGauge {...chartProps} />
+          <AuditScoresOverTime {...chartProps} />
+          <OpenAuditFindings {...chartProps} />
+        </div>
+      </div>
+
+      {/* Section C7 — Compliance Score */}
+      <div className="pt-2">
+        <div className="label-eyebrow text-[10px] mb-3">Section C7 · Compliance score</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ComplianceScoreTrend {...chartProps} />
+          <ComplianceBreakdownRadar {...chartProps} />
+          <ComplianceBySite {...chartProps} />
+        </div>
+      </div>
+
+      {/* Phase 4+ placeholder */}
+      <div className="bg-muted/40 border-2 border-dashed border-border p-6 text-center" data-testid="phase4-placeholder">
         <ChartLineUp size={28} className="mx-auto text-muted-foreground" weight="bold" />
-        <div className="font-bold mt-2 text-sm">Phase 3 coming: credentials, training, risk, documents, audits, compliance</div>
+        <div className="font-bold mt-2 text-sm">Phase 4 coming: industry-specific charts (D1–D5)</div>
       </div>
     </div>
   );
